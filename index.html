@@ -136,10 +136,26 @@
         @keyframes shake-double { 0%, 100% { transform: translate(0, 0); } 12% { transform: translate(-5px, 5px); } 25% { transform: translate(5px, -5px); } 37% { transform: translate(-5px, -5px); } 50% { transform: translate(0, 0); } 62% { transform: translate(-5px, 5px); } 75% { transform: translate(5px, -5px); } 87% { transform: translate(-5px, -5px); } }
         .anim-shake-double { animation: shake-double 0.4s ease-in-out; }
 
-        /* 토끼기사 연출용 CSS */
+                /* 토끼기사 연출용 CSS */
         .glitch-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: 900; font-style: italic; color: #fff; z-index: 200; text-shadow: 4px 0 #ff00ff, -4px 0 #00ffff; animation: glitch-anim 0.1s infinite; pointer-events: none; letter-spacing: 2px; }
         @keyframes glitch-anim { 0% { transform: translate(-50%, -50%) skew(0deg); } 20% { transform: translate(-52%, -50%) skew(-10deg); } 40% { transform: translate(-48%, -50%) skew(10deg); } 60% { transform: translate(-50%, -52%) skew(0deg); } 80% { transform: translate(-50%, -48%) skew(0deg); } 100% { transform: translate(-50%, -50%) skew(0deg); } }
         .flying-card { position: absolute; z-index: 150; width: 60px; height: 80px; background: #222; border: 2px solid #cc33ff; border-radius: 6px; color: #cc33ff; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; font-weight: bold; pointer-events: none; text-align: center; box-shadow: 0 0 20px rgba(204,51,255,0.8); }
+        
+        /* ✨ 신규: 8자 궤적 이동 컨테이너 */
+        .rabbit-infinity-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            animation: infinity-path 0.5s ease-in-out forwards;
+            z-index: 200; pointer-events: none;
+        }
+        @keyframes infinity-path {
+            0% { transform: translate(-30%, 30%) scale(0.5); opacity: 0; }
+            10% { transform: translate(-30%, 30%) scale(1); opacity: 1; } /* 좌하단 등장 */
+            30% { transform: translate(30%, -20%) scale(1.2); } /* 우상단으로 */
+            55% { transform: translate(30%, 30%) scale(1); } /* 우하단으로 */
+            75% { transform: translate(-30%, -20%) scale(1.2); } /* 좌상단으로 교차 */
+            85% { transform: translate(0, 10%) scale(1); opacity: 1; } /* 중앙 교차 */
+            100% { transform: translate(0, 40%) scale(0); opacity: 0; } /* 하단으로 추락하며 소멸 */
+        }
     </style>
 </head>
 <body>
@@ -161,8 +177,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.41</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 게임모드, 카드일람 추가</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.42</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 토끼기사 연출 추가</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -678,24 +694,34 @@ async startBattle() {
         this.scriptBox.scrollTop = this.scriptBox.scrollHeight;
     }
 
-async triggerGraveEffect(entity, card) {
+    async triggerGraveEffect(entity, card) {
         if (card.name === "토끼기사의 지혜") {
-            // ✨ 신규: 30회 초과 시 탈진 (턴 강제 종료)
             this.rabbitCount++;
             if (this.rabbitCount > 30) {
                 this.log(` 🐇 <b style="color:#ffaa00;">토끼가 탈진했습니다... (턴 강제 종료)</b>`);
                 this.isEndingTurn = true;
                 setTimeout(() => this.endTurn(), 1000);
-                return; // 애니메이션 및 타격 스킵
+                return;
             }
 
             const fxContainer = document.getElementById('game-container');
+            
+            // ✨ 1. 글리치 텍스트 8자 궤적 연출 (0.5초)
+            const glitchWrapper = document.createElement('div');
+            glitchWrapper.className = 'rabbit-infinity-container';
             const glitch = document.createElement('div');
-            glitch.className = 'glitch-text'; glitch.innerText = 'Rabbit';
-            fxContainer.appendChild(glitch); await sleep(1000); glitch.remove();
+            glitch.className = 'glitch-text'; 
+            glitch.innerText = 'Rabbit';
+            glitchWrapper.appendChild(glitch);
+            fxContainer.appendChild(glitchWrapper); 
+            
+            await sleep(500); 
+            glitchWrapper.remove();
 
+            // ✨ 2. 카드 날아가기 연출
             const flyCard = document.createElement('div');
-            flyCard.className = 'flying-card'; flyCard.innerHTML = 'Rabbit<br>Knight';
+            flyCard.className = 'flying-card'; 
+            flyCard.innerHTML = 'Rabbit<br>Knight';
             fxContainer.appendChild(flyCard);
 
             const handBox = document.getElementById('hand-box').getBoundingClientRect();
@@ -703,25 +729,51 @@ async triggerGraveEffect(entity, card) {
             const graveBtn = document.getElementById('btn-grave').getBoundingClientRect();
             const containerRect = fxContainer.getBoundingClientRect();
 
+            // 시작점: 손패
             flyCard.style.left = (handBox.left + handBox.width/2 - containerRect.left - 30) + 'px';
             flyCard.style.top = (handBox.top - containerRect.top - 40) + 'px';
-            flyCard.style.transition = 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-            await sleep(50);
+            flyCard.style.transition = 'all 0.3s ease-in';
 
+            await sleep(20);
+
+            // 적에게 날아가며 빙글빙글 회전 (3바퀴 = 1080도)
             flyCard.style.left = (enemyBox.left + enemyBox.width/2 - containerRect.left - 30) + 'px';
             flyCard.style.top = (enemyBox.top + enemyBox.height/2 - containerRect.top - 40) + 'px';
-            flyCard.style.transform = 'scale(1.5) rotate(15deg)';
+            flyCard.style.transform = 'scale(1.5) rotate(1080deg)'; 
+            
             await sleep(300); 
+            
+            // ✨ 3. 적중 시 역경직 & 색상 반전 연출
+            flyCard.style.transition = 'all 0.1s ease-out'; // 순간적으로 변하도록 설정
+            flyCard.style.transform = 'scale(1.8) rotate(1080deg)'; // 회전 멈춤 유지, 타격감 위한 크기 펌핑
+            flyCard.style.backgroundColor = '#dee2e6';
+            flyCard.style.color = '#ff4d4d';
+            flyCard.style.border = '1px solid #ff4d4d'; // 얇은 붉은 테두리
+            flyCard.style.boxShadow = '0 0 20px rgba(255, 77, 77, 0.9)'; // 붉은색 발광
             
             let target = entity === this.player ? this.enemy : this.player;
             await this.dealDamage(target, 17, 'physical');
+
+            // 타격감 홀딩 (역경직 0.15초)
+            await sleep(150); 
+
             if (this.checkEndGame()) { flyCard.remove(); return; }
 
+            // ✨ 4. 무덤으로 돌아가기 (다시 회전)
+            flyCard.style.transition = 'all 0.4s cubic-bezier(0.5, 0, 0.75, 0)'; 
             flyCard.style.left = (graveBtn.left + graveBtn.width/2 - containerRect.left - 30) + 'px';
             flyCard.style.top = (graveBtn.top + graveBtn.height/2 - containerRect.top - 40) + 'px';
-            flyCard.style.transform = 'scale(0.3) rotate(360deg)';
+            
+            // 원래 색상으로 복구
+            flyCard.style.backgroundColor = '#222';
+            flyCard.style.color = '#cc33ff';
+            flyCard.style.border = '2px solid #cc33ff';
+            flyCard.style.boxShadow = 'none';
+            flyCard.style.transform = 'scale(0.3) rotate(2160deg)'; // 3바퀴 추가 회전
             flyCard.style.opacity = '0';
-            await sleep(300); flyCard.remove();
+            
+            await sleep(400); 
+            flyCard.remove();
         }
     }
 
