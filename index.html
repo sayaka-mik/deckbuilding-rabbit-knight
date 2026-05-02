@@ -161,7 +161,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.38</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.40</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -497,9 +497,9 @@ class Game {
                     let el = document.createElement('div');
                     el.className = `card-detail ${this.getBgClass(card.tags)}`;
                     // 보기 편하게 태그 정보도 추가
-                    el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
-                    
-                    el.onclick = () => resolve(card);
+                el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
+
+                el.onclick = () => resolve(card);
                     listEl.appendChild(el);
                 });
             });
@@ -513,7 +513,7 @@ class Game {
         this.startBattle();
     }
 
-    // --- 신규: 카드 일람 페이지 생성 ---
+// --- 신규: 카드 일람 페이지 생성 ---
     showCollection() {
         this.changeScreen('collection');
         const grid = document.getElementById('collection-grid');
@@ -527,7 +527,9 @@ class Game {
         sortedCards.forEach(card => {
             let el = document.createElement('div');
             el.className = `card-mini ${this.getTagClass(card.tags)}`;
-            el.innerText = card.name;
+            
+            // ✨ 수정됨: 전체 내용을 <div>로 한 번 감싸서 Flexbox의 가로 정렬을 회피
+            el.innerHTML = `<div style="width: 100%;">${card.name}<br><span style="font-size: 0.65rem; color: #888; font-weight: normal; margin-top: 3px; display: inline-block;">#${card.category} 팩</span></div>`;
             
             // 카드 클릭 시 상세 효과 모달 띄우기
             el.onclick = () => this.showCardDetail(card);
