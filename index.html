@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>덱빌딩 게임 프로토타입</title>
+    <title>NEVER-NORMA-Beta</title>
     <style>
 /* 기본 설정 (모바일 최적화) */
         body { margin: 0; padding: 20px 10px; box-sizing: border-box; background-color: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
@@ -135,8 +135,18 @@
 <div id="game-container">
     <div id="fx-layer" class="hit-effect"></div>
 
+<!-- 1. 시작 화면 -->
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.25</h1>
+        <!-- src 속성에 실제 이미지 파일 이름이나 경로를 넣어주세요 -->
+        <img src="LOVENORMA.jpg" alt="게임 아이콘" style="width: 150px; height: 150px; margin-bottom: 15px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+        
+        <h1 style="font-size: 2.5rem; margin: 0 0 40px 0; text-align: left; line-height: 1.3; width: 250px;">
+            절대<br>
+            토끼 기사를<br>
+            사용하려<br>
+            하지 마<br>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.27</span>
+        </h1>
         <button id="btn-start">게임 시작</button>
     </div>
 
@@ -163,9 +173,11 @@
         <div id="reward-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto; flex-grow: 1;"></div>
     </div>
 
+<!-- 게임 오버 화면 -->
     <div id="screen-gameover" class="screen" style="justify-content: center; align-items: center;">
         <h1 style="color: #ff4d4d; margin-bottom: 20px;">눈앞이 깜깜해졌다.</h1>
-        <h2 id="final-score" style="margin-bottom: 50px;">격파한 적: 0명</h2>
+        <h2 id="final-score" style="margin-bottom: 10px;">격파한 적: 0명</h2>
+        <h2 id="final-boss-score" style="margin-bottom: 50px; color: #cc33ff;">보스 격파: 0회</h2>
         <button id="btn-restart">다시 시작</button>
     </div>
 
@@ -178,10 +190,12 @@
         </div>
     </div>
 
+<!-- 2.8 인터미션 화면 (보상과 전투 사이) -->
     <div id="screen-intermission" class="screen" style="align-items: center; justify-content: center;">
         <h2 style="color: #4da6ff; margin-bottom: 20px;">전투 준비 완료</h2>
         <div class="info-box" style="width: 80%; text-align: left; margin-bottom: 20px; background-color: #1a1a1a;">
             <p>🏆 <b>현재 격파 수:</b> <span id="inter-score" style="color: #ffcc00; font-size: 1.2rem;">0</span>명</p>
+            <p>👑 <b>보스 격파 수:</b> <span id="inter-boss-score" style="color: #cc33ff; font-size: 1.2rem;">0</span>회</p>
             <hr style="border-color: #333;">
             <p style="color: #aaa;">💀 <b>직전 격파:</b><br><span id="inter-last-enemy" style="color: #fff;">없음</span></p>
             <p style="color: #ff4d4d; font-size: 1.1rem; margin-top: 15px;">⚔️ <b>다음 적:</b><br><span id="inter-next-enemy" style="color: #fff;">미정</span></p>
@@ -254,15 +268,16 @@ const CARD_DB = [
 ];
 
 const ENEMY_POOL = [
-    { name: "전술 샌드백", hp: 110, deck: ["물어뜯기", "물어뜯기", "웅크리기", "주변 맴돌기", "주변 맴돌기"] },
-    { name: "떠돌이 늑대", hp: 100, deck: ["물어뜯기", "물어뜯기", "물어뜯기", "주변 맴돌기"] },
-    { name: "오염된 고블린", hp: 140, deck: ["물어뜯기", "웅크리기", "웅크리기", "주변 맴돌기"] }
+    { name: "전술 샌드백", hp: 50, deck: ["물어뜯기", "물어뜯기", "웅크리기", "주변 맴돌기", "주변 맴돌기"] },
+    { name: "떠돌이 늑대", hp: 70, deck: ["물어뜯기", "물어뜯기", "물어뜯기", "주변 맴돌기"] },
+    { name: "오염된 고블린", hp: 80, deck: ["물어뜯기", "웅크리기", "웅크리기", "주변 맴돌기"] }
 ];
 
 const getCard = name => ({ ...CARD_DB.find(c => c.name === name) }); 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // --- 신규: 랜덤 적 생성기 (스코어 스케일링 포함) ---
+// --- 랜덤 적 생성기 (기존과 동일) ---
 const generateRandomEnemy = (score = 0) => {
     const prefixes = ["오염된", "강인한", "오만한", "상냥한"];
     const names = ["트롤", "전사", "가로등지기", "기사"];
@@ -281,12 +296,33 @@ const generateRandomEnemy = (score = 0) => {
         deck.push(validCards[Math.floor(Math.random() * validCards.length)].name);
     }
 
-    let baseHp = Math.floor(Math.random() * 61) + 100; // 100 ~ 160
-    // 5명당 랜덤생성 적 HP 10% 복리 증가
+    let baseHp = Math.floor(Math.random() * 11) + 60; // 60 ~ 70
     let scaleMultiplier = Math.pow(1.1, Math.floor(score / 5));
     let scaledHp = Math.floor(baseHp * scaleMultiplier);
 
     return { name: fullName, hp: scaledHp, deck: deck };
+};
+
+// --- 신규: 5층 단위 보스 생성기 ---
+const generateBoss = (score) => {
+    let bossTier = Math.floor(score / 5); // 첫 보스(4마리 격파 후)는 0, 두 번째는 1...
+    let baseHp = 160;
+    let scaledHp = Math.floor(baseHp * Math.pow(1.2, bossTier)); // 20% 복리 상승
+
+    let deck = ["구사일생", "토끼기사의 지혜", "스텝 밟기", "스텝 밟기"];
+    
+    // 연격 태그 랜덤 1장
+    let comboCards = CARD_DB.filter(c => c.category === "연격");
+    deck.push(comboCards[Math.floor(Math.random() * comboCards.length)].name);
+
+    // 숨고르기 기믹 (기본 4장, 보스 티어가 오를수록 감소, 최소 1장)
+    let breathCount = Math.max(1, 4 - bossTier);
+    for(let i=0; i<breathCount; i++) {
+        deck.push("숨고르기");
+    }
+
+    // isBoss 태그를 달아서 구분
+    return { name: "뒤틀린 광기의 기사 [보스]", hp: scaledHp, deck: deck, isBoss: true };
 };
 
 // ============================================================================
@@ -295,9 +331,10 @@ const generateRandomEnemy = (score = 0) => {
 class Game {
     constructor() {
         this.score = 0;
+        this.bossKills = 0; // 신규: 보스 격파 카운트
         this.playerDeck = [];
-        this.lastEnemyData = null; // 인터미션용 직전 적 정보
-        this.nextEnemyData = null; // 인터미션용 다음 적 정보
+        this.lastEnemyData = null; 
+        this.nextEnemyData = null; 
         this.initDOM();
     }
 
@@ -305,16 +342,16 @@ class Game {
         this.screens = {
             start: document.getElementById('screen-start'),
             intro: document.getElementById('screen-intro'),
-            starter: document.getElementById('screen-starter'),     // 신규
-            intermission: document.getElementById('screen-intermission'), // 신규
+            starter: document.getElementById('screen-starter'),
+            intermission: document.getElementById('screen-intermission'),
             battle: document.getElementById('screen-battle'),
             reward: document.getElementById('screen-reward'),
             gameover: document.getElementById('screen-gameover')
         };
         
         document.getElementById('btn-start').onclick = () => this.showIntro();
-        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter'); // 시작 덱 선택으로 이동
-        document.getElementById('btn-inter-next').onclick = () => this.startBattle(); // 인터미션에서 전투로
+        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter'); 
+        document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
         document.getElementById('btn-deck').onclick = () => this.showListModal('덱 목록', this.player.deck);
@@ -350,48 +387,51 @@ class Game {
                 currentHTML += introText[i]; 
             }
             textEl.innerHTML = currentHTML;
-            await sleep(3); // 연출 스킵 원하면 0
+            await sleep(3); 
         }
         btn.style.display = "block";
     }
 
-    // --- 신규: 시작 덱 선택 및 다음 적 미리 준비 ---
     selectStarter(tag) {
         this.score = 0;
+        this.bossKills = 0; // 시작 시 초기화
         
-        // 고정 7장
         const baseNames = ["일반 공격", "일반 방어", "숨고르기", "숨고르기", "스텝 밟기", "토끼기사의 지혜", "호기심"];
         this.playerDeck = baseNames.map(getCard);
         
-        // 선택 태그 카드 3장 랜덤 추가
         let tagCards = CARD_DB.filter(c => c.category === tag);
         for(let i=0; i<3; i++) {
             this.playerDeck.push(getCard(tagCards[Math.floor(Math.random() * tagCards.length)].name));
         }
 
-        this.lastEnemyData = null; // 첫 전투이므로 직전 적은 없음
-        this.prepareNextEnemy();   // 다음 적 생성
-        this.startBattle();        // 첫 전투는 흐름상 덱 선택 후 바로 진입
+        this.lastEnemyData = null; 
+        this.prepareNextEnemy();   
+        this.startBattle();        
     }
 
     prepareNextEnemy() {
-        // 50:50 확률로 고정 몹 풀 또는 랜덤 스케일링 몹 생성
-        if (Math.random() > 0.5) {
-            this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
+        // ✨ 신규: 현재 스코어 + 1이 5의 배수라면(즉, 5층, 10층 진입 시) 보스 호출
+        if ((this.score + 1) % 5 === 0) {
+            this.nextEnemyData = generateBoss(this.score);
         } else {
-            this.nextEnemyData = generateRandomEnemy(this.score); 
+            if (Math.random() > 0.5) {
+                this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
+            } else {
+                this.nextEnemyData = generateRandomEnemy(this.score); 
+            }
         }
     }
 
-    // --- 신규: 인터미션 화면 갱신 ---
     showIntermission() {
         this.changeScreen('intermission');
         this.prepareNextEnemy();
         
         document.getElementById('inter-score').innerText = this.score;
+        document.getElementById('inter-boss-score').innerText = this.bossKills; // 보스 카운팅 표시
         
         if (this.lastEnemyData) {
-            document.getElementById('inter-last-enemy').innerHTML = `${this.lastEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${this.lastEnemyData.maxHp})</span>`;
+            let bossPrefix = this.lastEnemyData.isBoss ? "<span style='color:#cc33ff;'>[보스]</span> " : "";
+            document.getElementById('inter-last-enemy').innerHTML = `${bossPrefix}${this.lastEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${this.lastEnemyData.maxHp})</span>`;
         }
         
         let nextBonus = this.calcBonusHp(this.nextEnemyData.deck);
@@ -427,17 +467,18 @@ class Game {
         let pMaxHp = 150 + pBonusHp;
         this.player = { name: "플레이어", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
         
-        // 생성된 nextEnemyData 사용
         let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
         let eMaxHp = this.nextEnemyData.hp + eBonusHp;
         
-        this.enemy = { name: this.nextEnemyData.name, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
+        // isBoss 속성 전달
+        this.enemy = { name: this.nextEnemyData.name, isBoss: this.nextEnemyData.isBoss, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
 
         this.globalStatus = { blindness: 0, debt_contract: 0 };
-        this.isEndingTurn = false; // ✨ 신규 추가: 턴 종료 중복 방지용 깃발
+        this.isEndingTurn = false;
 
         this.updateBattleUI();
-        this.log(`야생의 [${this.enemy.name}]이(가) 나타났다!`);
+        this.log(`야생의 <b style="color:${this.enemy.isBoss ? '#cc33ff' : '#ff4d4d'};">[${this.enemy.name}]</b>이(가) 나타났다!`);
+        
         if (eBonusHp > 0) this.log(`(적의 패시브 효과로 HP가 ${eBonusHp} 증가했습니다.)`);
         if (pBonusHp > 0) this.log(`(당신의 패시브 효과로 HP가 ${pBonusHp} 증가했습니다.)`);
         
@@ -523,8 +564,8 @@ class Game {
         }
     }
 
-    async runTurn() {            
-        this.isEndingTurn = false; // ✨ 신규 추가: 턴이 새로 시작되면 잠금 해제
+    async runTurn() {
+        this.isEndingTurn = false;
 
         if(this.turn === 'player') {
             this.player.ap = 2; 
@@ -591,19 +632,17 @@ class Game {
         }
     }
 
-        checkPlayable() {
-        // ✨ 수정: 내 턴이 아니거나, 이미 턴 종료 진행 중이면 무시
-        if(this.turn !== 'player' || this.isEndingTurn) return; 
-        
+    checkPlayable() {
+        if(this.turn !== 'player' || this.isEndingTurn) return;
         if(this.player.ap < 2 || this.player.hand.length === 0) {
-            this.isEndingTurn = true; // ✨ 신규 추가: 턴 종료 절차에 돌입했음을 표시 (자물쇠 걸기)
+            this.isEndingTurn = true;
             this.log("카드를 낼 수 없어 턴을 종료합니다.");
             setTimeout(() => this.endTurn(), 1000);
         }
     }
 
     confirmPlayCard(card, index) {
-        if(this.turn !== 'player' || this.isEndingTurn) return; 
+        if(this.turn !== 'player' || this.isEndingTurn) return;
         if(this.player.ap < 2) {
             this.log("AP가 부족합니다.");
             this.playShakeOnly(); 
@@ -920,7 +959,6 @@ class Game {
             tookDamage = true;
         }
 
-        // 최후통첩(선고) 결산
         if (entity.statuses.ultimatum > 0) {
             this.log(`[상태이상] ⏳최후통첩(선고) 발동!`);
             let sentenceDmg = 0;
@@ -980,20 +1018,25 @@ class Game {
 
     checkEndGame() {
         if (this.player.hp <= 0 && this.enemy.hp <= 0) {
+            document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`;
+            document.getElementById('final-boss-score').innerText = `보스 격파: ${this.bossKills}회`;
             this.log("<br><b style='color:#ff4d4d'>동시 사망! (플레이어 패배 판정)</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
+            setTimeout(() => this.changeScreen('gameover'), 2000);
             return true;
         }
         if(this.enemy.hp <= 0) {
             this.log("<br><b style='color:#00ff00'>전투 승리!</b>");
+            if (this.enemy.isBoss) this.bossKills++; // 보스 격파 시 카운팅 증가
             this.score++;
-            this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp }; // 인터미션용 저장
+            this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp, isBoss: this.enemy.isBoss }; 
             setTimeout(() => this.startRewardPhase(), 1500);
             return true;
         }
         if(this.player.hp <= 0) {
+            document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`;
+            document.getElementById('final-boss-score').innerText = `보스 격파: ${this.bossKills}회`;
             this.log("<br><b style='color:#ff4d4d'>전투 패배...</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
+            setTimeout(() => this.changeScreen('gameover'), 2000);
             return true;
         }
         return false;
@@ -1019,7 +1062,10 @@ class Game {
         if (this.globalStatus.blindness > 0) globalEffects += `<span style="color:#fff; margin-right:10px;">🕶️실명(${this.globalStatus.blindness}턴)</span>`;
         if (this.globalStatus.debt_contract > 0) globalEffects += `<span style="color:#ffcc00; margin-right:10px;">📜부채계약(${this.globalStatus.debt_contract}턴)</span>`;
 
-        document.getElementById('enemy-info').innerHTML = `<b>${this.enemy.name}</b><br>HP: ${this.enemy.hp} | 방어도: ${this.enemy.defense}<br>${eStatus}`;
+        // 보스일 경우 이름 색상을 다르게 표시
+        let eNameDisplay = this.enemy.isBoss ? `<span style="color:#cc33ff;">${this.enemy.name}</span>` : this.enemy.name;
+
+        document.getElementById('enemy-info').innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어도: ${this.enemy.defense}<br>${eStatus}`;
         document.getElementById('player-info').innerHTML = `${globalEffects}<br>HP: ${this.player.hp} | AP: ${this.player.ap} | 방어: ${this.player.defense}<br>${pStatus}`;
         
         document.getElementById('btn-deck').innerHTML = `덱<br>(${this.player.deck.length})`;
@@ -1072,9 +1118,6 @@ class Game {
         await sleep(20);
     }
 
-    // ========================================================================
-    // 4. 모달 & 보상 시스템
-    // ========================================================================
     getTagClass(tags) {
         if(!tags) return "";
         if(tags.includes("공격")) return "tag-atk";
@@ -1168,12 +1211,12 @@ class Game {
 
         this.playerDeck.splice(removeIdx, 1); 
 
-        this.showIntermission(); // 보상 후 인터미션으로 이동
+        this.showIntermission();
     }
 }
 
 window.onload = () => {
-    window.game = new Game(); // const를 지우고 window.game으로 변경!
+    window.game = new Game();
 };
 </script>
 </body>
