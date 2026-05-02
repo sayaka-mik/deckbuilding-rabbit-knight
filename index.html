@@ -149,7 +149,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.33</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.34</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -251,7 +251,7 @@ const CARD_DB = [
     { id: "s5", category: "상태이상", name: "이행", desc: "적이 보유한 상태이상 중 1개를 랜덤으로 '결산'하여 물리피해로 입힌다.", tags: ["공격"] },
     { id: "s6", category: "상태이상", name: "결산", desc: "적이 보유한 상태이상 전부를 '결산'하여 물리피해로 입힌다.", tags: ["공격", "엘리트"] },
     { id: "s7", category: "상태이상", name: "거미줄을 딛고", desc: "자신이 4턴 동안 '인내' 상태에 돌입함. (피해를 누적하여 나중에 상태이상 피해로 입음)", tags: ["버프"] },
-    { id: "s8", category: "상태이상", name: "부채계약", desc: "2턴 동안 모두의 상태이상 스택이 감소하지 않는다.", tags: ["유틸리티"] },
+    { id: "s8", category: "상태이상", name: "부채계약", desc: "3턴 동안 모두의 상태이상 스택이 감소하지 않는다.", tags: ["유틸리티"] },
     { id: "s9", category: "상태이상", name: "실명", desc: "2턴 동안 모두가 모든 피해에 면역된다.", tags: ["버프"] },
     { id: "s10", category: "상태이상", name: "절체절명", desc: "모두의 상태이상을 결산한 뒤 제거하고, 양측의 HP를 최대치까지 회복시킨다.", tags: ["버프"] },
 
@@ -451,10 +451,33 @@ class Game {
         document.getElementById('inter-next-enemy').innerHTML = `${this.nextEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${nextMaxHp})</span>`;
     }
 
-    calcSettlement(type, stack) {
+calcSettlement(type, stack, entity) {
         if (stack <= 0) return 0;
-        let mult = type === 'poison' ? 8 : type === 'burn' ? 6 : 3;
-        return (stack * (stack + 1) / 2) * mult; 
+        let mult = type === 'poison' ? 8 : type === 'burn' ? 6 : type === 'curse' ? 3 : 0;
+        if (mult > 0) {
+            return (stack * (stack + 1) / 2) * mult; 
+        }
+        if (type === 'ultimatum') {
+            let sentenceDmg = 0;
+            CARD_DB.forEach(c => {
+                if (c.tags.includes("공격") && !c.tags.includes("엘리트") && !c.tags.includes("버프") && !c.tags.includes("유틸리티")) {
+                    let m = c.desc.match(/물리피해 (\d+)/);
+                    if (m) {
+                        let d = parseInt(m[1]);
+                        if(c.desc.includes("15x2")) d = 30;
+                        if(c.desc.includes("14x2")) d = 28;
+                        if(c.desc.includes("16x2")) d = 32;
+                        sentenceDmg += d;
+                    }
+                }
+            });
+            // 스택만큼 선고 데미지가 중첩되어 폭발합니다.
+            return stack * sentenceDmg;
+        }
+        if (type === 'patience_turns' && entity) {
+            return entity.statuses.patience_val;
+        }
+        return 0;
     }
 
     calcBonusHp(deckArray) {
@@ -850,29 +873,25 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             this.log(` 🌟 [절체절명] 모든 상태이상을 결산합니다!`);
             let pDmg = 0; let eDmg = 0;
             
-            // 1. 화상, 중독, 저주 결산
-            ['poison', 'burn', 'curse'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k]); });
-            ['poison', 'burn', 'curse'].forEach(k => { eDmg += this.calcSettlement(k, this.enemy.statuses[k]); });
-            
-            // ✨ 2. 인내 결산 추가 (누적된 피해량을 폭발 데미지에 합산)
-            pDmg += this.player.statuses.patience_val;
-            eDmg += this.enemy.statuses.patience_val;
+            // ✨ 화상, 중독, 저주, 최후통첩, 인내까지 모두 결산 딜에 합산
+            ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k], this.player); });
+            ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { eDmg += this.calcSettlement(k, this.enemy.statuses[k], this.enemy); });
             
             if (pDmg > 0) await this.dealDamage(this.player, pDmg, 'physical');
             if (eDmg > 0) await this.dealDamage(this.enemy, eDmg, 'physical');
             
             if (this.player.hp <= 0 || this.enemy.hp <= 0) { isSpecialCard = true; return; }
             
-            // ✨ 3. 글로벌 상태이상(실명, 부채계약) 정화 로직 추가
+            // ✨ 글로벌 상태이상(실명, 부채계약) 정화 로직 추가
             this.globalStatus.blindness = 0;
             this.globalStatus.debt_contract = 0;
             
-            // 4. 개인 상태이상 초기화 및 체력 회복
+            // ✨ 가시갑옷, 고요한 밤 포함 모두 초기화
             this.player.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.enemy.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
             
-            this.log(` 🌟 [절체절명] 모든 상태이상(실명, 부채계약 포함)이 제거되고 양측 체력이 100% 회복되었습니다!`);
+            this.log(` 🌟 [절체절명] 모든 상태이상 및 버프가 제거되고 양측 체력이 100% 회복되었습니다!`);
             isSpecialCard = true;
             
         } else if (card.name === "중독") {
@@ -881,45 +900,71 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             target.statuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
         } else if (card.name === "저주") {
             target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
-} else if (card.name === "기사의 신조") {
-            let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse', 'patience_turns'].includes(k) && caster.statuses[k] > 0);
+        } else if (card.name === "기사의 신조") {
+            // ✨ 실명, 부채계약, 최후통첩, 인내 포함 모두 정화 가능
+            let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse', 'patience_turns', 'ultimatum'].includes(k) && caster.statuses[k] > 0);
+            if (this.globalStatus.blindness > 0) active.push('blindness');
+            if (this.globalStatus.debt_contract > 0) active.push('debt_contract');
+
             if (active.length > 0) {
                 let toRemove = active[Math.floor(Math.random() * active.length)]; 
-                caster.statuses[toRemove] = 0; 
-
-                if (toRemove === 'patience_turns') caster.statuses.patience_val = 0;
                 
-                let krName = toRemove === 'poison' ? '중독' : toRemove === 'burn' ? '화상' : toRemove === 'curse' ? '저주' : '인내';
+                if (toRemove === 'blindness') {
+                    this.globalStatus.blindness = 0;
+                } else if (toRemove === 'debt_contract') {
+                    this.globalStatus.debt_contract = 0;
+                } else {
+                    caster.statuses[toRemove] = 0; 
+                    if (toRemove === 'patience_turns') caster.statuses.patience_val = 0;
+                }
+                
+                let krName = toRemove === 'poison' ? '중독' : toRemove === 'burn' ? '화상' : toRemove === 'curse' ? '저주' : toRemove === 'patience_turns' ? '인내' : toRemove === 'ultimatum' ? '최후통첩' : toRemove === 'blindness' ? '실명' : '부채계약';
                 this.log(` ✨ ${caster.name}의 [${krName}] 상태이상이 정화되었습니다!`);
             } else { this.log(` ✨ 정화할 상태이상이 없습니다.`); }
             isSpecialCard = true;
-            isSpecialCard = true;
         } else if (card.name === "이행") {
-            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse'].includes(k) && target.statuses[k] > 0);
+            // ✨ 최후통첩, 인내 포함하여 랜덤 폭발
+            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
             if (active.length > 0) {
                 let toRemove = active[Math.floor(Math.random() * active.length)];
-                let dmg = this.calcSettlement(toRemove, target.statuses[toRemove]);
-                target.statuses[toRemove] = 0;
+                let dmg = this.calcSettlement(toRemove, target.statuses[toRemove], target);
+                
                 this.log(` ⚡ [이행] 무작위 상태이상 폭발!`);
                 await this.dealDamage(target, dmg, 'physical');
+
+                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
+                if (this.globalStatus.debt_contract <= 0) {
+                    target.statuses[toRemove] = 0;
+                    if (toRemove === 'patience_turns') target.statuses.patience_val = 0;
+                } else {
+                    this.log(` 📜 [부채계약] 효과로 폭발한 스택이 사라지지 않습니다!`);
+                }
             }
             isSpecialCard = true;
         } else if (card.name === "결산") {
-            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse'].includes(k) && target.statuses[k] > 0);
+            // ✨ 최후통첩, 인내 포함하여 모두 폭발
+            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
             let totalDmg = 0;
             for (let k of active) { 
-                totalDmg += this.calcSettlement(k, target.statuses[k]); 
-                target.statuses[k] = 0; 
+                totalDmg += this.calcSettlement(k, target.statuses[k], target); 
+                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
+                if (this.globalStatus.debt_contract <= 0) {
+                    target.statuses[k] = 0;
+                    if (k === 'patience_turns') target.statuses.patience_val = 0;
+                }
             }
             if (totalDmg > 0) {
                 this.log(` 💥 [결산] 모든 상태이상 폭발!`);
                 await this.dealDamage(target, totalDmg, 'physical');
+                if (this.globalStatus.debt_contract > 0) {
+                    this.log(` 📜 [부채계약] 효과로 폭발한 모든 스택이 사라지지 않습니다!`);
+                }
             }
             isSpecialCard = true;
         } else if (card.name === "거미줄을 딛고") {
             caster.statuses.patience_turns = 4; this.log(` 🕸️ 4턴간 [인내] 상태 돌입.`); isSpecialCard = true;
         } else if (card.name === "부채계약") {
-            this.globalStatus.debt_contract = 2; this.log(` 📜 [부채계약] 체결.`); isSpecialCard = true;
+            this.globalStatus.debt_contract = 3; this.log(` 📜 [부채계약] 3턴 체결.`); isSpecialCard = true; // ✨ 3턴으로 변경됨
         } else if (card.name === "실명") {
             this.globalStatus.blindness = 2; this.log(` 🕶️ [실명] 발동.`); isSpecialCard = true;
         } else if (card.name === "가시갑옷") {
@@ -1060,14 +1105,20 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
         if (tookDamage) await sleep(500);
     }
 
-    async endTurn() {
+async endTurn() {
         let currentEntity = this.turn === 'player' ? this.player : this.enemy;
         await this.processEndTurnStatuses(currentEntity);
 
         if(this.checkEndGame()) return;
 
-        if (this.globalStatus.blindness > 0) this.globalStatus.blindness--;
-        if (this.globalStatus.debt_contract > 0) this.globalStatus.debt_contract--;
+        // ✨ 실명은 부채계약이 없을 때만 턴이 감소합니다.
+        if (this.globalStatus.blindness > 0 && this.globalStatus.debt_contract <= 0) {
+            this.globalStatus.blindness--;
+        }
+        // 부채계약 턴 자체는 매 턴마다 자연 감소합니다.
+        if (this.globalStatus.debt_contract > 0) {
+            this.globalStatus.debt_contract--;
+        }
 
         this.turn = this.turn === 'player' ? 'enemy' : 'player';
         this.runTurn();
