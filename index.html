@@ -106,7 +106,7 @@
     <div id="fx-layer" class="hit-effect"></div>
 
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.23</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.24</h1>
         <button id="btn-start">게임 시작</button>
     </div>
 
@@ -400,9 +400,11 @@ class Game {
         // 생성된 nextEnemyData 사용
         let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
         let eMaxHp = this.nextEnemyData.hp + eBonusHp;
+        
         this.enemy = { name: this.nextEnemyData.name, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
 
         this.globalStatus = { blindness: 0, debt_contract: 0 };
+        this.isEndingTurn = false; // ✨ 신규 추가: 턴 종료 중복 방지용 깃발
 
         this.updateBattleUI();
         this.log(`야생의 [${this.enemy.name}]이(가) 나타났다!`);
@@ -491,7 +493,9 @@ class Game {
         }
     }
 
-    async runTurn() {
+    async runTurn() {            
+        this.isEndingTurn = false; // ✨ 신규 추가: 턴이 새로 시작되면 잠금 해제
+
         if(this.turn === 'player') {
             this.player.ap = 2; 
             this.log(`<hr><b style="color:#4da6ff">--- 플레이어 턴 (AP:2) ---</b>`);
@@ -557,16 +561,19 @@ class Game {
         }
     }
 
-    checkPlayable() {
-        if(this.turn !== 'player') return;
+        checkPlayable() {
+        // ✨ 수정: 내 턴이 아니거나, 이미 턴 종료 진행 중이면 무시
+        if(this.turn !== 'player' || this.isEndingTurn) return; 
+        
         if(this.player.ap < 2 || this.player.hand.length === 0) {
+            this.isEndingTurn = true; // ✨ 신규 추가: 턴 종료 절차에 돌입했음을 표시 (자물쇠 걸기)
             this.log("카드를 낼 수 없어 턴을 종료합니다.");
             setTimeout(() => this.endTurn(), 1000);
         }
     }
 
     confirmPlayCard(card, index) {
-        if(this.turn !== 'player') return;
+        if(this.turn !== 'player' || this.isEndingTurn) return; 
         if(this.player.ap < 2) {
             this.log("AP가 부족합니다.");
             this.playShakeOnly(); 
