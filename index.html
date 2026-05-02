@@ -149,7 +149,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.32</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.33</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -846,21 +846,33 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             this.log(` 🆘 [구사일생] 공격 총 위력: ${totalDmg}!`);
             await this.dealDamage(target, totalDmg, 'physical');
             isSpecialCard = true;
-        } else if (card.name === "절체절명") {
+} else if (card.name === "절체절명") {
             this.log(` 🌟 [절체절명] 모든 상태이상을 결산합니다!`);
             let pDmg = 0; let eDmg = 0;
+            
+            // 1. 화상, 중독, 저주 결산
             ['poison', 'burn', 'curse'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k]); });
             ['poison', 'burn', 'curse'].forEach(k => { eDmg += this.calcSettlement(k, this.enemy.statuses[k]); });
+            
+            // ✨ 2. 인내 결산 추가 (누적된 피해량을 폭발 데미지에 합산)
+            pDmg += this.player.statuses.patience_val;
+            eDmg += this.enemy.statuses.patience_val;
             
             if (pDmg > 0) await this.dealDamage(this.player, pDmg, 'physical');
             if (eDmg > 0) await this.dealDamage(this.enemy, eDmg, 'physical');
             
             if (this.player.hp <= 0 || this.enemy.hp <= 0) { isSpecialCard = true; return; }
             
+            // ✨ 3. 글로벌 상태이상(실명, 부채계약) 정화 로직 추가
+            this.globalStatus.blindness = 0;
+            this.globalStatus.debt_contract = 0;
+            
+            // 4. 개인 상태이상 초기화 및 체력 회복
             this.player.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.enemy.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
-            this.log(` 🌟 양측 체력이 100% 회복되었습니다.`);
+            
+            this.log(` 🌟 [절체절명] 모든 상태이상(실명, 부채계약 포함)이 제거되고 양측 체력이 100% 회복되었습니다!`);
             isSpecialCard = true;
             
         } else if (card.name === "중독") {
