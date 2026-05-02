@@ -71,8 +71,38 @@
         .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 100; display: none; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .modal.active { display: flex; }
         .modal h3 { color: #fff; margin-bottom: 20px; text-align: center; }
-        .modal-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; margin-bottom: 20px; }
+        
+        /* 모달 내부 그리드 (덱, 무덤 목록) */
+        .modal-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: flex-start; /* 카드가 적을 때 무조건 왼쪽 위부터 차례대로 채움 */
+            width: 100%; 
+            max-width: 360px; /* 전체 카드 영역 너비 제한 */
+            margin-bottom: 20px; 
+        }
 
+        /* 덱/무덤 창의 카드는 손패의 가변 크기 설정을 무시하고 고정 크기 사용 */
+        .modal-grid .card-mini {
+            flex: 0 0 auto; 
+            max-width: none; 
+            box-sizing: border-box; 
+        }
+
+        /* 1~6번째 카드 (1번째 줄 3장, 2번째 줄 3장) */
+        .modal-grid .card-mini:nth-child(-n+6) {
+            width: calc((100% - 20px) / 3); /* 여백(10px) 2개를 제외한 공간을 정확히 3등분 */
+        }
+
+        /* 7~10번째 카드 (3번째 줄 4장) */
+        .modal-grid .card-mini:nth-child(n+7) {
+            width: calc((100% - 30px) / 4); /* 여백 3개를 제외한 공간을 정확히 4등분 */
+            font-size: 0.75rem; /* 4장이 들어가야 하므로 텍스트를 약간 축소 */
+            padding: 2px;
+        }
+
+        
         /* --- 연출 및 이펙트 --- */
         .hit-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: 50; }
         
@@ -106,7 +136,7 @@
     <div id="fx-layer" class="hit-effect"></div>
 
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.24</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.25</h1>
         <button id="btn-start">게임 시작</button>
     </div>
 
