@@ -83,6 +83,18 @@
             margin-bottom: 20px; 
         }
 
+        /* 카드 일람 전용 그리드 (무조건 한 줄에 3장) */
+        #collection-grid .card-mini {
+            width: calc((100% - 20px) / 3) !important;
+            margin-bottom: 5px;
+            flex: 0 0 auto !important;
+        }
+
+        /* 카드 일람 스크롤바 커스텀 */
+        #collection-list-container::-webkit-scrollbar { width: 6px; }
+        #collection-list-container::-webkit-scrollbar-track { background: #1a1a1a; }
+        #collection-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
         /* 덱/무덤 창의 카드는 손패의 가변 크기 설정을 무시하고 고정 크기 사용 */
         .modal-grid .card-mini {
             flex: 0 0 auto; 
@@ -149,7 +161,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.34</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.38</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -157,6 +169,28 @@
     <div id="screen-intro" class="screen" style="justify-content: center; text-align: center;">
         <div id="intro-text" style="font-size: 1.2rem; line-height: 1.8; flex-grow: 1; display: flex; align-items: center; justify-content: center;"></div>
         <button id="btn-intro-next" style="display: none; margin-top: auto;">전투 진입</button>
+    </div>
+
+<div id="screen-mode" class="screen" style="align-items: center; justify-content: center;">
+        <h2 style="margin-bottom: 30px;">플레이 모드를 선택하세요</h2>
+        <div style="display: flex; flex-direction: column; gap: 20px; width: 80%;">
+            <button onclick="game.selectClassicMode()">클래식 모드<br><span style="font-size: 0.8rem; color: #ccc;">(기본 7장 + 컨셉 3장)</span></button>
+            <button onclick="game.startDraftPhase()">랜덤 모드<br><span style="font-size: 0.8rem; color: #ccc;">(10장 직접 선택 드래프트)</span></button>
+            <button id="btn-show-collection" style="background-color: #2a2a2a; border-color: #777;">카드 일람<br><span style="font-size: 0.8rem; color: #aaa;">(전체 카드 효과 확인)</span></button>
+        </div>
+    </div>
+
+    <div id="screen-collection" class="screen" style="padding: 15px;">
+        <h2 style="text-align: center; color: #4da6ff; margin-bottom: 15px;">카드 도감</h2>
+        <div id="collection-list-container" style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
+            <div id="collection-grid" class="modal-grid" style="justify-content: center;"></div>
+        </div>
+        <button id="btn-collection-back" style="width: 100%; margin-top: 15px; padding: 15px; font-weight: bold;">돌아가기</button>
+    </div>
+
+    <div id="screen-draft" class="screen" style="align-items: center;">
+        <h3 id="draft-title" style="color: #4da6ff; margin-bottom: 15px;">시작 덱 구성 (1/10)</h3>
+        <div id="draft-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto; flex-grow: 1;"></div>
     </div>
 
     <div id="screen-battle" class="screen">
@@ -184,6 +218,8 @@
         <h2 id="final-boss-score" style="margin-bottom: 50px; color: #cc33ff;">보스 격파: 0회</h2>
         <button id="btn-restart">다시 시작</button>
     </div>
+
+
 
     <div id="screen-starter" class="screen" style="align-items: center; justify-content: center;">
         <h2 style="margin-bottom: 30px;">시작 덱 컨셉을 선택하세요</h2>
@@ -346,23 +382,30 @@ class Game {
         this.screens = {
             start: document.getElementById('screen-start'),
             intro: document.getElementById('screen-intro'),
+            mode: document.getElementById('screen-mode'),       // ✨ 신규
+            draft: document.getElementById('screen-draft'),     // ✨ 신규
             starter: document.getElementById('screen-starter'),
+            collection: document.getElementById('screen-collection'),
             intermission: document.getElementById('screen-intermission'),
             battle: document.getElementById('screen-battle'),
             reward: document.getElementById('screen-reward'),
             gameover: document.getElementById('screen-gameover')
         };
         
-    document.getElementById('btn-start').onclick = () => {
-            // 게임 시작 버튼을 누르면 BGM 볼륨을 50%로 맞추고 재생
+        document.getElementById('btn-start').onclick = () => {
             const bgm = document.getElementById('game-bgm');
-            bgm.volume = 0.5; // 0.0 ~ 1.0 사이 (0.5 = 50%)
+            bgm.volume = 0.5; 
             bgm.play().catch(e => console.log("BGM 재생 대기됨")); 
             
-            this.showIntro(); // 원래 하던 인트로 화면 넘어가기
+            this.showIntro(); 
         };
         
-        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter');
+    document.getElementById('btn-intro-next').onclick = () => this.changeScreen('mode');
+        
+        // ✨ 카드 일람 버튼 연결
+        document.getElementById('btn-show-collection').onclick = () => this.showCollection();
+        document.getElementById('btn-collection-back').onclick = () => this.changeScreen('mode');
+
         document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
@@ -421,6 +464,102 @@ class Game {
         this.startBattle();        
     }
 
+    // --- 신규: 클래식 모드 선택 시 기존 컨셉 선택창으로 이동 ---
+    selectClassicMode() {
+        this.changeScreen('starter');
+    }
+
+    // --- 신규: 랜덤 모드 선택 시 10장 드래프트 진행 ---
+    async startDraftPhase() {
+        this.changeScreen('draft');
+        this.score = 0;
+        this.bossKills = 0;
+        this.playerDeck = [];
+
+        const titleEl = document.getElementById('draft-title');
+        const listEl = document.getElementById('draft-list');
+
+        // 기본 공격/방어와 적 카드를 제외한 꿀잼 카드들로만 풀 구성
+        const draftPool = CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
+
+        // 10번 반복하여 1장씩 선택받기
+        for (let i = 1; i <= 10; i++) {
+            titleEl.innerText = `시작 덱 구성: 카드를 선택하세요 (${i}/10)`;
+            listEl.innerHTML = '';
+
+            let choices = [];
+            for(let j = 0; j < 3; j++) {
+                choices.push(getCard(draftPool[Math.floor(Math.random() * draftPool.length)].name));
+            }
+
+            const newCard = await new Promise(resolve => {
+                choices.forEach(card => {
+                    let el = document.createElement('div');
+                    el.className = `card-detail ${this.getBgClass(card.tags)}`;
+                    // 보기 편하게 태그 정보도 추가
+                    el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
+                    
+                    el.onclick = () => resolve(card);
+                    listEl.appendChild(el);
+                });
+            });
+
+            this.playerDeck.push(newCard);
+        }
+
+        // 10장 선택이 끝나면 첫 전투 준비 및 진입
+        this.lastEnemyData = null;
+        this.prepareNextEnemy();
+        this.startBattle();
+    }
+
+    // --- 신규: 카드 일람 페이지 생성 ---
+    showCollection() {
+        this.changeScreen('collection');
+        const grid = document.getElementById('collection-grid');
+        grid.innerHTML = '';
+
+        // "적" 카테고리를 제외한 모든 카드 정렬 (카테고리별로 정렬하여 보기 좋게 표시)
+        const sortedCards = CARD_DB
+            .filter(c => c.category !== "적")
+            .sort((a, b) => a.category.localeCompare(b.category));
+
+        sortedCards.forEach(card => {
+            let el = document.createElement('div');
+            el.className = `card-mini ${this.getTagClass(card.tags)}`;
+            el.innerText = card.name;
+            
+            // 카드 클릭 시 상세 효과 모달 띄우기
+            el.onclick = () => this.showCardDetail(card);
+            grid.appendChild(el);
+        });
+    }
+
+    // --- 신규: 카드 상세 정보 표시 (전용 상세 모달) ---
+    showCardDetail(card) {
+        const modal = document.getElementById('modal-play');
+        const container = document.getElementById('play-card-container');
+        
+        // 기존 '사용할까요?' 텍스트를 '카드 정보'로 임시 변경
+        const originalTitle = modal.querySelector('h3').innerHTML;
+        modal.querySelector('h3').innerHTML = `카드 정보<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span>`;
+
+        container.innerHTML = '';
+        let el = document.createElement('div');
+        el.className = `card-detail ${this.getBgClass(card.tags)}`;
+        el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
+        
+        container.appendChild(el);
+        modal.classList.add('active');
+
+        // 모달이 닫힐 때 제목을 원래대로 복구하는 일회성 이벤트
+        const restoreTitle = () => {
+            modal.querySelector('h3').innerHTML = originalTitle;
+            modal.removeEventListener('click', restoreTitle);
+        };
+        modal.addEventListener('click', restoreTitle);
+    }
+    
     prepareNextEnemy() {
         // ✨ 신규: 현재 스코어 + 1이 5의 배수라면(즉, 5층, 10층 진입 시) 보스 호출
         if ((this.score + 1) % 5 === 0) {
