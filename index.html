@@ -149,7 +149,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.30</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.31</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -470,7 +470,7 @@ class Game {
     // ========================================================================
     // 3. 전투 시스템
     // ========================================================================
-    async startBattle() {
+async startBattle() {
         this.changeScreen('battle');
         this.scriptBox = document.getElementById('script-box');
         this.scriptBox.innerHTML = '';
@@ -487,6 +487,7 @@ class Game {
 
         this.globalStatus = { blindness: 0, debt_contract: 0 };
         this.isEndingTurn = false;
+        this.isGameOver = false;
 
         this.updateBattleUI();
         this.log(`야생의 <b style="color:${this.enemy.isBoss ? '#cc33ff' : '#ff4d4d'};">[${this.enemy.name}]</b>이(가) 나타났다!`);
@@ -841,13 +842,18 @@ class Game {
             target.statuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
         } else if (card.name === "저주") {
             target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
-        } else if (card.name === "기사의 신조") {
-            let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse'].includes(k) && caster.statuses[k] > 0);
+} else if (card.name === "기사의 신조") {
+            let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse', 'patience_turns'].includes(k) && caster.statuses[k] > 0);
             if (active.length > 0) {
                 let toRemove = active[Math.floor(Math.random() * active.length)]; 
                 caster.statuses[toRemove] = 0; 
-                this.log(` ✨ 무작위 상태이상 정화!`);
-            }
+
+                if (toRemove === 'patience_turns') caster.statuses.patience_val = 0;
+                
+                let krName = toRemove === 'poison' ? '중독' : toRemove === 'burn' ? '화상' : toRemove === 'curse' ? '저주' : '인내';
+                this.log(` ✨ ${caster.name}의 [${krName}] 상태이상이 정화되었습니다!`);
+            } else { this.log(` ✨ 정화할 상태이상이 없습니다.`); }
+            isSpecialCard = true;
             isSpecialCard = true;
         } else if (card.name === "이행") {
             let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse'].includes(k) && target.statuses[k] > 0);
@@ -1028,27 +1034,28 @@ class Game {
         this.runTurn();
     }
 
-    checkEndGame() {
+checkEndGame() {
+        if (this.isGameOver) return true; // ✨ 1번 판정이 났으면 무조건 통과 (중복 실행 방지)
+
         if (this.player.hp <= 0 && this.enemy.hp <= 0) {
-            document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`;
-            document.getElementById('final-boss-score').innerText = `보스 격파: ${this.bossKills}회`;
+            this.isGameOver = true;
             this.log("<br><b style='color:#ff4d4d'>동시 사망! (플레이어 패배 판정)</b>");
-            setTimeout(() => this.changeScreen('gameover'), 2000);
+            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
             return true;
         }
         if(this.enemy.hp <= 0) {
+            this.isGameOver = true;
             this.log("<br><b style='color:#00ff00'>전투 승리!</b>");
-            if (this.enemy.isBoss) this.bossKills++; // 보스 격파 시 카운팅 증가
+            if (this.enemy.isBoss) this.bossKills++; 
             this.score++;
             this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp, isBoss: this.enemy.isBoss }; 
             setTimeout(() => this.startRewardPhase(), 1500);
             return true;
         }
         if(this.player.hp <= 0) {
-            document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`;
-            document.getElementById('final-boss-score').innerText = `보스 격파: ${this.bossKills}회`;
+            this.isGameOver = true;
             this.log("<br><b style='color:#ff4d4d'>전투 패배...</b>");
-            setTimeout(() => this.changeScreen('gameover'), 2000);
+            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
             return true;
         }
         return false;
