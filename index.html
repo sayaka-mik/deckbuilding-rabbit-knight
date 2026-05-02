@@ -27,7 +27,27 @@
         .deck-grave-ui button { padding: 8px 15px; font-size: 0.9rem; }
 
         /* --- 카드 UI --- */
-        .card-mini { flex: 1; max-width: 80px; aspect-ratio: 3/4; border: 2px solid #fff; border-radius: 6px; background-color: #222; display: flex; justify-content: center; align-items: center; text-align: center; font-size: 0.9rem; font-weight: bold; cursor: pointer; word-break: keep-all; padding: 5px; }
+        .card-mini { 
+            flex: 1 1 0; /* 카드가 많아지면 동일한 비율로 줄어들게 설정 */
+            min-width: 0; /* ★핵심: 텍스트 길이에 영향받지 않고 일정하게 축소되도록 강제 */
+            max-width: 75px; 
+            aspect-ratio: 3/4; 
+            border: 2px solid #fff; 
+            border-radius: 6px; 
+            background-color: #222; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            font-size: 0.85rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            word-break: keep-all; 
+            padding: 3px; 
+            box-sizing: border-box; 
+            overflow: hidden; /* ★핵심: 글자가 박스 밖으로 삐져나가는 것을 숨김 */
+            line-height: 1.2;
+        }
         .card-mini:active { transform: scale(0.9); }
         
         /* 드로우 / 선택용 디테일 카드 */
@@ -86,7 +106,7 @@
     <div id="fx-layer" class="hit-effect"></div>
 
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.21</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.23</h1>
         <button id="btn-start">게임 시작</button>
     </div>
 
@@ -730,7 +750,7 @@ class Game {
         } else if (card.name === "중독") {
             target.statuses.poison += 3; this.log(` ☠️ 중독 스택 3 부여!`); isSpecialCard = true;
         } else if (card.name === "화상") {
-            target.striatuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
+            target.statuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
         } else if (card.name === "저주") {
             target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
         } else if (card.name === "기사의 신조") {
