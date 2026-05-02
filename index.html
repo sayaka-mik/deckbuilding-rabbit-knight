@@ -86,7 +86,7 @@
     <div id="fx-layer" class="hit-effect"></div>
 
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.20</h1>
+        <h1 style="font-size: 2.5rem; margin-bottom: 50px;">덱빌딩<br>beta-0.21</h1>
         <button id="btn-start">게임 시작</button>
     </div>
 
@@ -117,6 +117,26 @@
         <h1 style="color: #ff4d4d; margin-bottom: 20px;">눈앞이 깜깜해졌다.</h1>
         <h2 id="final-score" style="margin-bottom: 50px;">격파한 적: 0명</h2>
         <button id="btn-restart">다시 시작</button>
+    </div>
+
+    <div id="screen-starter" class="screen" style="align-items: center; justify-content: center;">
+        <h2 style="margin-bottom: 30px;">시작 덱 컨셉을 선택하세요</h2>
+        <div style="display: flex; flex-direction: column; gap: 20px; width: 80%;">
+            <button onclick="game.selectStarter('연격')">연격 덱 (관련 카드 3장)</button>
+            <button onclick="game.selectStarter('상태이상')">상태이상 덱 (관련 카드 3장)</button>
+            <button onclick="game.selectStarter('반격')">반격 덱 (관련 카드 3장)</button>
+        </div>
+    </div>
+
+    <div id="screen-intermission" class="screen" style="align-items: center; justify-content: center;">
+        <h2 style="color: #4da6ff; margin-bottom: 20px;">전투 준비 완료</h2>
+        <div class="info-box" style="width: 80%; text-align: left; margin-bottom: 20px; background-color: #1a1a1a;">
+            <p>🏆 <b>현재 격파 수:</b> <span id="inter-score" style="color: #ffcc00; font-size: 1.2rem;">0</span>명</p>
+            <hr style="border-color: #333;">
+            <p style="color: #aaa;">💀 <b>직전 격파:</b><br><span id="inter-last-enemy" style="color: #fff;">없음</span></p>
+            <p style="color: #ff4d4d; font-size: 1.1rem; margin-top: 15px;">⚔️ <b>다음 적:</b><br><span id="inter-next-enemy" style="color: #fff;">미정</span></p>
+        </div>
+        <button id="btn-inter-next" style="width: 80%; padding: 15px; font-weight: bold;">다음 전투 진입</button>
     </div>
 
     <div id="modal-draw" class="modal">
@@ -192,8 +212,8 @@ const ENEMY_POOL = [
 const getCard = name => ({ ...CARD_DB.find(c => c.name === name) }); 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// --- 랜덤 적 생성기 ---
-const generateRandomEnemy = () => {
+// --- 신규: 랜덤 적 생성기 (스코어 스케일링 포함) ---
+const generateRandomEnemy = (score = 0) => {
     const prefixes = ["오염된", "강인한", "오만한", "상냥한"];
     const names = ["트롤", "전사", "가로등지기", "기사"];
     let fullName = `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
@@ -203,17 +223,20 @@ const generateRandomEnemy = () => {
 
     let deck = [];
     let primaryCards = CARD_DB.filter(c => c.category === primaryTag);
-    // 특정 태그 카드 2장 보장
     deck.push(primaryCards[Math.floor(Math.random() * primaryCards.length)].name);
     deck.push(primaryCards[Math.floor(Math.random() * primaryCards.length)].name);
 
-    // 나머지 5장은 비엘리트, 비기본 카드 중에서 랜덤
     let validCards = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.category !== "기본");
     for(let i=0; i<5; i++) {
         deck.push(validCards[Math.floor(Math.random() * validCards.length)].name);
     }
 
-    return { name: fullName, hp: Math.floor(Math.random() * 61) + 100, deck: deck };
+    let baseHp = Math.floor(Math.random() * 61) + 100; // 100 ~ 160
+    // 5명당 랜덤생성 적 HP 10% 복리 증가
+    let scaleMultiplier = Math.pow(1.1, Math.floor(score / 5));
+    let scaledHp = Math.floor(baseHp * scaleMultiplier);
+
+    return { name: fullName, hp: scaledHp, deck: deck };
 };
 
 // ============================================================================
@@ -223,6 +246,8 @@ class Game {
     constructor() {
         this.score = 0;
         this.playerDeck = [];
+        this.lastEnemyData = null; // 인터미션용 직전 적 정보
+        this.nextEnemyData = null; // 인터미션용 다음 적 정보
         this.initDOM();
     }
 
@@ -230,13 +255,16 @@ class Game {
         this.screens = {
             start: document.getElementById('screen-start'),
             intro: document.getElementById('screen-intro'),
+            starter: document.getElementById('screen-starter'),     // 신규
+            intermission: document.getElementById('screen-intermission'), // 신규
             battle: document.getElementById('screen-battle'),
             reward: document.getElementById('screen-reward'),
             gameover: document.getElementById('screen-gameover')
         };
         
         document.getElementById('btn-start').onclick = () => this.showIntro();
-        document.getElementById('btn-intro-next').onclick = () => this.startRun();
+        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter'); // 시작 덱 선택으로 이동
+        document.getElementById('btn-inter-next').onclick = () => this.startBattle(); // 인터미션에서 전투로
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
         document.getElementById('btn-deck').onclick = () => this.showListModal('덱 목록', this.player.deck);
@@ -272,17 +300,53 @@ class Game {
                 currentHTML += introText[i]; 
             }
             textEl.innerHTML = currentHTML;
-            await sleep(3);
+            await sleep(3); // 연출 스킵 원하면 0
         }
         btn.style.display = "block";
     }
 
-    startRun() {
+    // --- 신규: 시작 덱 선택 및 다음 적 미리 준비 ---
+    selectStarter(tag) {
         this.score = 0;
-        // 테스트 덱 (요청하신 신규 카드들 포함)
-        const baseNames = ["깨달음", "호기심", "성급한 결정", "만류귀종", "일반 공격", "단단함", "가시갑옷", "숨고르기", "숨고르기", "감각 개화"];
+        
+        // 고정 7장
+        const baseNames = ["일반 공격", "일반 방어", "숨고르기", "숨고르기", "스텝 밟기", "토끼기사의 지혜", "호기심"];
         this.playerDeck = baseNames.map(getCard);
-        this.startBattle();
+        
+        // 선택 태그 카드 3장 랜덤 추가
+        let tagCards = CARD_DB.filter(c => c.category === tag);
+        for(let i=0; i<3; i++) {
+            this.playerDeck.push(getCard(tagCards[Math.floor(Math.random() * tagCards.length)].name));
+        }
+
+        this.lastEnemyData = null; // 첫 전투이므로 직전 적은 없음
+        this.prepareNextEnemy();   // 다음 적 생성
+        this.startBattle();        // 첫 전투는 흐름상 덱 선택 후 바로 진입
+    }
+
+    prepareNextEnemy() {
+        // 50:50 확률로 고정 몹 풀 또는 랜덤 스케일링 몹 생성
+        if (Math.random() > 0.5) {
+            this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
+        } else {
+            this.nextEnemyData = generateRandomEnemy(this.score); 
+        }
+    }
+
+    // --- 신규: 인터미션 화면 갱신 ---
+    showIntermission() {
+        this.changeScreen('intermission');
+        this.prepareNextEnemy();
+        
+        document.getElementById('inter-score').innerText = this.score;
+        
+        if (this.lastEnemyData) {
+            document.getElementById('inter-last-enemy').innerHTML = `${this.lastEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${this.lastEnemyData.maxHp})</span>`;
+        }
+        
+        let nextBonus = this.calcBonusHp(this.nextEnemyData.deck);
+        let nextMaxHp = this.nextEnemyData.hp + nextBonus;
+        document.getElementById('inter-next-enemy').innerHTML = `${this.nextEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${nextMaxHp})</span>`;
     }
 
     calcSettlement(type, stack) {
@@ -301,27 +365,22 @@ class Game {
         return bonus;
     }
 
+    // ========================================================================
+    // 3. 전투 시스템
+    // ========================================================================
     async startBattle() {
         this.changeScreen('battle');
         this.scriptBox = document.getElementById('script-box');
         this.scriptBox.innerHTML = '';
         
-        // 플레이어 세팅
         let pBonusHp = this.calcBonusHp(this.playerDeck);
         let pMaxHp = 150 + pBonusHp;
         this.player = { name: "플레이어", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
         
-        // 적 세팅 (고정 적 풀과 랜덤 생성 적 50:50 비율)
-        let enemyData;
-        if (Math.random() > 0.5) {
-            enemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
-        } else {
-            enemyData = generateRandomEnemy();
-        }
-        
-        let eBonusHp = this.calcBonusHp(enemyData.deck);
-        let eMaxHp = enemyData.hp + eBonusHp;
-        this.enemy = { name: enemyData.name, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: enemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
+        // 생성된 nextEnemyData 사용
+        let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
+        let eMaxHp = this.nextEnemyData.hp + eBonusHp;
+        this.enemy = { name: this.nextEnemyData.name, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
 
         this.globalStatus = { blindness: 0, debt_contract: 0 };
 
@@ -549,7 +608,6 @@ class Game {
         this.endTurn();
     }
 
-    // --- 데미지 및 반사 로직 (방어도 상쇄 텍스트 추가) ---
     async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
         if (this.globalStatus.blindness > 0) {
             this.log(` 🕶️ 실명 효과로 인해 피해 무효화!`); return;
@@ -672,7 +730,7 @@ class Game {
         } else if (card.name === "중독") {
             target.statuses.poison += 3; this.log(` ☠️ 중독 스택 3 부여!`); isSpecialCard = true;
         } else if (card.name === "화상") {
-            target.statuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
+            target.striatuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
         } else if (card.name === "저주") {
             target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
         } else if (card.name === "기사의 신조") {
@@ -715,8 +773,6 @@ class Game {
             caster.statuses.thorn_armor += 3; this.log(` 🛡️ [가시갑옷] 3턴간 물리피해 50% 반사!`); isSpecialCard = true;
         } else if (card.name === "고요한 밤") {
             caster.statuses.silent_night += 3; this.log(` 🌙 [고요한 밤] 3턴간 상태이상 피해 50% 반사!`); isSpecialCard = true;
-        
-        // --- 신규 카드 4종 로직 ---
         } else if (card.name === "깨달음") {
             let pool = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.tags.includes("공격") && !this.playerDeck.some(pd => pd.id === c.id));
             if (pool.length > 0) {
@@ -807,7 +863,7 @@ class Game {
             tookDamage = true;
         }
 
-        // 최후통첩(선고) 결산 로직 추가
+        // 최후통첩(선고) 결산
         if (entity.statuses.ultimatum > 0) {
             this.log(`[상태이상] ⏳최후통첩(선고) 발동!`);
             let sentenceDmg = 0;
@@ -823,7 +879,7 @@ class Game {
                     }
                 }
             });
-            await this.dealDamage(entity, sentenceDmg, 'status', 'curse'); // 선고 데미지 (저주 이펙트)
+            await this.dealDamage(entity, sentenceDmg, 'status', 'curse');
             if (!keepStack) entity.statuses.ultimatum--;
             tookDamage = true;
         }
@@ -874,6 +930,7 @@ class Game {
         if(this.enemy.hp <= 0) {
             this.log("<br><b style='color:#00ff00'>전투 승리!</b>");
             this.score++;
+            this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp }; // 인터미션용 저장
             setTimeout(() => this.startRewardPhase(), 1500);
             return true;
         }
@@ -1054,14 +1111,13 @@ class Game {
 
         this.playerDeck.splice(removeIdx, 1); 
 
-        this.startBattle();
+        this.showIntermission(); // 보상 후 인터미션으로 이동
     }
 }
 
 window.onload = () => {
-    const game = new Game();
+    window.game = new Game(); // const를 지우고 window.game으로 변경!
 };
-
 </script>
 </body>
 </html>
