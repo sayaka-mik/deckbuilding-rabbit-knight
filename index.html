@@ -149,7 +149,7 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.31</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.32</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -513,8 +513,17 @@ async startBattle() {
         this.scriptBox.scrollTop = this.scriptBox.scrollHeight;
     }
 
-    async triggerGraveEffect(entity, card) {
+async triggerGraveEffect(entity, card) {
         if (card.name === "토끼기사의 지혜") {
+            // ✨ 신규: 30회 초과 시 탈진 (턴 강제 종료)
+            this.rabbitCount++;
+            if (this.rabbitCount > 30) {
+                this.log(` 🐇 <b style="color:#ffaa00;">토끼가 탈진했습니다... (턴 강제 종료)</b>`);
+                this.isEndingTurn = true;
+                setTimeout(() => this.endTurn(), 1000);
+                return; // 애니메이션 및 타격 스킵
+            }
+
             const fxContainer = document.getElementById('game-container');
             const glitch = document.createElement('div');
             glitch.className = 'glitch-text'; glitch.innerText = 'Rabbit';
@@ -551,7 +560,7 @@ async startBattle() {
         }
     }
 
-    async drawCard(entity, count) {
+async drawCard(entity, count) {
         let loopSafety = 0; 
         for(let i=0; i<count; i++) {
             loopSafety++;
@@ -569,7 +578,8 @@ async startBattle() {
                 this.log(` 🐇 [토끼기사의 지혜]가 드로우되어 즉시 무덤으로 갑니다.`);
                 entity.grave.push(card);
                 await this.triggerGraveEffect(entity, card);
-                if (this.checkEndGame()) return; 
+                // ✨ 신규: 탈진으로 인해 턴 종료 중이면 드로우 루프 탈출
+                if (this.checkEndGame() || this.isEndingTurn) return; 
                 i--; 
                 continue;
             }
@@ -577,8 +587,9 @@ async startBattle() {
         }
     }
 
-    async runTurn() {
+async runTurn() {
         this.isEndingTurn = false;
+        this.rabbitCount = 0; // ✨ 신규: 턴마다 토끼기사 출격 횟수 초기화
 
         if(this.turn === 'player') {
             this.player.ap = 2; 
@@ -586,6 +597,7 @@ async startBattle() {
             this.updateBattleUI();
             await sleep(500);
 
+            // ... (이하 기존 drawPool 로직 동일) ...
             let drawPool = [];
             for(let i=0; i<3; i++) {
                 if(this.player.deck.length === 0 && this.player.grave.length > 0) {
@@ -602,7 +614,7 @@ async startBattle() {
                     this.player.grave.push(picked);
                     drawPool.forEach(c => { if(c !== picked) this.player.deck.push(c); }); 
                     await this.triggerGraveEffect(this.player, picked);
-                    if (this.checkEndGame()) return;
+                    if (this.checkEndGame() || this.isEndingTurn) return; // 탈진 체크
                     await this.drawCard(this.player, 1);
                 } else {
                     this.player.hand.push(picked);
@@ -633,7 +645,7 @@ async startBattle() {
                     this.enemy.grave.push(picked);
                     drawPool.forEach(c => { if(c !== picked) this.enemy.deck.push(c); });
                     await this.triggerGraveEffect(this.enemy, picked);
-                    if (this.checkEndGame()) return;
+                    if (this.checkEndGame() || this.isEndingTurn) return; // 탈진 체크
                     await this.drawCard(this.enemy, 1);
                 } else {
                     this.enemy.hand.push(picked);
@@ -696,8 +708,9 @@ async startBattle() {
         setTimeout(() => this.checkPlayable(), 500);
     }
 
-    async enemyAI() {
-        while(this.enemy.ap >= 2 && this.enemy.hand.length > 0) {
+async enemyAI() {
+        // ✨ 신규: isEndingTurn이 true면 적 AI 중단
+        while(this.enemy.ap >= 2 && this.enemy.hand.length > 0 && !this.isEndingTurn) {
             const idx = Math.floor(Math.random() * this.enemy.hand.length);
             const card = this.enemy.hand.splice(idx, 1)[0];
             this.enemy.ap -= 2;
@@ -712,12 +725,16 @@ async startBattle() {
             if(this.checkEndGame()) return;
             await sleep(1000);
         }
-        this.log("적 턴 종료.");
-        await sleep(1000);
-        this.endTurn();
+        
+        // ✨ 신규: 탈진으로 강제 종료된 게 아닐 때만 정상 종료 로그 출력
+        if (!this.isEndingTurn) {
+            this.log("적 턴 종료.");
+            await sleep(1000);
+            this.endTurn();
+        }
     }
 
-    async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
+async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
         if (this.globalStatus.blindness > 0) {
             this.log(` 🕶️ 실명 효과로 인해 피해 무효화!`); return;
         }
@@ -735,6 +752,16 @@ async startBattle() {
             if (target.statuses.patience_turns > 0) {
                 target.statuses.patience_val += amount;
                 this.log(` 🕸️ [인내] ${amount} 피해 누적! (현재: ${target.statuses.patience_val})`);
+                
+                // ✨ 신규: 누적 400 이상 시 거미줄 폭발 기믹
+                if (target.statuses.patience_val >= 400) {
+                    this.log(` <b style="color:#ff4d4d;">🕸️ 누적된 피해가 400을 초과하여 거미줄이 끊어졌습니다! 강제 결산!</b>`);
+                    let snapDmg = target.statuses.patience_val;
+                    target.statuses.patience_turns = 0;
+                    target.statuses.patience_val = 0;
+                    // 모아둔 피해를 한 방에 터뜨림 (이 과정에서 고요한밤 반사 등은 자동으로 계산됨)
+                    await this.dealDamage(target, snapDmg, 'status', 'patience');
+                }
             } else {
                 let finalDmg = Math.max(0, amount - target.defense);
                 let blocked = amount - finalDmg;
