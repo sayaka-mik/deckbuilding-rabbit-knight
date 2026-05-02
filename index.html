@@ -135,6 +135,10 @@
 <div id="game-container">
     <div id="fx-layer" class="hit-effect"></div>
 
+    <audio id="game-bgm" loop>
+    <source src="rabbitknight.mp3" type="audio/mpeg">
+</audio>
+
 <!-- 1. 시작 화면 -->
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
         <!-- src 속성에 실제 이미지 파일 이름이나 경로를 넣어주세요 -->
@@ -143,9 +147,9 @@
         <h1 style="font-size: 2.5rem; margin: 0 0 40px 0; text-align: left; line-height: 1.3; width: 250px;">
             절대<br>
             토끼 기사를<br>
-            사용하려<br>
+            <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.27</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.30</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -349,8 +353,16 @@ class Game {
             gameover: document.getElementById('screen-gameover')
         };
         
-        document.getElementById('btn-start').onclick = () => this.showIntro();
-        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter'); 
+    document.getElementById('btn-start').onclick = () => {
+            // 게임 시작 버튼을 누르면 BGM 볼륨을 50%로 맞추고 재생
+            const bgm = document.getElementById('game-bgm');
+            bgm.volume = 0.5; // 0.0 ~ 1.0 사이 (0.5 = 50%)
+            bgm.play().catch(e => console.log("BGM 재생 대기됨")); 
+            
+            this.showIntro(); // 원래 하던 인트로 화면 넘어가기
+        };
+        
+        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('starter');
         document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
