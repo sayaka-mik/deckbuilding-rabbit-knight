@@ -156,6 +156,39 @@
             85% { transform: translate(0, 10%) scale(1); opacity: 1; } /* 중앙 교차 */
             100% { transform: translate(0, 40%) scale(0); opacity: 0; } /* 하단으로 추락하며 소멸 */
         }
+        
+                /* --- 신규 전투 UI 레이아웃 --- */
+        .top-status-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 130px; flex-shrink: 0; margin-bottom: 10px; }
+        .status-box { flex: 1; border: 1px solid #444; border-radius: 8px; background-color: #222; text-align: center; padding: 10px; display: flex; flex-direction: column; justify-content: center; font-size: 0.95rem; position: relative; }
+        
+        #center-stage { flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        #staged-card-slot { width: 110px; height: 146px; border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+        
+        .mid-action-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 50px; flex-shrink: 0; margin-bottom: 15px; }
+        .mid-btn { flex: 1; border-radius: 8px; border: 2px solid #555; font-size: 0.95rem; color: #fff; background-color: #333; cursor: pointer; white-space: nowrap; padding: 0 5px; }
+        .mid-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #btn-use-card { flex: 2; border: none; font-size: 1.1rem; }
+        #btn-use-card:disabled { background-color: #333 !important; color: #777 !important; }
+
+                /* ✨ 수정됨: 플로팅 데미지 (위치 고정값 제거, 자바스크립트가 추적하도록 변경) */
+        .floating-dmg { position: absolute; font-size: 2.2rem; font-weight: 900; color: #ff4d4d; animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards; pointer-events: none; z-index: 300; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; transform: translateX(-50%); }
+        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, 0) scale(0.5); } 15% { transform: translate(-50%, -20px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
+        .status-box { transition: border-color 0.3s ease; border-width: 2px; } /* 테두리 전환을 부드럽게 */
+
+        /* ✨ 신규: Guard 박스 튕김 연출 */
+        @keyframes guard-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .anim-guard { animation: guard-bounce 0.3s ease-in-out; border-color: #4da6ff !important; }
+
+        /* ✨ 신규: 드로우 덱 애니메이션 */
+        .draw-anim-card { position: absolute; width: 25px; height: 35px; background-color: #555; border: 2px solid #888; border-radius: 4px; z-index: 120; pointer-events: none; animation: draw-fly 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes draw-fly { 
+            0% { transform: translate(0, 0) scale(1); opacity: 1; } 
+            100% { transform: translate(-50px, -20px) scale(0.6) rotate(-20deg); opacity: 0; } 
+        }
+
     </style>
 </head>
 <body>
@@ -177,8 +210,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.42</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 토끼기사 연출 추가</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.47</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 드로우 피드백, 추가시전, 가드, 회복 표시</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -211,10 +244,22 @@
     </div>
 
     <div id="screen-battle" class="screen">
-        <div id="enemy-info" class="info-box">적 정보</div>
-        <div id="script-box"></div>
+        <div class="top-status-area">
+            <div id="enemy-info" class="status-box">적 정보</div>
+            <div id="player-info" class="status-box" style="border-color: #4da6ff;">플레이어 정보</div>
+        </div>
         
-        <div id="player-info" class="info-box" style="background-color: #1a2a3a; border-color: #4da6ff;">HP: 150 | AP: 0 | 방어: 0</div>
+        <div id="center-stage">
+            <div id="staged-card-slot">
+                <span style="color: #777;">카드 올리기</span>
+            </div>
+        </div>
+
+        <div class="mid-action-area">
+            <button id="btn-show-log" class="mid-btn">로그</button>
+            <button id="btn-use-card" class="mid-btn" style="background-color: #4da6ff; color: #000; font-weight: bold;" disabled>사용</button>
+            <button id="btn-cancel-card" class="mid-btn" disabled>내리기</button>
+        </div>
         
         <div class="bottom-action-area">
             <button id="btn-grave" class="deck-btn">무덤<br>(0)</button>
@@ -222,6 +267,12 @@
             <button id="btn-deck" class="deck-btn">덱<br>(10)</button>
         </div>
     </div>
+
+    <div id="modal-log" class="modal" onclick="this.classList.remove('active')">
+        <h3 style="margin-top: 10vh;">전투 기록<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span></h3>
+        <div id="script-box" style="width: 90%; max-width: 400px; background-color: #111; padding: 15px; border-radius: 8px; border: 1px solid #444; height: 50vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()"></div>
+    </div>
+
 
     <div id="screen-reward" class="screen" style="align-items: center;">
         <h3 id="reward-title">전투 승리! 카드를 1장 선택하세요.</h3>
@@ -426,8 +477,15 @@ class Game {
         document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
+        // (기존 버튼 연결 코드들 아래에 추가)
         document.getElementById('btn-deck').onclick = () => this.showListModal('덱 목록', this.player.deck);
         document.getElementById('btn-grave').onclick = () => this.showListModal('무덤 목록', this.player.grave);
+
+        // ✨ 신규 UI 버튼 이벤트 연결
+        document.getElementById('btn-show-log').onclick = () => document.getElementById('modal-log').classList.add('active');
+        document.getElementById('btn-use-card').onclick = () => this.playStagedCard();
+        document.getElementById('btn-cancel-card').onclick = () => this.cancelStagedCard();
+
     }
 
     changeScreen(name) {
@@ -651,27 +709,31 @@ calcSettlement(type, stack, entity) {
     // ========================================================================
     // 3. 전투 시스템
     // ========================================================================
-async startBattle() {
+    async startBattle() {
         this.changeScreen('battle');
         this.scriptBox = document.getElementById('script-box');
         this.scriptBox.innerHTML = '';
         
+        this.stagedCardIndex = -1; 
+        
         let pBonusHp = this.calcBonusHp(this.playerDeck);
         let pMaxHp = 150 + pBonusHp;
-        this.player = { name: "플레이어", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
+        this.player = { name: "낙원의 토끼", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
         
         let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
         let eMaxHp = this.nextEnemyData.hp + eBonusHp;
         
-        // isBoss 속성 전달
         this.enemy = { name: this.nextEnemyData.name, isBoss: this.nextEnemyData.isBoss, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
 
         this.globalStatus = { blindness: 0, debt_contract: 0 };
         this.isEndingTurn = false;
         this.isGameOver = false;
+        this.isProcessing = false; // ✨ 신규: 연타 방지용 자물쇠
 
         this.updateBattleUI();
         this.log(`야생의 <b style="color:${this.enemy.isBoss ? '#cc33ff' : '#ff4d4d'};">[${this.enemy.name}]</b>이(가) 나타났다!`);
+        
+        // ... (이하 startBattle 코드는 기존과 동일)
         
         if (eBonusHp > 0) this.log(`(적의 패시브 효과로 HP가 ${eBonusHp} 증가했습니다.)`);
         if (pBonusHp > 0) this.log(`(당신의 패시브 효과로 HP가 ${pBonusHp} 증가했습니다.)`);
@@ -791,6 +853,10 @@ async drawCard(entity, count) {
             }
             const card = entity.deck.pop();
             
+            // ✨ 신규: 카드 한 장 뽑을 때마다 회색 카드 날아가는 연출 (플레이어, 적 모두 적용)
+            this.playDrawAnim();
+            await sleep(50); // 드로우 사이 아주 짧은 간격
+
             if (card.name === "토끼기사의 지혜") {
                 this.log(` 🐇 [토끼기사의 지혜]가 드로우되어 즉시 무덤으로 갑니다.`);
                 entity.grave.push(card);
@@ -804,9 +870,10 @@ async drawCard(entity, count) {
         }
     }
 
-async runTurn() {
+    async runTurn() {
         this.isEndingTurn = false;
-        this.rabbitCount = 0; // ✨ 신규: 턴마다 토끼기사 출격 횟수 초기화
+        this.isProcessing = false; // ✨ 신규: 턴이 넘어올 때 자물쇠 풀기
+        this.rabbitCount = 0; 
 
         if(this.turn === 'player') {
             this.player.ap = 2; 
@@ -846,7 +913,13 @@ async runTurn() {
         } else {
             this.enemy.ap = 2; 
             this.log(`<hr><b style="color:#ff4d4d">--- ${this.enemy.name} 턴 (AP:2) ---</b>`);
+            
+            // ✨ 신규: 적 턴이 시작되자마자 붉은 테두리가 켜지도록 즉시 UI 갱신
+            this.updateBattleUI(); 
+            
             await sleep(800);
+
+            // ... (이하 drawPool 로직 동일)
 
             let drawPool = [];
             for(let i=0; i<2; i++) {
@@ -915,24 +988,143 @@ async runTurn() {
         this.player.ap -= 2;
         
         this.log(`👉 <b>[${card.name}]</b> 사용!`);
+        
+        // ✨ 발동 주체(this.player)를 전달
+        await this.triggerCardActionAnim(card, this.player);
+        
         await this.executeCard(card, this.player, this.enemy);
         
         this.player.grave.push(card);
         await this.triggerGraveEffect(this.player, card); 
         
         this.updateBattleUI();
+        this.isProcessing = false; // ✨ 처리가 다 끝났으므로 자물쇠 풀기
+        
         if(this.checkEndGame()) return;
         setTimeout(() => this.checkPlayable(), 500);
     }
 
-async enemyAI() {
-        // ✨ 신규: isEndingTurn이 true면 적 AI 중단
+    // --- 신규 UI 액션 함수들 ---
+    stageCard(idx) {
+        // ✨ 신규: 플레이어 턴이 아니거나, 턴 종료 중이거나, 카드 처리 중일 때는 터치 무시
+        if(this.turn !== 'player' || this.isEndingTurn || this.isProcessing) return;
+        this.stagedCardIndex = idx;
+        this.updateBattleUI(); 
+    }
+
+    // ✨ 누가 썼는지(entity) 인자 추가
+    async triggerCardActionAnim(card, entity) {
+        const stageSlot = document.getElementById('staged-card-slot');
+        let tagClass = this.getTagClass(card.tags);
+        
+        let glowColor = 'rgba(255, 255, 255, 0.5)';
+        if(card.tags.includes('공격')) glowColor = 'rgba(255, 77, 77, 0.8)';
+        if(card.tags.includes('유틸리티')) glowColor = 'rgba(77, 166, 255, 0.8)';
+        if(card.tags.includes('버프')) glowColor = 'rgba(255, 204, 0, 0.8)';
+        if(card.tags.includes('엘리트')) glowColor = 'rgba(204, 51, 255, 0.9)';
+
+        // 내부 카드 div에 CSS transition(부드러운 이동) 속성 추가
+        stageSlot.innerHTML = `<div id="anim-card-inner" class="card-mini ${tagClass}" style="width: 100%; height: 100%; max-width: none; font-size: 1.05rem; pointer-events: none; transition: transform 0.4s ease-in, opacity 0.4s ease-in;">${card.name}</div>`;
+        stageSlot.style.border = 'none';
+        
+        const innerCard = document.getElementById('anim-card-inner');
+        
+        // 1. 후광 및 약간 커짐 (시전 대기)
+        innerCard.style.boxShadow = `0 0 25px 5px ${glowColor}`;
+        innerCard.style.transform = 'scale(1.15)';
+        
+        await sleep(300); // 플레이어가 카드를 인식하는 0.3초 대기
+        
+        // ✨ 2. 화면 밖으로 슬라이드 이동하며 소멸
+        if (entity === this.player) {
+            innerCard.style.transform = 'translate(-250px, 0) scale(1.15)'; // 플레이어는 좌측 밖으로
+        } else {
+            innerCard.style.transform = 'translate(250px, 0) scale(1.15)';  // 적은 우측 밖으로
+        }
+        innerCard.style.opacity = '0'; // 서서히 투명해짐
+        
+        await sleep(400); // 날아가는 시간 0.4초 대기
+        
+        stageSlot.innerHTML = ''; // 슬롯 완전히 비우기
+    }
+
+
+    playStagedCard() {
+        if(this.turn !== 'player' || this.isEndingTurn || this.stagedCardIndex === -1 || this.isProcessing) return;
+        if(this.player.ap < 2) {
+            this.log("AP가 부족합니다.");
+            this.playShakeOnly(); 
+            return;
+        }
+        this.isProcessing = true; // ✨ 신규: 카드를 내는 순간 다른 행동 못하게 자물쇠 닫기
+        let idx = this.stagedCardIndex;
+        this.stagedCardIndex = -1; 
+        this.playCard(idx); 
+    }
+
+// ✨ 수정됨: 데미지 뿐만 아니라 회복, Guard 등 다양한 텍스트를 띄우도록 변경
+    showFloatingText(entity, text, color = '#ff4d4d') {
+        const targetId = entity === this.player ? 'player-info' : 'enemy-info';
+        const box = document.getElementById(targetId);
+        
+        // 텍스트 내용에 따라 박스 흔들림/확대 연출 분기
+        if (text === 'Guard!') {
+            box.classList.remove('anim-guard', 'anim-shake');
+            void box.offsetWidth;
+            box.classList.add('anim-guard');
+        } else if (color !== '#00ff00') { // 회복(초록색)일 때는 박스를 흔들지 않음
+            box.classList.remove('anim-guard', 'anim-shake');
+            void box.offsetWidth;
+            box.classList.add('anim-shake');
+        }
+
+        const floatEl = document.createElement('div');
+        floatEl.className = 'floating-dmg';
+        floatEl.style.color = color;
+        floatEl.innerText = text;
+        
+        const container = document.getElementById('game-container');
+        const boxRect = box.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        floatEl.style.left = (boxRect.left - containerRect.left + boxRect.width / 2) + 'px';
+        floatEl.style.top = (boxRect.top - containerRect.top + 20) + 'px'; 
+
+        container.appendChild(floatEl);
+        
+        setTimeout(() => { if(floatEl.parentNode) floatEl.remove(); }, 1000);
+    }
+
+    // ✨ 신규: 덱에서 카드가 뽑혀나오는 연출
+    async playDrawAnim() {
+        const deckBtn = document.getElementById('btn-deck');
+        const container = document.getElementById('game-container');
+        if (!deckBtn || !container) return;
+
+        const btnRect = deckBtn.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        const fly = document.createElement('div');
+        fly.className = 'draw-anim-card';
+        // 덱 버튼의 중앙 즈음에서 생성
+        fly.style.left = (btnRect.left - containerRect.left + 15) + 'px';
+        fly.style.top = (btnRect.top - containerRect.top + 5) + 'px';
+
+        container.appendChild(fly);
+        setTimeout(() => { if (fly.parentNode) fly.remove(); }, 300);
+    }
+
+    async enemyAI() {
         while(this.enemy.ap >= 2 && this.enemy.hand.length > 0 && !this.isEndingTurn) {
             const idx = Math.floor(Math.random() * this.enemy.hand.length);
             const card = this.enemy.hand.splice(idx, 1)[0];
             this.enemy.ap -= 2;
 
             this.log(`💀 적 <b>[${card.name}]</b> 사용!`);
+            
+            // ✨ 발동 주체(this.enemy)를 전달
+            await this.triggerCardActionAnim(card, this.enemy);
+
             await this.executeCard(card, this.enemy, this.player);
             
             this.enemy.grave.push(card);
@@ -940,10 +1132,9 @@ async enemyAI() {
 
             this.updateBattleUI();
             if(this.checkEndGame()) return;
-            await sleep(1000);
+            await sleep(300); 
         }
         
-        // ✨ 신규: 탈진으로 강제 종료된 게 아닐 때만 정상 종료 로그 출력
         if (!this.isEndingTurn) {
             this.log("적 턴 종료.");
             await sleep(1000);
@@ -951,7 +1142,7 @@ async enemyAI() {
         }
     }
 
-async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
+    async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
         if (this.globalStatus.blindness > 0) {
             this.log(` 🕶️ 실명 효과로 인해 피해 무효화!`); return;
         }
@@ -970,13 +1161,11 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
                 target.statuses.patience_val += amount;
                 this.log(` 🕸️ [인내] ${amount} 피해 누적! (현재: ${target.statuses.patience_val})`);
                 
-                // ✨ 신규: 누적 400 이상 시 거미줄 폭발 기믹
                 if (target.statuses.patience_val >= 400) {
                     this.log(` <b style="color:#ff4d4d;">🕸️ 누적된 피해가 400을 초과하여 거미줄이 끊어졌습니다! 강제 결산!</b>`);
                     let snapDmg = target.statuses.patience_val;
                     target.statuses.patience_turns = 0;
                     target.statuses.patience_val = 0;
-                    // 모아둔 피해를 한 방에 터뜨림 (이 과정에서 고요한밤 반사 등은 자동으로 계산됨)
                     await this.dealDamage(target, snapDmg, 'status', 'patience');
                 }
             } else {
@@ -987,10 +1176,16 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
                 
                 if (finalDmg > 0) {
                     this.log(` ⚔️ ${target.name}에게 ${finalDmg}의 물리피해!` + (blocked > 0 ? ` (방어도 ${blocked} 상쇄)` : ``));
+                    // ✨ 텍스트 팝업 함수명 변경 반영
+                    this.showFloatingText(target, `-${finalDmg}`, '#ff4d4d'); 
+                    await this.playPhysicalFX(isMultiHit);
                 } else {
                     this.log(` 🛡️ 방어력에 막혀 피해를 주지 못했습니다! (방어도 ${blocked} 상쇄)`);
+                    // ✨ 신규: 물리 피해를 완전히 막았을 때 Guard 연출
+                    if (amount > 0) {
+                        this.showFloatingText(target, 'Guard!', '#4da6ff');
+                    }
                 }
-                await this.playPhysicalFX(isMultiHit);
             }
 
             if (reflectDmg > 0 && !this.checkEndGame()) {
@@ -1006,6 +1201,10 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
 
             target.hp -= amount;
             this.log(` 🩸 ${target.name}에게 ${amount}의 상태이상 피해!`);
+            
+            // ✨ 상태이상 데미지 플로팅 출력 (보라색 계열)
+            this.showFloatingText(target, amount, '#cc33ff'); 
+            
             await this.playStatusFX(statusType);
             
             if (reflectDmg > 0 && !this.checkEndGame()) {
@@ -1085,6 +1284,13 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             this.enemy.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
             
+            let pHeal = this.player.maxHp - this.player.hp;
+            let eHeal = this.enemy.maxHp - this.enemy.hp;
+            
+            this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
+            if (pHeal > 0) this.showFloatingText(this.player, `+${pHeal}`, '#00ff00');
+            if (eHeal > 0) this.showFloatingText(this.enemy, `+${eHeal}`, '#00ff00');
+
             this.log(` 🌟 [절체절명] 모든 상태이상 및 버프가 제거되고 양측 체력이 100% 회복되었습니다!`);
             isSpecialCard = true;
             
@@ -1170,6 +1376,7 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             if (pool.length > 0) {
                 let picked = pool[Math.floor(Math.random() * pool.length)];
                 this.log(` 💡 [깨달음] 발동! 랜덤 공격 카드 [${picked.name}] 시전!`);
+                await this.triggerCardActionAnim(picked, caster); // ✨ 추가: 덱에서 튀어나와서 시전됨!
                 await this.executeCard(picked, caster, target);
             } else { this.log(` 💡 [깨달음] 시전할 수 있는 카드가 없습니다.`); }
             isSpecialCard = true;
@@ -1178,8 +1385,18 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
             if (pool.length > 0) {
                 let picked = pool[Math.floor(Math.random() * pool.length)];
                 this.log(` 💡 [호기심] 발동! 랜덤 유틸 카드 [${picked.name}] 시전!`);
+                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
                 await this.executeCard(picked, caster, target);
             } else { this.log(` 💡 [호기심] 시전할 수 있는 카드가 없습니다.`); }
+            isSpecialCard = true;
+        } else if (card.name === "성급한 결정") {
+            let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); 
+            if (pool.length > 0) {
+                let picked = pool[Math.floor(Math.random() * pool.length)];
+                this.log(` 💡 [성급한 결정] 발동! 랜덤 카드 [${picked.name}] 시전!`);
+                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
+                await this.executeCard(picked, caster, target);
+            }
             isSpecialCard = true;
         } else if (card.name === "성급한 결정") {
             let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); // 무한 루프 방지
@@ -1224,8 +1441,15 @@ async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isRe
         let healMatch = card.desc.match(/HP회복 (\d+)|HP (\d+) 회복/);
         if(healMatch) {
             let heal = parseInt(healMatch[1] || healMatch[2]);
+            let oldHp = caster.hp;
             caster.hp = Math.min(caster.maxHp, caster.hp + heal);
-            this.log(` 💚 HP 회복.`);
+            
+            // ✨ 신규: 실제 회복된 만큼만 +숫자로 표기
+            let actualHeal = caster.hp - oldHp;
+            if (actualHeal > 0) {
+                this.log(` 💚 HP ${actualHeal} 회복.`);
+                this.showFloatingText(caster, `+${actualHeal}`, '#00ff00');
+            }
         }
 
         this.updateBattleUI();
@@ -1346,30 +1570,50 @@ checkEndGame() {
     }
 
     formatStatus(entity) {
-        let res = '';
-        if(entity.statuses.poison > 0) res += `<span style="color:#00ff00; margin-right:5px;">☠️${entity.statuses.poison}</span>`;
-        if(entity.statuses.burn > 0) res += `<span style="color:#ff4d4d; margin-right:5px;">🔥${entity.statuses.burn}</span>`;
-        if(entity.statuses.curse > 0) res += `<span style="color:#cc33ff; margin-right:5px;">🔮${entity.statuses.curse}</span>`;
-        if(entity.statuses.ultimatum > 0) res += `<span style="color:#ffaa00; margin-right:5px;">⏳통첩(${entity.statuses.ultimatum})</span>`;
-        if(entity.statuses.patience_turns > 0) res += `<span style="color:#aaaaaa; margin-right:5px;">🕸️누적${entity.statuses.patience_val}(${entity.statuses.patience_turns}턴)</span>`;
-        if(entity.statuses.thorn_armor > 0) res += `<span style="color:#cccccc; margin-right:5px;">🛡️가시(${entity.statuses.thorn_armor}턴)</span>`;
-        if(entity.statuses.silent_night > 0) res += `<span style="color:#99ccff; margin-right:5px;">🌙고요(${entity.statuses.silent_night}턴)</span>`;
-        return res;
+        let res = [];
+        // ✨ 상태이상을 아이콘+수치 형태로 극한의 압축
+        if(entity.statuses.poison > 0) res.push(`<span style="color:#00ff00;" title="중독">☠️${entity.statuses.poison}</span>`);
+        if(entity.statuses.burn > 0) res.push(`<span style="color:#ff4d4d;" title="화상">🔥${entity.statuses.burn}</span>`);
+        if(entity.statuses.curse > 0) res.push(`<span style="color:#cc33ff;" title="저주">🔮${entity.statuses.curse}</span>`);
+        if(entity.statuses.ultimatum > 0) res.push(`<span style="color:#ffaa00;" title="최후통첩">⏳${entity.statuses.ultimatum}</span>`);
+        if(entity.statuses.patience_turns > 0) res.push(`<span style="color:#aaaaaa;" title="인내">🕸️${entity.statuses.patience_val}(${entity.statuses.patience_turns}턴)</span>`);
+        if(entity.statuses.thorn_armor > 0) res.push(`<span style="color:#cccccc;" title="가시갑옷">🛡️${entity.statuses.thorn_armor}턴</span>`);
+        if(entity.statuses.silent_night > 0) res.push(`<span style="color:#99ccff;" title="고요한 밤">🌙${entity.statuses.silent_night}턴</span>`);
+        return res.join(' ');
     }
 
     updateBattleUI() {
         let pStatus = this.formatStatus(this.player);
         let eStatus = this.formatStatus(this.enemy);
 
-        let globalEffects = '';
-        if (this.globalStatus.blindness > 0) globalEffects += `<span style="color:#fff; margin-right:10px;">🕶️실명(${this.globalStatus.blindness}턴)</span>`;
-        if (this.globalStatus.debt_contract > 0) globalEffects += `<span style="color:#ffcc00; margin-right:10px;">📜부채계약(${this.globalStatus.debt_contract}턴)</span>`;
+        let globalEffects = [];
+        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff;" title="실명">🕶️${this.globalStatus.blindness}턴</span>`);
+        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00;" title="부채계약">📜${this.globalStatus.debt_contract}턴</span>`);
+        let globalStr = globalEffects.join(' ');
 
-        // 보스일 경우 이름 색상을 다르게 표시
+        // 글로벌 효과와 플레이어 상태이상을 보기 좋게 병합
+        let pCombinedStatus = [globalStr, pStatus].filter(s => s).join(' '); 
+
+        let eBox = document.getElementById('enemy-info');
+        let pBox = document.getElementById('player-info');
+        
+        if (this.turn === 'player') {
+            pBox.style.borderColor = '#4da6ff'; 
+            eBox.style.borderColor = '#444';
+        } else if (this.turn === 'enemy') {
+            pBox.style.borderColor = '#444';
+            eBox.style.borderColor = '#ff4d4d'; 
+        }
+
         let eNameDisplay = this.enemy.isBoss ? `<span style="color:#cc33ff;">${this.enemy.name}</span>` : this.enemy.name;
+        
+        // 빈 공간 방지를 위한 여백 처리
+        let pStatusHTML = pCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${pCombinedStatus}</div>` : '';
+        let eStatusHTML = eStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${eStatus}</div>` : '';
 
-        document.getElementById('enemy-info').innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어도: ${this.enemy.defense}<br>${eStatus}`;
-        document.getElementById('player-info').innerHTML = `${globalEffects}<br>HP: ${this.player.hp} | AP: ${this.player.ap} | 방어: ${this.player.defense}<br>${pStatus}`;
+        // ✨ 핵심: 플레이어 박스에서 AP 렌더링 삭제
+        eBox.innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어: ${this.enemy.defense}${eStatusHTML}`;
+        pBox.innerHTML = `<b>${this.player.name}</b><br>HP: ${this.player.hp} | 방어: ${this.player.defense}${pStatusHTML}`;
         
         document.getElementById('btn-deck').innerHTML = `덱<br>(${this.player.deck.length})`;
         document.getElementById('btn-grave').innerHTML = `무덤<br>(${this.player.grave.length})`;
@@ -1377,13 +1621,33 @@ checkEndGame() {
         const handBox = document.getElementById('hand-box');
         handBox.innerHTML = '';
         this.player.hand.forEach((card, idx) => {
+            if (idx === this.stagedCardIndex) return; 
             let tagClass = this.getTagClass(card.tags);
             let el = document.createElement('div');
             el.className = `card-mini ${tagClass}`;
             el.innerText = card.name;
-            el.onclick = () => this.confirmPlayCard(card, idx);
+            el.onclick = () => this.stageCard(idx); 
             handBox.appendChild(el);
         });
+
+        const stageSlot = document.getElementById('staged-card-slot');
+        if (this.stagedCardIndex !== -1) {
+            let card = this.player.hand[this.stagedCardIndex];
+            let tagClass = this.getTagClass(card.tags);
+            stageSlot.innerHTML = `<div class="card-mini ${tagClass}" style="width: 100%; height: 100%; max-width: none; font-size: 1rem;">${card.name}</div>`;
+            stageSlot.style.border = 'none';
+            stageSlot.onclick = () => this.showCardDetail(card); 
+
+            document.getElementById('btn-use-card').disabled = false;
+            document.getElementById('btn-cancel-card').disabled = false;
+        } else {
+            stageSlot.innerHTML = `<span style="color: #777;">카드 올리기</span>`;
+            stageSlot.style.border = '2px dashed #555';
+            stageSlot.onclick = null;
+
+            document.getElementById('btn-use-card').disabled = true;
+            document.getElementById('btn-cancel-card').disabled = true;
+        }
     }
 
     triggerFX(className) {
@@ -1405,9 +1669,6 @@ checkEndGame() {
         c.classList.remove('anim-shake', 'anim-shake-double'); 
         void c.offsetWidth; 
         c.classList.add(isMultiHit ? 'anim-shake-double' : 'anim-shake');
-        
-        this.triggerFX('flash-white');
-        await sleep(20);
     }
 
     async playStatusFX(type) {
