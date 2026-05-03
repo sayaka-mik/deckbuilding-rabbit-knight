@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.56</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 초기덱 세팅변경.</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.58</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 핸드제한 롤백. 적명칭픽스.</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -835,10 +835,16 @@ selectStarter(tag) {
         }
     }
 
-prepareNextEnemy() {
-        const floor = this.score + 1; // 1층부터 시작
+    prepareNextEnemy() {
+        const floor = this.score + 1;
 
-        // 보조 함수: 엘리트/기본/적 전용을 제외한 무작위 카드 뽑기
+        // ✨ 신규: 무작위 이름 생성기 (적 AI 전용)
+        const getRandomName = () => {
+            const prefixes = ["오염된", "강인한", "오만한", "상냥한", "혼란한", "무른", "햄버거먹는", "이형의", "회전하는", "만만한", "정교한", "수학적인", "연설하는"];
+            const names = ["트롤", "전사", "가로등지기", "기사", "토끼", "삼엽충", "타이어", "냉장고", "개구리인간", "혓바닥", "체스선수", "마장동소녀", "수학가", "산타클로스"];
+            return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+        };
+
         const getRandomNormalCards = (count) => {
             let validCards = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.category !== "기본" && c.category !== "적");
             let res = [];
@@ -846,22 +852,22 @@ prepareNextEnemy() {
             return res;
         };
 
-        // 테마 적 생성기 모음
+        // ✨ 수정됨: 테마 덱을 가진 적들도 랜덤한 이름을 부여받습니다.
         const generateComboTheme = () => {
             let hp = floor <= 6 ? Math.floor(Math.random() * 11) + 60 : 80;
-            return { name: "연격 테마 적", hp: hp, deck: ["스텝 밟기", "주변 맴돌기", "연속 베기", "연속 베기", "숨고르기", "숨고르기", ...getRandomNormalCards(2)] };
+            return { name: getRandomName(), hp: hp, deck: ["스텝 밟기", "주변 맴돌기", "연속 베기", "연속 베기", "숨고르기", "숨고르기", ...getRandomNormalCards(2)] };
         };
 
         const generateStatus1Theme = () => {
-            return { name: "상태이상 테마 적", hp: 130, deck: ["화상", "화상", "부채계약", "거미줄을 딛고", "주변 맴돌기", ...getRandomNormalCards(2)] };
+            return { name: getRandomName(), hp: 130, deck: ["화상", "화상", "부채계약", "거미줄을 딛고", "주변 맴돌기", ...getRandomNormalCards(2)] };
         };
 
         const generateStatus2Theme = () => {
-            return { name: "상태이상 테마 2 적", hp: 150, deck: ["중독", "저주", "저주", "이행", "스텝 밟기", "스텝 밟기", "부채계약"] };
+            return { name: getRandomName(), hp: 150, deck: ["중독", "저주", "저주", "이행", "스텝 밟기", "스텝 밟기", "부채계약"] };
         };
 
         const generateCounterTheme = () => {
-            return { name: "반격 테마 적", hp: 140, deck: ["가시갑옷", "고요한 밤", "단단함", "단단함", "단단함", "스텝 밟기", "스텝 밟기", "성급한 결정"] };
+            return { name: getRandomName(), hp: 140, deck: ["가시갑옷", "고요한 밤", "단단함", "단단함", "단단함", "스텝 밟기", "스텝 밟기", "성급한 결정"] };
         };
 
         // 층별 하드코딩 및 확률 분기
@@ -901,12 +907,13 @@ prepareNextEnemy() {
             if (r < 0.8) this.nextEnemyData = generateCounterTheme();
             else this.nextEnemyData = generateStatus1Theme();
         } else {
-            // 27층 이상 (예외 처리용 무한 모드)
+            // 27층 이상 (무한 모드)
             this.nextEnemyData = generateRandomEnemy(this.score);
             this.nextEnemyData.name = "심연의 잔재";
             this.nextEnemyData.hp += (floor - 26) * 30;
         }
     }
+
 
 showIntermission() {
         this.changeScreen('intermission');
