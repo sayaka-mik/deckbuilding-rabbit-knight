@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.58</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 핸드제한 롤백. 적명칭픽스.</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.59</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 플레이어 HP 너프.</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -1050,7 +1050,7 @@ async playNightAnim() {
         this.stagedCardIndex = -1; 
         
         let pBonusHp = this.calcBonusHp(this.playerDeck);
-        let pMaxHp = 150 + pBonusHp;
+        let pMaxHp = 100 + pBonusHp;
         this.player = { name: "낙원의 토끼", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
         
         let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
