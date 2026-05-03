@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.53</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 롤백, 3층보상, 정보표시</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.56</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 초기덱 세팅변경.</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -355,7 +355,9 @@
             <p>👑 <b>보스 격파 수:</b> <span id="inter-boss-score" style="color: #cc33ff; font-size: 1.2rem;">0</span>회</p>
             <hr style="border-color: #333;">
             <p style="color: #aaa;">💀 <b>직전 격파:</b><br><span id="inter-last-enemy" style="color: #fff;">없음</span></p>
-            <p style="color: #ff4d4d; font-size: 1.1rem; margin-top: 15px;">⚔️ <b>다음 적:</b><br><span id="inter-next-enemy" style="color: #fff;">미정</span></p>
+            <!-- ✨ 신규 추가: 다음 구간 테마 표시 -->
+            <p style="color: #4da6ff; font-size: 1.1rem; margin-top: 15px;">🏷️ <b>구간 테마:</b> <span id="inter-next-theme" style="color: #fff;">미정</span></p>
+            <p style="color: #ff4d4d; font-size: 1.1rem; margin-top: 5px;">⚔️ <b>다음 적:</b><br><span id="inter-next-enemy" style="color: #fff;">미정</span></p>
         </div>
         <button id="btn-inter-next" style="width: 80%; padding: 15px; font-weight: bold;">다음 전투 진입</button>
     </div>
@@ -442,8 +444,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // --- 신규: 랜덤 적 생성기 (스코어 스케일링 포함) ---
 // --- 랜덤 적 생성기 (기존과 동일) ---
 const generateRandomEnemy = (score = 0) => {
-    const prefixes = ["오염된", "강인한", "오만한", "상냥한"];
-    const names = ["트롤", "전사", "가로등지기", "기사"];
+    const prefixes = ["오염된", "강인한", "오만한", "상냥한", "혼란한", "무른", "햄버거먹는", "이형의", "회전하는", "만만한", "정교한", "수학적인", "연설하는"];
+    const names = ["트롤", "전사", "가로등지기", "기사", "토끼", "삼엽충", "타이어", "냉장고", "개구리인간", "혓바닥", "체스선수", "마장동소녀", "수학가", "산타클로스"];
     let fullName = `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
 
     let tags = ["연격", "상태이상", "반격"];
@@ -543,7 +545,6 @@ class Game {
             this.showIntro(); 
         };
         
-    document.getElementById('btn-intro-next').onclick = () => this.changeScreen('mode');
         
         // ✨ 카드 일람 버튼 연결
         document.getElementById('btn-show-collection').onclick = () => this.showCollection();
@@ -574,13 +575,17 @@ class Game {
         }
     }
 
-    async showIntro() {
+async showIntro() {
         this.changeScreen('intro');
         const textEl = document.getElementById('intro-text');
         const btn = document.getElementById('btn-intro-next');
         textEl.innerHTML = ""; 
         btn.style.display = "none";
         
+        // ✨ 버튼 텍스트와 연결 함수 변경
+        btn.innerText = "계속";
+        btn.onclick = () => this.showIntro2(); 
+
         const introText = "덱빌딩의 세계에 오신 것을 환영합니다.<br><br>당신은 10장의 카드를 갖습니다.<br>카드를 1장 낼 때마다 행동력(AP)을 2 소비합니다.<br>매 턴마다 AP 2를 얻습니다.<br>카드를 낼 수 없게 될 때까지 카드를 사용해야 합니다.<br>전투에서 승리하면 새로운 카드를 얻습니다.<br><br>과연 몇 명의 적을 쓰러뜨릴 수 있을까요?";
         
         let currentHTML = "";
@@ -597,19 +602,99 @@ class Game {
         btn.style.display = "block";
     }
 
+// ✨ 신규: 두 번째 인트로 페이지 (테마 예고)
+    async showIntro2() {
+        const textEl = document.getElementById('intro-text');
+        const btn = document.getElementById('btn-intro-next');
+        textEl.innerHTML = ""; 
+        btn.style.display = "none";
+        
+        // ✨ 버튼 텍스트 변경 및 모드 선택창으로 연결
+        btn.innerText = "모드 선택 (전투 진입)";
+        btn.onclick = () => this.changeScreen('mode');
+
+        // ✨ 수정됨: 전체를 묶는 block div를 추가하여 flex 가로 정렬 강제 배치를 무력화함
+        const introText2 = "<div style='display:block; width:100%; text-align:center; line-height:2.0;'>" +
+            "앞으로 당신이 마주할 시련의 정보입니다.<br><br>" +
+            "<span style='color:#ff4d4d; font-size:1.15rem; font-weight:bold;'>1층 ~ 10층 : 연격 테마</span><br>" +
+            "<span style='color:#cc33ff; font-size:1.15rem; font-weight:bold;'>11층 ~ 20층 : 상태이상 테마</span><br>" +
+            "<span style='color:#ffcc00; font-size:1.15rem; font-weight:bold;'>21층 ~ 25층 : 반격 테마</span><br>" +
+            "<span style='color:#aaaaaa; font-size:1.15rem; font-weight:bold;'>26층 : ???</span><br><br><br>" +
+            "각 테마에 맞춰 덱을<br>철저히 준비하십시오." +
+            "</div>";
+        
+        let currentHTML = "";
+        for(let i=0; i<introText2.length; i++) {
+            if(introText2[i] === '<') { 
+                let tag = "";
+                while(introText2[i] !== '>' && i < introText2.length) {
+                    tag += introText2[i];
+                    i++;
+                }
+                tag += '>';
+                currentHTML += tag;
+            } else { 
+                currentHTML += introText2[i]; 
+                textEl.innerHTML = currentHTML;
+                await sleep(5); // ✨ 아주 빠른 속도로 출력되도록 시간 단축
+            }
+        }
+        btn.style.display = "block";
+    }
+
 selectStarter(tag) {
         this.score = 0;
         this.bossKills = 0;
-        this.starterCategory = tag; // ✨ 신규: 태그 저장
+        this.starterCategory = tag; 
         
-        const baseNames = ["일반 공격", "일반 방어", "숨고르기", "숨고르기", "스텝 밟기", "토끼기사의 지혜", "호기심"];
-        this.playerDeck = baseNames.map(getCard);
+        // =========================================================
+        // [1] 공통 기본 카드 (모든 테마에 공통으로 들어가는 뼈대)
+        // =========================================================
+        let baseNames = [
+            "일반 공격", 
+            "일반 공격", 
+            "일반 방어", 
+            "일반 방어", 
+            "숨고르기", 
+            "스텝 밟기", 
+        ]; // 현재 6장
         
+        // =========================================================
+        // [2] 테마별 세팅 (고정으로 줄 카드 & 랜덤으로 뽑을 장수)
+        // =========================================================
+        let fixedThemeCards = [];
+        let randomThemeCount = 0;
+
+        if (tag === '연격') {
+            // 연격 테마: 연속 베기는 반드시 주고, 나머지 3장은 연격 풀에서 랜덤
+            fixedThemeCards = ["연속 베기", "구사일생"]; 
+            randomThemeCount = 2; 
+
+        } else if (tag === '상태이상') {
+            // 상태이상 테마: 중독과 이행을 콤보로 반드시 주고, 나머지 2장 랜덤
+            fixedThemeCards = ["중독", "화상"]; 
+            randomThemeCount = 2; 
+
+        } else if (tag === '반격') {
+            // 반격 테마: 가시갑옷은 무조건 베이스로 깔고, 나머지 3장 랜덤
+            fixedThemeCards = ["가시갑옷", "성급한 결정"]; 
+            randomThemeCount = 2; 
+        }
+
+        // =========================================================
+        // [3] 실제 덱 구축 로직 (수정할 필요 없음)
+        // =========================================================
+        // 공통 카드와 테마 고정 카드를 먼저 덱에 넣습니다.
+        let combinedNames = [...baseNames, ...fixedThemeCards];
+        this.playerDeck = combinedNames.map(getCard);
+        
+        // 해당 테마의 카드 풀에서 지정한 장수만큼 랜덤으로 뽑아 덱에 추가합니다.
         let tagCards = CARD_DB.filter(c => c.category === tag);
-        for(let i=0; i<3; i++) {
+        for(let i=0; i<randomThemeCount; i++) {
             this.playerDeck.push(getCard(tagCards[Math.floor(Math.random() * tagCards.length)].name));
         }
 
+        // 전투 시작 준비
         this.lastEnemyData = null; 
         this.prepareNextEnemy();   
         this.startBattle();        
@@ -750,29 +835,106 @@ selectStarter(tag) {
         }
     }
 
-    prepareNextEnemy() {
-        // ✨ 신규: 현재 스코어 + 1이 5의 배수라면(즉, 5층, 10층 진입 시) 보스 호출
-        if ((this.score + 1) % 5 === 0) {
-            this.nextEnemyData = generateBoss(this.score);
+prepareNextEnemy() {
+        const floor = this.score + 1; // 1층부터 시작
+
+        // 보조 함수: 엘리트/기본/적 전용을 제외한 무작위 카드 뽑기
+        const getRandomNormalCards = (count) => {
+            let validCards = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.category !== "기본" && c.category !== "적");
+            let res = [];
+            for(let i=0; i<count; i++) res.push(validCards[Math.floor(Math.random() * validCards.length)].name);
+            return res;
+        };
+
+        // 테마 적 생성기 모음
+        const generateComboTheme = () => {
+            let hp = floor <= 6 ? Math.floor(Math.random() * 11) + 60 : 80;
+            return { name: "연격 테마 적", hp: hp, deck: ["스텝 밟기", "주변 맴돌기", "연속 베기", "연속 베기", "숨고르기", "숨고르기", ...getRandomNormalCards(2)] };
+        };
+
+        const generateStatus1Theme = () => {
+            return { name: "상태이상 테마 적", hp: 130, deck: ["화상", "화상", "부채계약", "거미줄을 딛고", "주변 맴돌기", ...getRandomNormalCards(2)] };
+        };
+
+        const generateStatus2Theme = () => {
+            return { name: "상태이상 테마 2 적", hp: 150, deck: ["중독", "저주", "저주", "이행", "스텝 밟기", "스텝 밟기", "부채계약"] };
+        };
+
+        const generateCounterTheme = () => {
+            return { name: "반격 테마 적", hp: 140, deck: ["가시갑옷", "고요한 밤", "단단함", "단단함", "단단함", "스텝 밟기", "스텝 밟기", "성급한 결정"] };
+        };
+
+        // 층별 하드코딩 및 확률 분기
+        if (floor === 1) {
+            this.nextEnemyData = { name: "전술 샌드백", hp: 50, deck: ["물어뜯기", "물어뜯기", "웅크리기", "주변 맴돌기", "주변 맴돌기"] };
+        } else if (floor === 2) {
+            this.nextEnemyData = { name: "오염된 늑대", hp: 70, deck: ["물어뜯기", "물어뜯기", "물어뜯기", "주변 맴돌기"] };
+        } else if (floor === 5) {
+            let comboCards = CARD_DB.filter(c => c.category === "연격");
+            let randomCombo = comboCards[Math.floor(Math.random() * comboCards.length)].name;
+            this.nextEnemyData = { name: "뒤틀린 광기의 기사 [보스]", hp: 140, isBoss: true, deck: ["구사일생", "토끼기사의 지혜", "스텝 밟기", "스텝 밟기", randomCombo, "숨고르기", "숨고르기", "숨고르기"] };
+        } else if (floor === 10) {
+            this.nextEnemyData = { name: "뒤엉킨 토끼의 짐승 [보스]", hp: 155, isBoss: true, deck: ["토끼기사의 지혜", "토끼기사의 지혜", "토끼기사의 지혜", "숨고르기", "숨고르기", "고요한 밤", "기사의 신조"] };
+        } else if (floor === 15) {
+            this.nextEnemyData = { name: "타오르는 마녀 [보스]", hp: 170, isBoss: true, deck: ["화상", "화상", "화상", "부채계약", "부채계약", "스텝 밟기", "스텝 밟기", "거미줄을 딛고"] };
+        } else if (floor === 20) {
+            this.nextEnemyData = { name: "녹기 전에 녹이는 마녀 [보스]", hp: 120, isBoss: true, deck: ["저주", "저주", "저주", "결산", "스텝 밟기", "스텝 밟기", "절체절명"] };
+        } else if (floor === 25) {
+            this.nextEnemyData = { name: "졸음쉼터지기 [보스]", hp: 210, isBoss: true, deck: ["가시갑옷", "고요한 밤", "거미줄을 딛고", "선견지명", "스텝 밟기"] };
+        } else if (floor === 26) {
+            this.nextEnemyData = { name: "삼계의 문 [최종 보스]", hp: 350, isBoss: true, deck: ["스텝 밟기", "스텝 밟기", "선견지명", "실명", "성급한 결정", "성급한 결정", "성급한 결정"] };
+        } else if (floor >= 3 && floor <= 9) {
+            let r = Math.random();
+            if (r < 0.7) this.nextEnemyData = generateComboTheme();
+            else if (r < 0.9) this.nextEnemyData = generateRandomEnemy(this.score); 
+            else this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
+        } else if (floor >= 11 && floor <= 14) {
+            let r = Math.random();
+            if (r < 0.8) this.nextEnemyData = generateStatus1Theme();
+            else this.nextEnemyData = generateComboTheme();
+        } else if (floor >= 16 && floor <= 19) {
+            let r = Math.random();
+            if (r < 0.8) this.nextEnemyData = generateStatus2Theme();
+            else this.nextEnemyData = generateStatus1Theme();
+        } else if (floor >= 21 && floor <= 24) {
+            let r = Math.random();
+            if (r < 0.8) this.nextEnemyData = generateCounterTheme();
+            else this.nextEnemyData = generateStatus1Theme();
         } else {
-            if (Math.random() > 0.5) {
-                this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
-            } else {
-                this.nextEnemyData = generateRandomEnemy(this.score); 
-            }
+            // 27층 이상 (예외 처리용 무한 모드)
+            this.nextEnemyData = generateRandomEnemy(this.score);
+            this.nextEnemyData.name = "심연의 잔재";
+            this.nextEnemyData.hp += (floor - 26) * 30;
         }
     }
 
-    showIntermission() {
+showIntermission() {
         this.changeScreen('intermission');
         this.prepareNextEnemy();
         
         document.getElementById('inter-score').innerText = this.score;
-        document.getElementById('inter-boss-score').innerText = this.bossKills; // 보스 카운팅 표시
+        document.getElementById('inter-boss-score').innerText = this.bossKills; 
         
         if (this.lastEnemyData) {
             let bossPrefix = this.lastEnemyData.isBoss ? "<span style='color:#cc33ff;'>[보스]</span> " : "";
             document.getElementById('inter-last-enemy').innerHTML = `${bossPrefix}${this.lastEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${this.lastEnemyData.maxHp})</span>`;
+        }
+
+        // ✨ 신규: 현재 층수에 따른 테마 계산 및 UI 반영
+        const floor = this.score + 1;
+        let themeStr = "";
+        let themeColor = "#fff";
+        
+        if (floor >= 1 && floor <= 2) { themeStr = "기본 조우"; themeColor = "#aaa"; }
+        else if (floor >= 3 && floor <= 10) { themeStr = "연격 테마 집중 구간"; themeColor = "#ff4d4d"; }
+        else if (floor >= 11 && floor <= 20) { themeStr = "상태이상 테마 집중 구간"; themeColor = "#cc33ff"; }
+        else if (floor >= 21 && floor <= 25) { themeStr = "반격 테마 집중 구간"; themeColor = "#ffcc00"; }
+        else if (floor === 26) { themeStr = "심연 (최종전)"; themeColor = "#ff0000"; }
+        else { themeStr = "미지의 영역"; themeColor = "#888"; }
+
+        const themeEl = document.getElementById('inter-next-theme');
+        if (themeEl) {
+            themeEl.innerHTML = `<span style="color: ${themeColor}; font-weight: bold;">${themeStr}</span>`;
         }
         
         let nextBonus = this.calcBonusHp(this.nextEnemyData.deck);
@@ -1718,7 +1880,7 @@ async endTurn() {
     }
 
 checkEndGame() {
-        if (this.isGameOver) return true; // ✨ 1번 판정이 났으면 무조건 통과 (중복 실행 방지)
+        if (this.isGameOver) return true;
 
         if (this.player.hp <= 0 && this.enemy.hp <= 0) {
             this.isGameOver = true;
@@ -1728,6 +1890,22 @@ checkEndGame() {
         }
         if(this.enemy.hp <= 0) {
             this.isGameOver = true;
+            
+            // ✨ 신규: 26층 최종 보스 격파 시 게임 클리어 엔딩 연출
+            if (this.enemy.name.includes("[최종 보스]")) {
+                this.score++;
+                this.log("<br><b style='color:#ffcc00; font-size: 1.2rem;'>🎉 세계의 문을 파괴했습니다! 게임 클리어! 🎉</b>");
+                setTimeout(() => { 
+                    document.getElementById('screen-gameover').querySelector('h1').innerText = "세계의 문을 닫았습니다.";
+                    document.getElementById('screen-gameover').querySelector('h1').style.color = "#00ff00";
+                    document.getElementById('final-score').innerText = `완벽한 승리! (최종 도달: 26층)`; 
+                    document.getElementById('final-boss-score').innerText = `처치한 보스: 6체`; 
+                    document.getElementById('final-boss-score').innerText = `다음 모험까지 휴식을 취합시다.`; 
+                    this.changeScreen('gameover'); 
+                }, 3000);
+                return true;
+            }
+
             this.log("<br><b style='color:#00ff00'>전투 승리!</b>");
             if (this.enemy.isBoss) this.bossKills++; 
             this.score++;
