@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.59</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 플레이어 HP 너프.</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.60</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 패배 시 재도전 가능.</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -328,13 +328,17 @@
         <div id="reward-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto; flex-grow: 1;"></div>
     </div>
 
-<!-- 게임 오버 화면 -->
-    <div id="screen-gameover" class="screen" style="justify-content: center; align-items: center;">
-        <h1 style="color: #ff4d4d; margin-bottom: 20px;">눈앞이 깜깜해졌다.</h1>
+<div id="screen-gameover" class="screen" style="justify-content: center; align-items: center;">
+        <h1 id="gameover-title" style="color: #ff4d4d; margin-bottom: 20px;">눈앞이 깜깜해졌다.</h1>
         <h2 id="final-score" style="margin-bottom: 10px;">격파한 적: 0명</h2>
         <h2 id="final-boss-score" style="margin-bottom: 50px; color: #cc33ff;">보스 격파: 0회</h2>
-        <button id="btn-restart">다시 시작</button>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px; width: 80%;">
+            <button id="btn-retry" style="background-color: #4da6ff; color: #000; font-weight: bold;">현재 전투 재도전</button>
+            <button id="btn-restart">포기하고 처음으로</button>
+        </div>
     </div>
+
 
 
 
@@ -552,6 +556,7 @@ class Game {
 
         document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
+        document.getElementById('btn-retry').onclick = () => this.startBattle();         
 
         // (기존 버튼 연결 코드들 아래에 추가)
         document.getElementById('btn-deck').onclick = () => this.showListModal('덱 목록', this.player.deck);
@@ -1886,28 +1891,36 @@ async endTurn() {
         this.runTurn();
     }
 
-checkEndGame() {
+    checkEndGame() {
         if (this.isGameOver) return true;
+
+        const retryBtn = document.getElementById('btn-retry'); // ✨ 재도전 버튼
 
         if (this.player.hp <= 0 && this.enemy.hp <= 0) {
             this.isGameOver = true;
             this.log("<br><b style='color:#ff4d4d'>동시 사망! (플레이어 패배 판정)</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
+            setTimeout(() => { 
+                document.getElementById('gameover-title').innerText = "눈앞이 깜깜해졌다.";
+                document.getElementById('gameover-title').style.color = "#ff4d4d";
+                document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; 
+                retryBtn.style.display = "block"; // ✨ 패배 시 재도전 버튼 표시
+                this.changeScreen('gameover'); 
+            }, 2000);
             return true;
         }
         if(this.enemy.hp <= 0) {
             this.isGameOver = true;
             
-            // ✨ 신규: 26층 최종 보스 격파 시 게임 클리어 엔딩 연출
+            // 26층 최종 보스 격파 시 게임 클리어 엔딩 연출
             if (this.enemy.name.includes("[최종 보스]")) {
                 this.score++;
                 this.log("<br><b style='color:#ffcc00; font-size: 1.2rem;'>🎉 세계의 문을 파괴했습니다! 게임 클리어! 🎉</b>");
                 setTimeout(() => { 
-                    document.getElementById('screen-gameover').querySelector('h1').innerText = "세계의 문을 닫았습니다.";
-                    document.getElementById('screen-gameover').querySelector('h1').style.color = "#00ff00";
+                    document.getElementById('gameover-title').innerText = "세계의 문을 닫았습니다.";
+                    document.getElementById('gameover-title').style.color = "#00ff00";
                     document.getElementById('final-score').innerText = `완벽한 승리! (최종 도달: 26층)`; 
-                    document.getElementById('final-boss-score').innerText = `처치한 보스: 6체`; 
                     document.getElementById('final-boss-score').innerText = `다음 모험까지 휴식을 취합시다.`; 
+                    retryBtn.style.display = "none"; // ✨ 클리어 시 재도전 버튼 숨김
                     this.changeScreen('gameover'); 
                 }, 3000);
                 return true;
@@ -1923,7 +1936,13 @@ checkEndGame() {
         if(this.player.hp <= 0) {
             this.isGameOver = true;
             this.log("<br><b style='color:#ff4d4d'>전투 패배...</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
+            setTimeout(() => { 
+                document.getElementById('gameover-title').innerText = "눈앞이 깜깜해졌다.";
+                document.getElementById('gameover-title').style.color = "#ff4d4d";
+                document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; 
+                retryBtn.style.display = "block"; // ✨ 패배 시 재도전 버튼 표시
+                this.changeScreen('gameover'); 
+            }, 2000);
             return true;
         }
         return false;
