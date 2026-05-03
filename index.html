@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.51</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 실명,부채계약 표기,인트로 해설</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.53</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 롤백, 3층보상, 정보표시</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -375,6 +375,12 @@
 <div id="modal-play" class="modal" onclick="document.getElementById('modal-play').classList.remove('active')">
         <h3 style="margin-top: 20vh;">이 카드를 사용할까요?<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 취소)</span></h3>
         <div id="play-card-container" style="display: flex; justify-content: center; width: 100%;"></div>
+    </div>
+
+    <!-- ✨ 신규 추가: 카드 및 상태이상 상세 정보 표시 전용 모달 -->
+    <div id="modal-info" class="modal" style="z-index: 150;" onclick="this.classList.remove('active')">
+        <h3 style="margin-top: 20vh;">정보<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span></h3>
+        <div id="info-container" style="display: flex; justify-content: center; width: 100%;"></div>
     </div>
 
 <script>
@@ -511,6 +517,7 @@ class Game {
         this.playerDeck = [];
         this.lastEnemyData = null; 
         this.nextEnemyData = null; 
+        this.starterCategory = null;
         this.initDOM();
     }
 
@@ -590,9 +597,10 @@ class Game {
         btn.style.display = "block";
     }
 
-    selectStarter(tag) {
+selectStarter(tag) {
         this.score = 0;
-        this.bossKills = 0; // 시작 시 초기화
+        this.bossKills = 0;
+        this.starterCategory = tag; // ✨ 신규: 태그 저장
         
         const baseNames = ["일반 공격", "일반 방어", "숨고르기", "숨고르기", "스텝 밟기", "토끼기사의 지혜", "호기심"];
         this.playerDeck = baseNames.map(getCard);
@@ -618,6 +626,7 @@ class Game {
         this.score = 0;
         this.bossKills = 0;
         this.playerDeck = [];
+        this.starterCategory = null;
 
         const titleEl = document.getElementById('draft-title');
         const listEl = document.getElementById('draft-list');
@@ -705,6 +714,42 @@ class Game {
         modal.addEventListener('click', restoreTitle);
     }
     
+    // ✨ 신규: 카드나 상태이상 정보를 띄우는 공용 모달 호출기
+    showInfoModal(name, desc, tags = [], bgClass = '') {
+        const modal = document.getElementById('modal-info');
+        const container = document.getElementById('info-container');
+        container.innerHTML = '';
+
+        let el = document.createElement('div');
+        el.className = `card-detail ${bgClass}`;
+        let tagHTML = tags.length > 0 ? `<span style="font-size:0.7rem; font-weight:normal;">${tags.map(t=>'#'+t).join(' ')}</span>` : '';
+        el.innerHTML = `<div class="name">${name} ${tagHTML}</div><div class="desc">${desc}</div>`;
+        
+        // 바탕을 눌렀을 때만 닫히도록 박스 자체 클릭 이벤트 전파 차단
+        el.onclick = (e) => e.stopPropagation();
+        
+        container.appendChild(el);
+        modal.classList.add('active');
+    }
+
+    // ✨ 신규: 상태이상 텍스트 데이터베이스 및 모달 연결기
+    showStatusInfo(type) {
+        const statusDB = {
+            'poison': { name: '중독', desc: '자신의 턴 종료 시 스택당 8의 상태이상 피해를 입고 스택이 1 감소합니다.' },
+            'burn': { name: '화상', desc: '자신의 턴 종료 시 스택당 6의 상태이상 피해를 입고 스택이 1 감소합니다.' },
+            'curse': { name: '저주', desc: '자신의 턴 종료 시 스택당 3의 상태이상 피해를 입고 스택이 1 감소합니다.' },
+            'ultimatum': { name: '최후통첩', desc: '자신의 턴 종료 시 공격 카드 위력의 총합만큼 상태이상 피해(선고)를 입고 스택이 1 감소합니다.' },
+            'patience': { name: '인내', desc: '지속 턴 동안 받는 물리피해를 0으로 만들고 누적하며, 해제 시 누적된 피해를 상태이상 피해로 입습니다.' },
+            'thorn': { name: '가시갑옷', desc: '자신의 물리피해를 50% 감소시키고 막은 만큼 적에게 물리피해로 반사합니다.' },
+            'night': { name: '고요한 밤', desc: '자신의 상태이상 피해를 50% 감소시키고 막은 만큼 적에게 상태이상 피해로 반사합니다.' },
+            'blind': { name: '실명', desc: '양측의 턴이 경과하는 동안 모든 피해에 면역됩니다.' },
+            'debt': { name: '부채계약', desc: '양측의 턴이 경과하는 동안 모든 상태이상의 스택과 턴이 감소하지 않습니다.' }
+        };
+        if(statusDB[type]) {
+            this.showInfoModal(statusDB[type].name, statusDB[type].desc);
+        }
+    }
+
     prepareNextEnemy() {
         // ✨ 신규: 현재 스코어 + 1이 5의 배수라면(즉, 5층, 10층 진입 시) 보스 호출
         if ((this.score + 1) % 5 === 0) {
@@ -1699,16 +1744,16 @@ checkEndGame() {
         return false;
     }
 
-    formatStatus(entity) {
+formatStatus(entity) {
         let res = [];
-        // ✨ 상태이상을 아이콘+수치 형태로 극한의 압축
-        if(entity.statuses.poison > 0) res.push(`<span style="color:#00ff00;" title="중독">☠️${entity.statuses.poison}</span>`);
-        if(entity.statuses.burn > 0) res.push(`<span style="color:#ff4d4d;" title="화상">🔥${entity.statuses.burn}</span>`);
-        if(entity.statuses.curse > 0) res.push(`<span style="color:#cc33ff;" title="저주">🔮${entity.statuses.curse}</span>`);
-        if(entity.statuses.ultimatum > 0) res.push(`<span style="color:#ffaa00;" title="최후통첩">⏳${entity.statuses.ultimatum}</span>`);
-        if(entity.statuses.patience_turns > 0) res.push(`<span style="color:#aaaaaa;" title="인내">🕸️${entity.statuses.patience_val}(${entity.statuses.patience_turns}턴)</span>`);
-        if(entity.statuses.thorn_armor > 0) res.push(`<span style="color:#cccccc;" title="가시갑옷">🛡️${entity.statuses.thorn_armor}</span>`);
-        if(entity.statuses.silent_night > 0) res.push(`<span style="color:#99ccff;" title="고요한 밤">🌙${entity.statuses.silent_night}</span>`);
+        // ✨ 수정됨: span에 클릭 시 showStatusInfo를 호출하는 속성 추가
+        if(entity.statuses.poison > 0) res.push(`<span style="color:#00ff00; cursor:pointer;" onclick="window.game.showStatusInfo('poison')">☠️${entity.statuses.poison}</span>`);
+        if(entity.statuses.burn > 0) res.push(`<span style="color:#ff4d4d; cursor:pointer;" onclick="window.game.showStatusInfo('burn')">🔥${entity.statuses.burn}</span>`);
+        if(entity.statuses.curse > 0) res.push(`<span style="color:#cc33ff; cursor:pointer;" onclick="window.game.showStatusInfo('curse')">🔮${entity.statuses.curse}</span>`);
+        if(entity.statuses.ultimatum > 0) res.push(`<span style="color:#ffaa00; cursor:pointer;" onclick="window.game.showStatusInfo('ultimatum')">⏳${entity.statuses.ultimatum}</span>`);
+        if(entity.statuses.patience_turns > 0) res.push(`<span style="color:#aaaaaa; cursor:pointer;" onclick="window.game.showStatusInfo('patience')">🕸️${entity.statuses.patience_val}(${entity.statuses.patience_turns}턴)</span>`);
+        if(entity.statuses.thorn_armor > 0) res.push(`<span style="color:#cccccc; cursor:pointer;" onclick="window.game.showStatusInfo('thorn')">🛡️${entity.statuses.thorn_armor}</span>`);
+        if(entity.statuses.silent_night > 0) res.push(`<span style="color:#99ccff; cursor:pointer;" onclick="window.game.showStatusInfo('night')">🌙${entity.statuses.silent_night}</span>`);
         return res.join(' ');
     }
 
@@ -1717,8 +1762,9 @@ updateBattleUI() {
         let eStatus = this.formatStatus(this.enemy);
 
         let globalEffects = [];
-        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff;" title="실명">🕶️${this.globalStatus.blindness}</span>`);
-        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00;" title="부채계약">📜${this.globalStatus.debt_contract}</span>`);
+        // ✨ 수정됨: 글로벌 효과 아이콘에도 클릭 속성 추가
+        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff; cursor:pointer;" onclick="window.game.showStatusInfo('blind')">🕶️${this.globalStatus.blindness}</span>`);
+        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00; cursor:pointer;" onclick="window.game.showStatusInfo('debt')">📜${this.globalStatus.debt_contract}</span>`);
         let globalStr = globalEffects.join(' ');
 
         // ✨ 수정됨: 플레이어와 적 양쪽 모두에게 글로벌 효과를 병합하여 표기
@@ -1828,7 +1874,7 @@ updateBattleUI() {
         return "";
     }
 
-    showListModal(title, cards) {
+showListModal(title, cards) {
         const modal = document.getElementById('modal-view');
         document.getElementById('view-title').innerText = title;
         const list = document.getElementById('view-list');
@@ -1838,10 +1884,14 @@ updateBattleUI() {
             let el = document.createElement('div');
             el.className = `card-mini ${this.getTagClass(card.tags)}`;
             el.innerText = card.name;
+            
+            // ✨ 신규: 리스트 내 카드 클릭 시 팝업 띄우기 연결
+            el.onclick = () => this.showInfoModal(card.name, card.desc, card.tags, this.getBgClass(card.tags));
+            
             list.appendChild(el);
         });
         modal.classList.add('active');
-    }
+    }    
 
     openDrawModalAsync(cards) {
         return new Promise(resolve => {
@@ -1864,17 +1914,30 @@ updateBattleUI() {
         });
     }
 
-    async startRewardPhase() {
+async startRewardPhase() {
         this.changeScreen('reward');
         const titleEl = document.getElementById('reward-title');
         const listEl = document.getElementById('reward-list');
         
-        titleEl.innerText = "승리 보상: 덱에 추가할 카드를 선택하세요.";
+        // ✨ 신규: 3층 단위 특수 보상 체크
+        let isSpecialReward = this.starterCategory && (this.score > 0) && (this.score % 3 === 0);
+        
+        if (isSpecialReward) {
+            titleEl.innerHTML = `<span style="color:#ffcc00;">[특수 보상]</span> ${this.starterCategory} 팩 카드 중 선택하세요.`;
+        } else {
+            titleEl.innerText = "승리 보상: 덱에 추가할 카드를 선택하세요.";
+        }
         listEl.innerHTML = '';
 
-        const rewardPool = CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
+        // ✨ 신규: 특수 보상이면 해당 카테고리만, 아니면 전체 풀
+        const rewardPool = isSpecialReward 
+            ? CARD_DB.filter(c => c.category === this.starterCategory)
+            : CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
+            
         let choices = [];
-        for(let i=0; i<3; i++) choices.push(getCard(rewardPool[Math.floor(Math.random() * rewardPool.length)].name));
+        for(let i=0; i<3; i++) {
+            choices.push(getCard(rewardPool[Math.floor(Math.random() * rewardPool.length)].name));
+        }
 
         const newCard = await new Promise(resolve => {
             choices.forEach(card => {
@@ -1886,7 +1949,7 @@ updateBattleUI() {
             });
         });
 
-        this.playerDeck.push(newCard); 
+        this.playerDeck.push(newCard);
 
         titleEl.innerText = "덱 압축: 버릴 카드를 1장 선택하세요.";
         listEl.innerHTML = '';
