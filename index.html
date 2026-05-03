@@ -28,8 +28,8 @@
 
         /* --- 카드 UI --- */
         .card-mini { 
-            flex: 1 1 0; /* 카드가 많아지면 동일한 비율로 줄어들게 설정 */
-            min-width: 0; /* ★핵심: 텍스트 길이에 영향받지 않고 일정하게 축소되도록 강제 */
+            flex: 1 1 0; 
+            min-width: 0; 
             max-width: 75px; 
             aspect-ratio: 3/4; 
             border: 2px solid #fff; 
@@ -45,7 +45,7 @@
             word-break: keep-all; 
             padding: 3px; 
             box-sizing: border-box; 
-            overflow: hidden; /* ★핵심: 글자가 박스 밖으로 삐져나가는 것을 숨김 */
+            overflow: hidden; 
             line-height: 1.2;
         }
         .card-mini:active { transform: scale(0.9); }
@@ -72,184 +72,90 @@
         .modal.active { display: flex; }
         .modal h3 { color: #fff; margin-bottom: 20px; text-align: center; }
         
-        /* 모달 내부 그리드 (덱, 무덤 목록) */
         .modal-grid { 
             display: flex; 
             flex-wrap: wrap; 
             gap: 10px; 
-            justify-content: flex-start; /* 카드가 적을 때 무조건 왼쪽 위부터 차례대로 채움 */
+            justify-content: flex-start; 
             width: 100%; 
-            max-width: 360px; /* 전체 카드 영역 너비 제한 */
+            max-width: 360px; 
             margin-bottom: 20px; 
         }
 
-        /* 카드 일람 전용 그리드 (무조건 한 줄에 3장) */
         #collection-grid .card-mini {
             width: calc((100% - 20px) / 3) !important;
             margin-bottom: 5px;
             flex: 0 0 auto !important;
         }
 
-        /* 카드 일람 스크롤바 커스텀 */
         #collection-list-container::-webkit-scrollbar { width: 6px; }
         #collection-list-container::-webkit-scrollbar-track { background: #1a1a1a; }
         #collection-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
-        /* 덱/무덤 창의 카드는 손패의 가변 크기 설정을 무시하고 고정 크기 사용 */
-        .modal-grid .card-mini {
-            flex: 0 0 auto; 
-            max-width: none; 
-            box-sizing: border-box; 
-        }
+        .modal-grid .card-mini { flex: 0 0 auto; max-width: none; box-sizing: border-box; }
+        .modal-grid .card-mini:nth-child(-n+6) { width: calc((100% - 20px) / 3); }
+        .modal-grid .card-mini:nth-child(n+7) { width: calc((100% - 30px) / 4); font-size: 0.75rem; padding: 2px; }
 
-        /* 1~6번째 카드 (1번째 줄 3장, 2번째 줄 3장) */
-        .modal-grid .card-mini:nth-child(-n+6) {
-            width: calc((100% - 20px) / 3); /* 여백(10px) 2개를 제외한 공간을 정확히 3등분 */
-        }
-
-        /* 7~10번째 카드 (3번째 줄 4장) */
-        .modal-grid .card-mini:nth-child(n+7) {
-            width: calc((100% - 30px) / 4); /* 여백 3개를 제외한 공간을 정확히 4등분 */
-            font-size: 0.75rem; /* 4장이 들어가야 하므로 텍스트를 약간 축소 */
-            padding: 2px;
-        }
-
-        
         /* --- 연출 및 이펙트 --- */
         .hit-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: 50; }
-        
-        /* 물리피해 플래시 */
         .flash-white { background-color: rgba(255, 255, 255, 0.8); animation: flash 0.3s ease-out; }
-        
-        /* 상태이상 침식 연출 (테두리 및 전체화면) */
         .tint-green { box-shadow: inset 0 0 100px 30px rgba(0, 255, 0, 0.6); animation: flash 0.6s ease-out; }
         .tint-red { box-shadow: inset 0 0 100px 30px rgba(255, 0, 0, 0.6); animation: flash 0.6s ease-out; }
         .tint-purple { box-shadow: inset 0 0 100px 30px rgba(200, 0, 255, 0.6); animation: flash 0.6s ease-out; }
         .tint-white { box-shadow: inset 0 0 100px 30px rgba(255, 255, 255, 0.8); animation: flash 0.6s ease-out; } 
-        
         @keyframes flash { 0% { opacity: 0.8; } 100% { opacity: 0; } }
-        
-        /* 흔들림 연출 (1타 및 2타) */
         @keyframes shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-5px, 5px); } 50% { transform: translate(5px, -5px); } 75% { transform: translate(-5px, -5px); } }
         .anim-shake { animation: shake 0.3s ease-in-out; }
-        
         @keyframes shake-double { 0%, 100% { transform: translate(0, 0); } 12% { transform: translate(-5px, 5px); } 25% { transform: translate(5px, -5px); } 37% { transform: translate(-5px, -5px); } 50% { transform: translate(0, 0); } 62% { transform: translate(-5px, 5px); } 75% { transform: translate(5px, -5px); } 87% { transform: translate(-5px, -5px); } }
         .anim-shake-double { animation: shake-double 0.4s ease-in-out; }
 
-                /* 토끼기사 연출용 CSS */
+        /* 토끼기사 연출용 CSS */
         .glitch-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: 900; font-style: italic; color: #fff; z-index: 200; text-shadow: 4px 0 #ff00ff, -4px 0 #00ffff; animation: glitch-anim 0.1s infinite; pointer-events: none; letter-spacing: 2px; }
         @keyframes glitch-anim { 0% { transform: translate(-50%, -50%) skew(0deg); } 20% { transform: translate(-52%, -50%) skew(-10deg); } 40% { transform: translate(-48%, -50%) skew(10deg); } 60% { transform: translate(-50%, -52%) skew(0deg); } 80% { transform: translate(-50%, -48%) skew(0deg); } 100% { transform: translate(-50%, -50%) skew(0deg); } }
         .flying-card { position: absolute; z-index: 150; width: 60px; height: 80px; background: #222; border: 2px solid #cc33ff; border-radius: 6px; color: #cc33ff; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; font-weight: bold; pointer-events: none; text-align: center; box-shadow: 0 0 20px rgba(204,51,255,0.8); }
+        .rabbit-infinity-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; animation: infinity-path 0.5s ease-in-out forwards; z-index: 200; pointer-events: none; }
+        @keyframes infinity-path { 0% { transform: translate(-30%, 30%) scale(0.5); opacity: 0; } 10% { transform: translate(-30%, 30%) scale(1); opacity: 1; } 30% { transform: translate(30%, -20%) scale(1.2); } 55% { transform: translate(30%, 30%) scale(1); } 75% { transform: translate(-30%, -20%) scale(1.2); } 85% { transform: translate(0, 10%) scale(1); opacity: 1; } 100% { transform: translate(0, 40%) scale(0); opacity: 0; } }
         
-        /* ✨ 신규: 8자 궤적 이동 컨테이너 */
-        .rabbit-infinity-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            animation: infinity-path 0.5s ease-in-out forwards;
-            z-index: 200; pointer-events: none;
-        }
-        @keyframes infinity-path {
-            0% { transform: translate(-30%, 30%) scale(0.5); opacity: 0; }
-            10% { transform: translate(-30%, 30%) scale(1); opacity: 1; } /* 좌하단 등장 */
-            30% { transform: translate(30%, -20%) scale(1.2); } /* 우상단으로 */
-            55% { transform: translate(30%, 30%) scale(1); } /* 우하단으로 */
-            75% { transform: translate(-30%, -20%) scale(1.2); } /* 좌상단으로 교차 */
-            85% { transform: translate(0, 10%) scale(1); opacity: 1; } /* 중앙 교차 */
-            100% { transform: translate(0, 40%) scale(0); opacity: 0; } /* 하단으로 추락하며 소멸 */
-        }
-        
-                /* --- 신규 전투 UI 레이아웃 --- */
+        /* --- 신규 전투 UI 레이아웃 --- */
         .top-status-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 130px; flex-shrink: 0; margin-bottom: 10px; }
-        .status-box { flex: 1; border: 1px solid #444; border-radius: 8px; background-color: #222; text-align: center; padding: 10px; display: flex; flex-direction: column; justify-content: center; font-size: 0.95rem; position: relative; }
-        
+        .status-box { flex: 1; border: 1px solid #444; border-radius: 8px; background-color: #222; text-align: center; padding: 10px; display: flex; flex-direction: column; justify-content: center; font-size: 0.95rem; position: relative; transition: border-color 0.3s ease; border-width: 2px; }
         #center-stage { flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         #staged-card-slot { width: 110px; height: 146px; border: 2px dashed #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
-        
         .mid-action-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 50px; flex-shrink: 0; margin-bottom: 15px; }
         .mid-btn { flex: 1; border-radius: 8px; border: 2px solid #555; font-size: 0.95rem; color: #fff; background-color: #333; cursor: pointer; white-space: nowrap; padding: 0 5px; }
         .mid-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         #btn-use-card { flex: 2; border: none; font-size: 1.1rem; }
         #btn-use-card:disabled { background-color: #333 !important; color: #777 !important; }
-
-                /* ✨ 수정됨: 플로팅 데미지 (위치 고정값 제거, 자바스크립트가 추적하도록 변경) */
         .floating-dmg { position: absolute; font-size: 2.2rem; font-weight: 900; color: #ff4d4d; animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards; pointer-events: none; z-index: 300; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; transform: translateX(-50%); }
         @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, 0) scale(0.5); } 15% { transform: translate(-50%, -20px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
-        .status-box { transition: border-color 0.3s ease; border-width: 2px; } /* 테두리 전환을 부드럽게 */
-
-        /* ✨ 신규: Guard 박스 튕김 연출 */
-        @keyframes guard-bounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
+        @keyframes guard-bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .anim-guard { animation: guard-bounce 0.3s ease-in-out; border-color: #4da6ff !important; }
-
-        /* ✨ 신규: 드로우 덱 애니메이션 */
         .draw-anim-card { position: absolute; width: 25px; height: 35px; background-color: #555; border: 2px solid #888; border-radius: 4px; z-index: 120; pointer-events: none; animation: draw-fly 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        @keyframes draw-fly { 
-            0% { transform: translate(0, 0) scale(1); opacity: 1; } 
-            100% { transform: translate(-50px, -20px) scale(0.6) rotate(-20deg); opacity: 0; } 
-        }
-
-        /* ✨ 신규: AP 회복 테두리 색조 및 상승선 연출 */
+        @keyframes draw-fly { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(-50px, -20px) scale(0.6) rotate(-20deg); opacity: 0; } }
         .ap-effect-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 150; overflow: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .ap-effect-player { box-shadow: inset 0 0 80px rgba(77, 166, 255, 0.4); }
         .ap-effect-enemy { box-shadow: inset 0 0 80px rgba(255, 77, 77, 0.4); }
         .ap-line { position: absolute; bottom: -20%; width: 4px; height: 15%; border-radius: 4px; opacity: 0; }
         .ap-line-player { background: linear-gradient(to top, transparent, #4da6ff, transparent); box-shadow: 0 0 10px #4da6ff; }
         .ap-line-enemy { background: linear-gradient(to top, transparent, #ff4d4d, transparent); box-shadow: 0 0 10px #ff4d4d; }
-        @keyframes ap-rise {
-            0% { transform: translateY(0); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateY(-120vh); opacity: 0; }
-        }
-
-/* ✨ 신규: 고요한 밤 안개 연출 (1.0초) */
-        .fog-effect-container { position: absolute; top: 35%; left: 0; width: 100%; height: 30%; overflow: hidden; pointer-events: none; z-index: 200; }
-        .fog-layer { position: absolute; top: 0; left: -100%; width: 200%; height: 100%; background: linear-gradient(90deg, transparent, rgba(20, 20, 20, 0.8), rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.8), transparent); filter: blur(12px); animation: fog-drift 1s ease-in-out forwards; }
-        @keyframes fog-drift {
-            0% { transform: translateX(0); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateX(50%); opacity: 0; }
-        }
-
-        /* ✨ 신규: 실명 지직거림 + 블랙아웃 연출 (총 1.0초: 0.3초 글리치 + 0.5초 블랙 + 0.2초 페이드아웃) */
+        @keyframes ap-rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-120vh); opacity: 0; } }
+        .night-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); pointer-events: none; z-index: 250; animation: night-anim 0.5s forwards; }
+        @keyframes night-anim { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
         .blind-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 250; animation: blind-anim 1s forwards; }
-        @keyframes blind-anim {
-            0% { background: transparent; opacity: 0; }
-            5% { background: white; opacity: 1; filter: invert(1); transform: translate(15px, 5px) skewX(-20deg); }
-            15% { background: black; opacity: 0.8; filter: none; transform: translate(-10px, -10px) skewX(20deg); }
-            25% { background: gray; opacity: 1; filter: invert(1); transform: translate(5px, 15px) skewX(-10deg); }
-            30% { background: black; opacity: 1; filter: none; transform: none; } /* 0.3초: 글리치 종료, 새까매짐 */
-            80% { background: black; opacity: 1; } /* 0.8초: 새까만 화면 유지 완료 */
-            100% { background: black; opacity: 0; } /* 부드럽게 사라짐 */
-        }
-
+        @keyframes blind-anim { 0% { background: transparent; opacity: 0; } 5% { background: white; opacity: 1; filter: invert(1); transform: translate(15px, 5px) skewX(-20deg); } 15% { background: black; opacity: 0.8; filter: none; transform: translate(-10px, -10px) skewX(20deg); } 25% { background: gray; opacity: 1; filter: invert(1); transform: translate(5px, 15px) skewX(-10deg); } 30% { background: black; opacity: 1; filter: none; transform: none; } 80% { background: black; opacity: 1; } 100% { background: black; opacity: 0; } }
     </style>
 </head>
 <body>
-
 <div id="game-container">
     <div id="fx-layer" class="hit-effect"></div>
+    <audio id="game-bgm" loop><source src="rabbitknight.mp3" type="audio/mpeg"></audio>
 
-    <audio id="game-bgm" loop>
-    <source src="rabbitknight.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="se-salute" src="salute.mp3" preload="auto"></audio>
-
-<!-- 1. 시작 화면 -->
     <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
-        <!-- src 속성에 실제 이미지 파일 이름이나 경로를 넣어주세요 -->
         <img src="LOVENORMA.jpg" alt="게임 아이콘" style="width: 150px; height: 150px; margin-bottom: 15px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-        
         <h1 style="font-size: 2.5rem; margin: 0 0 40px 0; text-align: left; line-height: 1.3; width: 250px;">
-            절대<br>
-            토끼 기사를<br>
-            <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
-            하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.51</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 실명,부채계약 표기,인트로 해설</span>
+            절대<br>토끼 기사를<br>사용하려<br>하지 마<br>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.52</span><br>
+            <span style="font-size: 0.8rem; color: #888;">패치: 3층 주기 보상, 덱 목록 상세 보기</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -259,7 +165,7 @@
         <button id="btn-intro-next" style="display: none; margin-top: auto;">전투 진입</button>
     </div>
 
-<div id="screen-mode" class="screen" style="align-items: center; justify-content: center;">
+    <div id="screen-mode" class="screen" style="align-items: center; justify-content: center;">
         <h2 style="margin-bottom: 30px;">플레이 모드를 선택하세요</h2>
         <div style="display: flex; flex-direction: column; gap: 20px; width: 80%;">
             <button onclick="game.selectClassicMode()">클래식 모드<br><span style="font-size: 0.8rem; color: #ccc;">(기본 7장 + 컨셉 3장)</span></button>
@@ -284,21 +190,16 @@
     <div id="screen-battle" class="screen">
         <div class="top-status-area">
             <div id="enemy-info" class="status-box">적 정보</div>
-            <div id="player-info" class="status-box" style="border-color: #4da6ff;">플레이어 정보</div>
+            <div id="player-info" class="status-box">플레이어 정보</div>
         </div>
-        
         <div id="center-stage">
-            <div id="staged-card-slot">
-                <span style="color: #777;">카드 올리기</span>
-            </div>
+            <div id="staged-card-slot"><span style="color: #777;">카드 올리기</span></div>
         </div>
-
         <div class="mid-action-area">
             <button id="btn-show-log" class="mid-btn">로그</button>
             <button id="btn-use-card" class="mid-btn" style="background-color: #4da6ff; color: #000; font-weight: bold;" disabled>사용</button>
-            <button id="btn-salute" class="mid-btn">경례</button>
+            <button id="btn-cancel-card" class="mid-btn" disabled>내리기</button>
         </div>
-        
         <div class="bottom-action-area">
             <button id="btn-grave" class="deck-btn">무덤<br>(0)</button>
             <div id="hand-box" class="hand-area"></div>
@@ -311,32 +212,17 @@
         <div id="script-box" style="width: 90%; max-width: 400px; background-color: #111; padding: 15px; border-radius: 8px; border: 1px solid #444; height: 50vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()"></div>
     </div>
 
-    <!-- ✨ 신규 추가: 토끼기사 경례 모달 -->
-    <div id="modal-salute" class="modal" onclick="this.classList.remove('active')">
-        <h3 style="margin-top: 10vh;">경례<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span></h3>
-        <div style="width: 90%; max-width: 350px; background-color: #111; padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; flex-direction: column; align-items: center; gap: 15px;" onclick="event.stopPropagation()">
-            <!-- 350x350px 이미지 (적당한 이미지 파일명으로 교체해서 쓰시면 됩니다) -->
-            <img src="rabbit_salute.jpg" alt="토끼기사" style="width: 100%; max-width: 350px; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; border: 2px solid #cc33ff; background-color: #222;">
-            <h3 style="margin: 0; color: #fff;">토끼기사에게 경례합니다</h3>
-            <!-- 기능은 없지만 누르면 텍스트가 바뀌는 소소한 재미 요소 -->
-            <button style="background-color: #cc33ff; color: #fff; border: none; padding: 12px 20px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; width: 100%; cursor: pointer;" onclick="executeSalute(this)">경례하기</button>
-        </div>
-    </div>
-
     <div id="screen-reward" class="screen" style="align-items: center;">
         <h3 id="reward-title">전투 승리! 카드를 1장 선택하세요.</h3>
         <div id="reward-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto; flex-grow: 1;"></div>
     </div>
 
-<!-- 게임 오버 화면 -->
     <div id="screen-gameover" class="screen" style="justify-content: center; align-items: center;">
         <h1 style="color: #ff4d4d; margin-bottom: 20px;">눈앞이 깜깜해졌다.</h1>
         <h2 id="final-score" style="margin-bottom: 10px;">격파한 적: 0명</h2>
         <h2 id="final-boss-score" style="margin-bottom: 50px; color: #cc33ff;">보스 격파: 0회</h2>
         <button id="btn-restart">다시 시작</button>
     </div>
-
-
 
     <div id="screen-starter" class="screen" style="align-items: center; justify-content: center;">
         <h2 style="margin-bottom: 30px;">시작 덱 컨셉을 선택하세요</h2>
@@ -347,7 +233,6 @@
         </div>
     </div>
 
-<!-- 2.8 인터미션 화면 (보상과 전투 사이) -->
     <div id="screen-intermission" class="screen" style="align-items: center; justify-content: center;">
         <h2 style="color: #4da6ff; margin-bottom: 20px;">전투 준비 완료</h2>
         <div class="info-box" style="width: 80%; text-align: left; margin-bottom: 20px; background-color: #1a1a1a;">
@@ -370,12 +255,12 @@
         <div id="view-list" class="modal-grid"></div>
         <button onclick="document.getElementById('modal-view').classList.remove('active')" style="margin-top: 20px; width: 80%;">닫기</button>
     </div>
-</div>
 
-<div id="modal-play" class="modal" onclick="document.getElementById('modal-play').classList.remove('active')">
+    <div id="modal-play" class="modal" onclick="document.getElementById('modal-play').classList.remove('active')">
         <h3 style="margin-top: 20vh;">이 카드를 사용할까요?<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 취소)</span></h3>
         <div id="play-card-container" style="display: flex; justify-content: center; width: 100%;"></div>
     </div>
+</div>
 
 <script>
 // ============================================================================
@@ -385,7 +270,6 @@ const CARD_DB = [
     { id: "b1", category: "기본", name: "일반 공격", desc: "적에게 물리피해 10", tags: ["공격"] },
     { id: "b2", category: "기본", name: "일반 방어", desc: "자신에게 물리피해 방어도 8", tags: ["버프"] },
     { id: "b3", category: "기본", name: "숨고르기", desc: "효과 없음", tags: ["유틸리티"] },
-    
     { id: "c1", category: "연격", name: "연속 베기", desc: "적에게 물리피해 15x2", tags: ["공격"] },
     { id: "c2", category: "연격", name: "연속 찌르기", desc: "적에게 물리피해 14x2", tags: ["공격"] },
     { id: "c3", category: "연격", name: "연속 때리기", desc: "적에게 물리피해 16x2", tags: ["공격"] },
@@ -396,7 +280,6 @@ const CARD_DB = [
     { id: "c8", category: "연격", name: "선견지명", desc: "자신의 덱에서 '스텝 밟기' 1장을 찾아 드로우, 자신 AP 4 회복.", tags: ["유틸리티"] },
     { id: "c9", category: "연격", name: "토끼기사의 지혜", desc: "드로우 시 무덤으로 가며 1장을 대신 드로우한다. 무덤으로 갈 때 적에게 물리피해 17. 사용 시 효과 없음.", tags: ["공격", "유틸리티"] },
     { id: "c10", category: "연격", name: "구사일생", desc: "자신이 구축한 10장의 덱 풀에 존재하는 물리피해 공격 카드의 위력을 합산하여 물리피해로 입힌다.", tags: ["공격", "엘리트", "유틸리티"] },
-
     { id: "s1", category: "상태이상", name: "중독", desc: "적에게 중독 3 부여. (매턴 종료시 스택당 8의 피해 후 스택 1 감소)", tags: ["공격"] },
     { id: "s2", category: "상태이상", name: "화상", desc: "적에게 화상 4 부여. (매턴 종료시 스택당 6의 피해 후 스택 1 감소)", tags: ["공격"] },
     { id: "s3", category: "상태이상", name: "저주", desc: "적에게 저주 7 부여. (매턴 종료시 스택당 3의 피해 후 스택 1 감소)", tags: ["공격"] },
@@ -407,7 +290,6 @@ const CARD_DB = [
     { id: "s8", category: "상태이상", name: "부채계약", desc: "3턴 동안 모두의 상태이상 스택이 감소하지 않는다.", tags: ["유틸리티"] },
     { id: "s9", category: "상태이상", name: "실명", desc: "2턴 동안 모두가 모든 피해에 면역된다.", tags: ["버프"] },
     { id: "s10", category: "상태이상", name: "절체절명", desc: "모두의 상태이상을 결산한 뒤 제거하고, 양측의 HP를 최대치까지 회복시킨다.", tags: ["버프"] },
-
     { id: "r1", category: "반격", name: "가시갑옷", desc: "3턴 동안 자신이 받는 물리피해를 50% 감소시키고, 막은 만큼 반사한다. (중첩 시 턴 추가)", tags: ["버프"] },
     { id: "r2", category: "반격", name: "고요한 밤", desc: "3턴 동안 자신이 받는 상태이상 피해를 50% 감소시키고, 막은 만큼 반사한다. (중첩 시 턴 추가)", tags: ["버프"] },
     { id: "r3", category: "반격", name: "단단함", desc: "자신에게 방어도 2 증가. (보유효과: 소지 시 최대 HP 40 증가)", tags: ["버프"] },
@@ -418,7 +300,6 @@ const CARD_DB = [
     { id: "r8", category: "반격", name: "호기심", desc: "덱에 없는 엘리트 제외 '유틸리티' 카드를 무작위로 1장 시전한다.", tags: ["유틸리티"] },
     { id: "r9", category: "반격", name: "성급한 결정", desc: "모든 카드 중 하나를 무작위로 시전한다.", tags: ["유틸리티", "엘리트"] },
     { id: "r10", category: "반격", name: "만류귀종", desc: "적에게 최후통첩 1 부여. 매턴 종료 시 선고 데미지를 상태이상으로 입힌다.", tags: ["공격", "엘리트"] },
-
     { id: "e1", category: "적", name: "물어뜯기", desc: "적에게 물리피해 27.", tags: ["공격"] },
     { id: "e2", category: "적", name: "웅크리기", desc: "자신에게 물리피해 방어도 13.", tags: ["버프"] },
     { id: "e3", category: "적", name: "주변 맴돌기", desc: "자신 1장 드로우, 자신 AP 3 회복", tags: ["유틸리티"] }
@@ -433,73 +314,33 @@ const ENEMY_POOL = [
 const getCard = name => ({ ...CARD_DB.find(c => c.name === name) }); 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// --- 신규: 랜덤 적 생성기 (스코어 스케일링 포함) ---
-// --- 랜덤 적 생성기 (기존과 동일) ---
 const generateRandomEnemy = (score = 0) => {
     const prefixes = ["오염된", "강인한", "오만한", "상냥한"];
     const names = ["트롤", "전사", "가로등지기", "기사"];
     let fullName = `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
-
     let tags = ["연격", "상태이상", "반격"];
     let primaryTag = tags[Math.floor(Math.random() * tags.length)];
-
     let deck = [];
     let primaryCards = CARD_DB.filter(c => c.category === primaryTag);
     deck.push(primaryCards[Math.floor(Math.random() * primaryCards.length)].name);
     deck.push(primaryCards[Math.floor(Math.random() * primaryCards.length)].name);
-
     let validCards = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.category !== "기본");
-    for(let i=0; i<5; i++) {
-        deck.push(validCards[Math.floor(Math.random() * validCards.length)].name);
-    }
-
-    let baseHp = Math.floor(Math.random() * 11) + 60; // 60 ~ 70
+    for(let i=0; i<5; i++) deck.push(validCards[Math.floor(Math.random() * validCards.length)].name);
+    let baseHp = Math.floor(Math.random() * 11) + 60;
     let scaleMultiplier = Math.pow(1.1, Math.floor(score / 5));
-    let scaledHp = Math.floor(baseHp * scaleMultiplier);
-
-    return { name: fullName, hp: scaledHp, deck: deck };
+    return { name: fullName, hp: Math.floor(baseHp * scaleMultiplier), deck: deck };
 };
 
-// --- 신규: 5층 단위 보스 생성기 ---
 const generateBoss = (score) => {
-    let bossTier = Math.floor(score / 5); // 첫 보스(4마리 격파 후)는 0, 두 번째는 1...
-    let baseHp = 160;
-    let scaledHp = Math.floor(baseHp * Math.pow(1.2, bossTier)); // 20% 복리 상승
-
+    let bossTier = Math.floor(score / 5);
+    let scaledHp = Math.floor(160 * Math.pow(1.2, bossTier));
     let deck = ["구사일생", "토끼기사의 지혜", "스텝 밟기", "스텝 밟기"];
-    
-    // 연격 태그 랜덤 1장
     let comboCards = CARD_DB.filter(c => c.category === "연격");
     deck.push(comboCards[Math.floor(Math.random() * comboCards.length)].name);
-
-    // 숨고르기 기믹 (기본 4장, 보스 티어가 오를수록 감소, 최소 1장)
     let breathCount = Math.max(1, 4 - bossTier);
-    for(let i=0; i<breathCount; i++) {
-        deck.push("숨고르기");
-    }
-
-    // isBoss 태그를 달아서 구분
+    for(let i=0; i<breathCount; i++) deck.push("숨고르기");
     return { name: "뒤틀린 광기의 기사 [보스]", hp: scaledHp, deck: deck, isBoss: true };
 };
-
-function executeSalute(btn) {
-    // 1. 오디오 재생 (재클릭 시 즉시 처음부터 다시 재생되도록 currentTime 초기화)
-    const se = document.getElementById('se-salute');
-    if (se) {
-        se.currentTime = 0; 
-        se.play().catch(e => console.log("경례 SE 재생 대기됨: " + e));
-    }
-    
-    // 2. 버튼 텍스트 및 색상 변경 (눌린 상태)
-    btn.innerText = '충성!';
-    btn.style.backgroundColor = '#8822aa';
-    
-    // 3. 1.1초(1100ms) 뒤에 원래 상태로 복구
-    setTimeout(() => {
-        btn.innerText = '경례하기';
-        btn.style.backgroundColor = '#cc33ff';
-    }, 1100);
-}
 
 // ============================================================================
 // 2. 코어 시스템
@@ -507,10 +348,11 @@ function executeSalute(btn) {
 class Game {
     constructor() {
         this.score = 0;
-        this.bossKills = 0; // 신규: 보스 격파 카운트
+        this.bossKills = 0;
         this.playerDeck = [];
         this.lastEnemyData = null; 
         this.nextEnemyData = null; 
+        this.starterCategory = null; // ✨ 추가: 선택한 스타터 팩 저장
         this.initDOM();
     }
 
@@ -518,8 +360,8 @@ class Game {
         this.screens = {
             start: document.getElementById('screen-start'),
             intro: document.getElementById('screen-intro'),
-            mode: document.getElementById('screen-mode'),       // ✨ 신규
-            draft: document.getElementById('screen-draft'),     // ✨ 신규
+            mode: document.getElementById('screen-mode'),
+            draft: document.getElementById('screen-draft'),
             starter: document.getElementById('screen-starter'),
             collection: document.getElementById('screen-collection'),
             intermission: document.getElementById('screen-intermission'),
@@ -530,60 +372,37 @@ class Game {
         
         document.getElementById('btn-start').onclick = () => {
             const bgm = document.getElementById('game-bgm');
-            bgm.volume = 0.5; 
-            bgm.play().catch(e => console.log("BGM 재생 대기됨")); 
-            
+            bgm.volume = 0.5; bgm.play().catch(e => console.log("BGM 재생 대기")); 
             this.showIntro(); 
         };
-        
-    document.getElementById('btn-intro-next').onclick = () => this.changeScreen('mode');
-        
-        // ✨ 카드 일람 버튼 연결
+        document.getElementById('btn-intro-next').onclick = () => this.changeScreen('mode');
         document.getElementById('btn-show-collection').onclick = () => this.showCollection();
         document.getElementById('btn-collection-back').onclick = () => this.changeScreen('mode');
-
         document.getElementById('btn-inter-next').onclick = () => this.startBattle(); 
         document.getElementById('btn-restart').onclick = () => this.changeScreen('start');
 
-        // (기존 버튼 연결 코드들 아래에 추가)
         document.getElementById('btn-deck').onclick = () => this.showListModal('덱 목록', this.player.deck);
         document.getElementById('btn-grave').onclick = () => this.showListModal('무덤 목록', this.player.grave);
-
-        // ✨ 신규 UI 버튼 이벤트 연결
         document.getElementById('btn-show-log').onclick = () => document.getElementById('modal-log').classList.add('active');
         document.getElementById('btn-use-card').onclick = () => this.playStagedCard();
-        document.getElementById('btn-salute').onclick = () => document.getElementById('modal-salute').classList.add('active');
-
+        document.getElementById('btn-cancel-card').onclick = () => this.cancelStagedCard();
     }
 
     changeScreen(name) {
-        for (let key in this.screens) {
-            if (this.screens[key]) {
-                this.screens[key].classList.remove('active');
-            }
-        }
-        if (this.screens[name]) {
-            this.screens[name].classList.add('active');
-        }
+        for (let key in this.screens) this.screens[key].classList.remove('active');
+        if (this.screens[name]) this.screens[name].classList.add('active');
     }
 
     async showIntro() {
         this.changeScreen('intro');
         const textEl = document.getElementById('intro-text');
         const btn = document.getElementById('btn-intro-next');
-        textEl.innerHTML = ""; 
-        btn.style.display = "none";
-        
-        const introText = "덱빌딩의 세계에 오신 것을 환영합니다.<br><br>당신은 10장의 카드를 갖습니다.<br>카드를 1장 낼 때마다 행동력(AP)을 2 소비합니다.<br>매 턴마다 AP 2를 얻습니다.<br>카드를 낼 수 없게 될 때까지 카드를 사용해야 합니다.<br>전투에서 승리하면 새로운 카드를 얻습니다.<br><br>과연 몇 명의 적을 쓰러뜨릴 수 있을까요?";
-        
+        textEl.innerHTML = ""; btn.style.display = "none";
+        const introText = "덱빌딩의 세계에 오신 것을 환영합니다.<br><br>당신은 10장의 카드를 갖습니다.<br>매 턴마다 AP 2를 얻고 카드를 사용하세요.<br>전투에서 승리하면 새로운 카드를 얻고,<br>기존 카드를 버려 덱을 압축할 수 있습니다.<br><br>과연 몇 명의 적을 쓰러뜨릴 수 있을까요?";
         let currentHTML = "";
         for(let i=0; i<introText.length; i++) {
-            if(introText[i] === '<') { 
-                currentHTML += "<br>"; 
-                i += 3; 
-            } else { 
-                currentHTML += introText[i]; 
-            }
+            if(introText[i] === '<') { currentHTML += "<br>"; i += 3; }
+            else { currentHTML += introText[i]; }
             textEl.innerHTML = currentHTML;
             await sleep(3); 
         }
@@ -591,156 +410,97 @@ class Game {
     }
 
     selectStarter(tag) {
-        this.score = 0;
-        this.bossKills = 0; // 시작 시 초기화
-        
+        this.score = 0; this.bossKills = 0;
+        this.starterCategory = tag; // ✨ 카테고리 저장
         const baseNames = ["일반 공격", "일반 방어", "숨고르기", "숨고르기", "스텝 밟기", "토끼기사의 지혜", "호기심"];
         this.playerDeck = baseNames.map(getCard);
-        
         let tagCards = CARD_DB.filter(c => c.category === tag);
-        for(let i=0; i<3; i++) {
-            this.playerDeck.push(getCard(tagCards[Math.floor(Math.random() * tagCards.length)].name));
-        }
-
-        this.lastEnemyData = null; 
-        this.prepareNextEnemy();   
-        this.startBattle();        
+        for(let i=0; i<3; i++) this.playerDeck.push(getCard(tagCards[Math.floor(Math.random() * tagCards.length)].name));
+        this.lastEnemyData = null; this.prepareNextEnemy(); this.startBattle();        
     }
 
-    // --- 신규: 클래식 모드 선택 시 기존 컨셉 선택창으로 이동 ---
-    selectClassicMode() {
-        this.changeScreen('starter');
-    }
+    selectClassicMode() { this.changeScreen('starter'); }
 
-    // --- 신규: 랜덤 모드 선택 시 10장 드래프트 진행 ---
     async startDraftPhase() {
-        this.changeScreen('draft');
-        this.score = 0;
-        this.bossKills = 0;
-        this.playerDeck = [];
-
+        this.changeScreen('draft'); this.score = 0; this.bossKills = 0; this.playerDeck = [];
+        this.starterCategory = null; // 랜덤 모드는 전용 카테고리 없음
         const titleEl = document.getElementById('draft-title');
         const listEl = document.getElementById('draft-list');
-
-        // 기본 공격/방어와 적 카드를 제외한 꿀잼 카드들로만 풀 구성
         const draftPool = CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
-
-        // 10번 반복하여 1장씩 선택받기
         for (let i = 1; i <= 10; i++) {
             titleEl.innerText = `시작 덱 구성: 카드를 선택하세요 (${i}/10)`;
             listEl.innerHTML = '';
-
             let choices = [];
-            for(let j = 0; j < 3; j++) {
-                choices.push(getCard(draftPool[Math.floor(Math.random() * draftPool.length)].name));
-            }
-
+            for(let j = 0; j < 3; j++) choices.push(getCard(draftPool[Math.floor(Math.random() * draftPool.length)].name));
             const newCard = await new Promise(resolve => {
                 choices.forEach(card => {
                     let el = document.createElement('div');
                     el.className = `card-detail ${this.getBgClass(card.tags)}`;
-                    // 보기 편하게 태그 정보도 추가
-                el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
-
-                el.onclick = () => resolve(card);
+                    el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
+                    el.onclick = () => resolve(card);
                     listEl.appendChild(el);
                 });
             });
-
             this.playerDeck.push(newCard);
         }
-
-        // 10장 선택이 끝나면 첫 전투 준비 및 진입
-        this.lastEnemyData = null;
-        this.prepareNextEnemy();
-        this.startBattle();
+        this.lastEnemyData = null; this.prepareNextEnemy(); this.startBattle();
     }
 
-// --- 신규: 카드 일람 페이지 생성 ---
     showCollection() {
         this.changeScreen('collection');
         const grid = document.getElementById('collection-grid');
         grid.innerHTML = '';
-
-        // "적" 카테고리를 제외한 모든 카드 정렬 (카테고리별로 정렬하여 보기 좋게 표시)
-        const sortedCards = CARD_DB
-            .filter(c => c.category !== "적")
-            .sort((a, b) => a.category.localeCompare(b.category));
-
+        const sortedCards = CARD_DB.filter(c => c.category !== "적").sort((a, b) => a.category.localeCompare(b.category));
         sortedCards.forEach(card => {
             let el = document.createElement('div');
             el.className = `card-mini ${this.getTagClass(card.tags)}`;
-            
-            // ✨ 수정됨: 전체 내용을 <div>로 한 번 감싸서 Flexbox의 가로 정렬을 회피
             el.innerHTML = `<div style="width: 100%;">${card.name}<br><span style="font-size: 0.65rem; color: #888; font-weight: normal; margin-top: 3px; display: inline-block;">#${card.category} 팩</span></div>`;
-            
-            // 카드 클릭 시 상세 효과 모달 띄우기
             el.onclick = () => this.showCardDetail(card);
             grid.appendChild(el);
         });
     }
 
-    // --- 신규: 카드 상세 정보 표시 (전용 상세 모달) ---
     showCardDetail(card) {
         const modal = document.getElementById('modal-play');
         const container = document.getElementById('play-card-container');
-        
-        // 기존 '사용할까요?' 텍스트를 '카드 정보'로 임시 변경
-        const originalTitle = modal.querySelector('h3').innerHTML;
-        modal.querySelector('h3').innerHTML = `카드 정보<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span>`;
-
+        const h3 = modal.querySelector('h3');
+        const originalTitle = h3.innerHTML;
+        h3.innerHTML = `카드 정보<br><span style="font-size: 0.8rem; color: #aaa;">(바탕 터치 시 닫기)</span>`;
         container.innerHTML = '';
         let el = document.createElement('div');
         el.className = `card-detail ${this.getBgClass(card.tags)}`;
         el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
-        
         container.appendChild(el);
         modal.classList.add('active');
-
-        // 모달이 닫힐 때 제목을 원래대로 복구하는 일회성 이벤트
-        const restoreTitle = () => {
-            modal.querySelector('h3').innerHTML = originalTitle;
-            modal.removeEventListener('click', restoreTitle);
-        };
+        const restoreTitle = () => { h3.innerHTML = originalTitle; modal.removeEventListener('click', restoreTitle); };
         modal.addEventListener('click', restoreTitle);
     }
     
     prepareNextEnemy() {
-        // ✨ 신규: 현재 스코어 + 1이 5의 배수라면(즉, 5층, 10층 진입 시) 보스 호출
-        if ((this.score + 1) % 5 === 0) {
-            this.nextEnemyData = generateBoss(this.score);
-        } else {
-            if (Math.random() > 0.5) {
-                this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
-            } else {
-                this.nextEnemyData = generateRandomEnemy(this.score); 
-            }
+        if ((this.score + 1) % 5 === 0) this.nextEnemyData = generateBoss(this.score);
+        else {
+            if (Math.random() > 0.5) this.nextEnemyData = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
+            else this.nextEnemyData = generateRandomEnemy(this.score); 
         }
     }
 
     showIntermission() {
         this.changeScreen('intermission');
         this.prepareNextEnemy();
-        
         document.getElementById('inter-score').innerText = this.score;
-        document.getElementById('inter-boss-score').innerText = this.bossKills; // 보스 카운팅 표시
-        
+        document.getElementById('inter-boss-score').innerText = this.bossKills;
         if (this.lastEnemyData) {
             let bossPrefix = this.lastEnemyData.isBoss ? "<span style='color:#cc33ff;'>[보스]</span> " : "";
             document.getElementById('inter-last-enemy').innerHTML = `${bossPrefix}${this.lastEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${this.lastEnemyData.maxHp})</span>`;
         }
-        
-        let nextBonus = this.calcBonusHp(this.nextEnemyData.deck);
-        let nextMaxHp = this.nextEnemyData.hp + nextBonus;
+        let nextMaxHp = this.nextEnemyData.hp + this.calcBonusHp(this.nextEnemyData.deck);
         document.getElementById('inter-next-enemy').innerHTML = `${this.nextEnemyData.name}<br><span style="font-size: 0.9rem;">(최대 HP: ${nextMaxHp})</span>`;
     }
 
-calcSettlement(type, stack, entity) {
+    calcSettlement(type, stack, entity) {
         if (stack <= 0) return 0;
         let mult = type === 'poison' ? 8 : type === 'burn' ? 6 : type === 'curse' ? 3 : 0;
-        if (mult > 0) {
-            return (stack * (stack + 1) / 2) * mult; 
-        }
+        if (mult > 0) return (stack * (stack + 1) / 2) * mult; 
         if (type === 'ultimatum') {
             let sentenceDmg = 0;
             CARD_DB.forEach(c => {
@@ -748,19 +508,14 @@ calcSettlement(type, stack, entity) {
                     let m = c.desc.match(/물리피해 (\d+)/);
                     if (m) {
                         let d = parseInt(m[1]);
-                        if(c.desc.includes("15x2")) d = 30;
-                        if(c.desc.includes("14x2")) d = 28;
-                        if(c.desc.includes("16x2")) d = 32;
+                        if(c.desc.includes("15x2")) d = 30; if(c.desc.includes("14x2")) d = 28; if(c.desc.includes("16x2")) d = 32;
                         sentenceDmg += d;
                     }
                 }
             });
-            // 스택만큼 선고 데미지가 중첩되어 폭발합니다.
             return stack * sentenceDmg;
         }
-        if (type === 'patience_turns' && entity) {
-            return entity.statuses.patience_val;
-        }
+        if (type === 'patience_turns' && entity) return entity.statuses.patience_val;
         return 0;
     }
 
@@ -774,47 +529,28 @@ calcSettlement(type, stack, entity) {
         return bonus;
     }
 
-    // --- 신규: 특수 카드 연출 함수들 ---
     async playAPRecoveryAnim(type) {
         const container = document.getElementById('game-container');
         const fx = document.createElement('div');
         fx.className = `ap-effect-container ap-effect-${type}`;
         container.appendChild(fx);
-
-        // 랜덤 위치와 속도를 가진 상승선(Line) 15개 생성
         for(let i=0; i<15; i++) {
             let line = document.createElement('div');
             line.className = `ap-line ap-line-${type}`;
-            line.style.left = `${Math.random() * 95}%`; // 가로 랜덤 위치
-            
-            let duration = 0.5 + Math.random() * 0.4; // 0.5초 ~ 0.9초 속도
-            let delay = Math.random() * 0.3; // 0 ~ 0.3초 딜레이
-            
-            line.style.animation = `ap-rise ${duration}s ${delay}s cubic-bezier(0.25, 1, 0.5, 1) forwards`;
+            line.style.left = `${Math.random() * 95}%`;
+            line.style.animation = `ap-rise ${0.5 + Math.random() * 0.4}s ${Math.random() * 0.3}s cubic-bezier(0.25, 1, 0.5, 1) forwards`;
             fx.appendChild(line);
         }
-
-        setTimeout(() => { fx.style.opacity = '1'; }, 10);
-        setTimeout(() => {
-            fx.style.opacity = '0'; // 테두리 색조 페이드아웃
-            setTimeout(() => fx.remove(), 200);
-        }, 800);
+        setTimeout(() => fx.style.opacity = '1', 10);
+        setTimeout(() => { fx.style.opacity = '0'; setTimeout(() => fx.remove(), 200); }, 800);
     }
 
-async playNightAnim() {
+    async playNightAnim() {
         const container = document.getElementById('game-container');
-        
         const fx = document.createElement('div');
-        fx.className = 'fog-effect-container';
-        
-        const fog = document.createElement('div');
-        fog.className = 'fog-layer';
-        
-        fx.appendChild(fog);
+        fx.className = 'night-effect';
         container.appendChild(fx);
-        
-        // 안개가 1초 동안 지나가고 완전히 사라짐
-        setTimeout(() => { if(fx.parentNode) fx.remove(); }, 1000); 
+        setTimeout(() => fx.parentNode && fx.remove(), 600);
     }
 
     async playBlindAnim() {
@@ -822,7 +558,7 @@ async playNightAnim() {
         const fx = document.createElement('div');
         fx.className = 'blind-effect';
         container.appendChild(fx);
-        setTimeout(() => { if(fx.parentNode) fx.remove(); }, 1100);
+        setTimeout(() => fx.parentNode && fx.remove(), 1100);
     }
 
     // ========================================================================
@@ -832,141 +568,81 @@ async playNightAnim() {
         this.changeScreen('battle');
         this.scriptBox = document.getElementById('script-box');
         this.scriptBox.innerHTML = '';
-        
         this.stagedCardIndex = -1; 
-        
         let pBonusHp = this.calcBonusHp(this.playerDeck);
         let pMaxHp = 150 + pBonusHp;
         this.player = { name: "낙원의 토끼", hp: pMaxHp, maxHp: pMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: [...this.playerDeck].sort(()=>0.5-Math.random()), hand: [], grave: [] };
-        
         let eBonusHp = this.calcBonusHp(this.nextEnemyData.deck);
         let eMaxHp = this.nextEnemyData.hp + eBonusHp;
-        
         this.enemy = { name: this.nextEnemyData.name, isBoss: this.nextEnemyData.isBoss, hp: eMaxHp, maxHp: eMaxHp, ap: 0, defense: 0, statuses: { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 }, deck: this.nextEnemyData.deck.map(getCard).sort(()=>0.5-Math.random()), hand: [], grave: [] };
-
         this.globalStatus = { blindness: 0, debt_contract: 0 };
-        this.isEndingTurn = false;
-        this.isGameOver = false;
-        this.isProcessing = false; // ✨ 신규: 연타 방지용 자물쇠
-
+        this.isEndingTurn = false; this.isGameOver = false; this.isProcessing = false;
         this.updateBattleUI();
         this.log(`야생의 <b style="color:${this.enemy.isBoss ? '#cc33ff' : '#ff4d4d'};">[${this.enemy.name}]</b>이(가) 나타났다!`);
-        
-        // ... (이하 startBattle 코드는 기존과 동일)
-        
         if (eBonusHp > 0) this.log(`(적의 패시브 효과로 HP가 ${eBonusHp} 증가했습니다.)`);
         if (pBonusHp > 0) this.log(`(당신의 패시브 효과로 HP가 ${pBonusHp} 증가했습니다.)`);
-        
         await sleep(1000);
-
-        await this.drawCard(this.player, 1);
-        await this.drawCard(this.enemy, 1);
+        await this.drawCard(this.player, 1); await this.drawCard(this.enemy, 1);
         this.updateBattleUI();
-
         this.turn = Math.random() < 0.5 ? 'player' : 'enemy';
         this.log(this.turn === 'player' ? "플레이어 선공!" : "적 선공!");
         await sleep(1000);
-
         this.runTurn();
     }
 
-    log(msg) {
-        this.scriptBox.innerHTML += `<div>${msg}</div>`;
-        this.scriptBox.scrollTop = this.scriptBox.scrollHeight;
-    }
+    log(msg) { this.scriptBox.innerHTML += `<div>${msg}</div>`; this.scriptBox.scrollTop = this.scriptBox.scrollHeight; }
 
     async triggerGraveEffect(entity, card) {
         if (card.name === "토끼기사의 지혜") {
             this.rabbitCount++;
             if (this.rabbitCount > 30) {
                 this.log(` 🐇 <b style="color:#ffaa00;">토끼가 탈진했습니다... (턴 강제 종료)</b>`);
-                this.isEndingTurn = true;
-                setTimeout(() => this.endTurn(), 1000);
-                return;
+                this.isEndingTurn = true; setTimeout(() => this.endTurn(), 1000); return;
             }
-
             const fxContainer = document.getElementById('game-container');
-            
-            // ✨ 1. 글리치 텍스트 8자 궤적 연출 (0.5초)
             const glitchWrapper = document.createElement('div');
             glitchWrapper.className = 'rabbit-infinity-container';
             const glitch = document.createElement('div');
-            glitch.className = 'glitch-text'; 
-            glitch.innerText = 'Rabbit';
-            glitchWrapper.appendChild(glitch);
-            fxContainer.appendChild(glitchWrapper); 
-            
-            await sleep(500); 
-            glitchWrapper.remove();
-
-// ✨ 2. 카드 날아가기 연출
+            glitch.className = 'glitch-text'; glitch.innerText = 'Rabbit';
+            glitchWrapper.appendChild(glitch); fxContainer.appendChild(glitchWrapper); 
+            await sleep(500); glitchWrapper.remove();
             const flyCard = document.createElement('div');
-            flyCard.className = 'flying-card'; 
-            flyCard.innerHTML = 'Rabbit<br>Knight';
+            flyCard.className = 'flying-card'; flyCard.innerHTML = 'Rabbit<br>Knight';
             fxContainer.appendChild(flyCard);
-
-            // ✨ 수정됨: 누가 썼는지에 따라 출발지와 목적지(타겟)를 동적으로 변경
-            const isPlayer = (entity === this.player);
-            const startBox = document.getElementById(isPlayer ? 'hand-box' : 'enemy-info').getBoundingClientRect();
-            const targetBox = document.getElementById(isPlayer ? 'enemy-info' : 'player-info').getBoundingClientRect();
-            
+            const handBox = document.getElementById('hand-box').getBoundingClientRect();
+            const enemyBox = document.getElementById('enemy-info').getBoundingClientRect();
             const graveBtn = document.getElementById('btn-grave').getBoundingClientRect();
             const containerRect = fxContainer.getBoundingClientRect();
-
-            // 시작점 (플레이어면 손패에서, 적이면 적 상태창에서 출발)
-            flyCard.style.left = (startBox.left + startBox.width/2 - containerRect.left - 30) + 'px';
-            flyCard.style.top = (startBox.top - containerRect.top - 40) + 'px';
+            flyCard.style.left = (handBox.left + handBox.width/2 - containerRect.left - 30) + 'px';
+            flyCard.style.top = (handBox.top - containerRect.top - 40) + 'px';
             flyCard.style.transition = 'all 0.3s ease-in';
-
             await sleep(20);
-
-            // 타겟을 향해 날아가며 회전
-            flyCard.style.left = (targetBox.left + targetBox.width/2 - containerRect.left - 30) + 'px';
-            flyCard.style.top = (targetBox.top + targetBox.height/2 - containerRect.top - 40) + 'px';
+            flyCard.style.left = (enemyBox.left + enemyBox.width/2 - containerRect.left - 30) + 'px';
+            flyCard.style.top = (enemyBox.top + enemyBox.height/2 - containerRect.top - 40) + 'px';
             flyCard.style.transform = 'scale(1.5) rotate(1080deg)'; 
-            
-            await sleep(300);
-            
-            // ✨ 3. 적중 시 역경직 & 색상 반전 연출
-            flyCard.style.transition = 'all 0.1s ease-out'; // 순간적으로 변하도록 설정
-            flyCard.style.transform = 'scale(1.8) rotate(1080deg)'; // 회전 멈춤 유지, 타격감 위한 크기 펌핑
-            flyCard.style.backgroundColor = '#dee2e6';
-            flyCard.style.color = '#ff4d4d';
-            flyCard.style.border = '1px solid #ff4d4d'; // 얇은 붉은 테두리
-            flyCard.style.boxShadow = '0 0 20px rgba(255, 77, 77, 0.9)'; // 붉은색 발광
-            
+            await sleep(300); 
+            flyCard.style.transition = 'all 0.1s ease-out';
+            flyCard.style.transform = 'scale(1.8) rotate(1080deg)';
+            flyCard.style.backgroundColor = '#dee2e6'; flyCard.style.color = '#ff4d4d';
+            flyCard.style.border = '1px solid #ff4d4d'; flyCard.style.boxShadow = '0 0 20px rgba(255, 77, 77, 0.9)';
             let target = entity === this.player ? this.enemy : this.player;
             await this.dealDamage(target, 17, 'physical');
-
-            // 타격감 홀딩 (역경직 0.15초)
             await sleep(150); 
-
             if (this.checkEndGame()) { flyCard.remove(); return; }
-
-            // ✨ 4. 무덤으로 돌아가기 (다시 회전)
             flyCard.style.transition = 'all 0.4s cubic-bezier(0.5, 0, 0.75, 0)'; 
             flyCard.style.left = (graveBtn.left + graveBtn.width/2 - containerRect.left - 30) + 'px';
             flyCard.style.top = (graveBtn.top + graveBtn.height/2 - containerRect.top - 40) + 'px';
-            
-            // 원래 색상으로 복구
-            flyCard.style.backgroundColor = '#222';
-            flyCard.style.color = '#cc33ff';
-            flyCard.style.border = '2px solid #cc33ff';
-            flyCard.style.boxShadow = 'none';
-            flyCard.style.transform = 'scale(0.3) rotate(2160deg)'; // 3바퀴 추가 회전
-            flyCard.style.opacity = '0';
-            
-            await sleep(400); 
-            flyCard.remove();
+            flyCard.style.backgroundColor = '#222'; flyCard.style.color = '#cc33ff';
+            flyCard.style.border = '2px solid #cc33ff'; flyCard.style.boxShadow = 'none';
+            flyCard.style.transform = 'scale(0.3) rotate(2160deg)'; flyCard.style.opacity = '0';
+            await sleep(400); flyCard.remove();
         }
     }
 
-async drawCard(entity, count) {
+    async drawCard(entity, count) {
         let loopSafety = 0; 
         for(let i=0; i<count; i++) {
-            loopSafety++;
-            if (loopSafety > 30) break;
-
+            loopSafety++; if (loopSafety > 30) break;
             if(entity.deck.length === 0) {
                 if(entity.grave.length === 0) break;
                 entity.deck = [...entity.grave].sort(()=>0.5-Math.random());
@@ -974,36 +650,21 @@ async drawCard(entity, count) {
                 if(entity === this.player) this.log("[시스템] 무덤을 덱으로 섞었습니다.");
             }
             const card = entity.deck.pop();
-            
-            // ✨ 신규: 카드 한 장 뽑을 때마다 회색 카드 날아가는 연출 (플레이어, 적 모두 적용)
-            this.playDrawAnim();
-            await sleep(50); // 드로우 사이 아주 짧은 간격
-
+            this.playDrawAnim(); await sleep(50);
             if (card.name === "토끼기사의 지혜") {
                 this.log(` 🐇 [토끼기사의 지혜]가 드로우되어 즉시 무덤으로 갑니다.`);
-                entity.grave.push(card);
-                await this.triggerGraveEffect(entity, card);
-                // ✨ 신규: 탈진으로 인해 턴 종료 중이면 드로우 루프 탈출
-                if (this.checkEndGame() || this.isEndingTurn) return; 
-                i--; 
-                continue;
+                entity.grave.push(card); await this.triggerGraveEffect(entity, card);
+                if (this.checkEndGame() || this.isEndingTurn) return; i--; continue;
             }
             entity.hand.push(card);
         }
     }
 
     async runTurn() {
-        this.isEndingTurn = false;
-        this.isProcessing = false; // ✨ 신규: 턴이 넘어올 때 자물쇠 풀기
-        this.rabbitCount = 0; 
-
+        this.isEndingTurn = false; this.isProcessing = false; this.rabbitCount = 0; 
         if(this.turn === 'player') {
-            this.player.ap = 2; 
-            this.log(`<hr><b style="color:#4da6ff">--- 플레이어 턴 (AP:2) ---</b>`);
-            this.updateBattleUI();
-            await sleep(500);
-
-            // ... (이하 기존 drawPool 로직 동일) ...
+            this.player.ap = 2; this.log(`<hr><b style="color:#4da6ff">--- 플레이어 턴 (AP:2) ---</b>`);
+            this.updateBattleUI(); await sleep(500);
             let drawPool = [];
             for(let i=0; i<3; i++) {
                 if(this.player.deck.length === 0 && this.player.grave.length > 0) {
@@ -1012,7 +673,6 @@ async drawCard(entity, count) {
                 }
                 if(this.player.deck.length > 0) drawPool.push(this.player.deck.pop());
             }
-
             if(drawPool.length > 0) {
                 const picked = await this.openDrawModalAsync(drawPool);
                 if (picked.name === "토끼기사의 지혜") {
@@ -1020,7 +680,7 @@ async drawCard(entity, count) {
                     this.player.grave.push(picked);
                     drawPool.forEach(c => { if(c !== picked) this.player.deck.push(c); }); 
                     await this.triggerGraveEffect(this.player, picked);
-                    if (this.checkEndGame() || this.isEndingTurn) return; // 탈진 체크
+                    if (this.checkEndGame() || this.isEndingTurn) return;
                     await this.drawCard(this.player, 1);
                 } else {
                     this.player.hand.push(picked);
@@ -1028,21 +688,10 @@ async drawCard(entity, count) {
                     this.log(`[${picked.name}] 드로우.`);
                 }
             }
-            
-            this.updateBattleUI();
-            this.checkPlayable();
-
+            this.updateBattleUI(); this.checkPlayable();
         } else {
-            this.enemy.ap = 2; 
-            this.log(`<hr><b style="color:#ff4d4d">--- ${this.enemy.name} 턴 (AP:2) ---</b>`);
-            
-            // ✨ 신규: 적 턴이 시작되자마자 붉은 테두리가 켜지도록 즉시 UI 갱신
-            this.updateBattleUI(); 
-            
-            await sleep(800);
-
-            // ... (이하 drawPool 로직 동일)
-
+            this.enemy.ap = 2; this.log(`<hr><b style="color:#ff4d4d">--- ${this.enemy.name} 턴 (AP:2) ---</b>`);
+            this.updateBattleUI(); await sleep(800);
             let drawPool = [];
             for(let i=0; i<2; i++) {
                 if(this.enemy.deck.length === 0 && this.enemy.grave.length > 0) {
@@ -1057,14 +706,13 @@ async drawCard(entity, count) {
                     this.enemy.grave.push(picked);
                     drawPool.forEach(c => { if(c !== picked) this.enemy.deck.push(c); });
                     await this.triggerGraveEffect(this.enemy, picked);
-                    if (this.checkEndGame() || this.isEndingTurn) return; // 탈진 체크
+                    if (this.checkEndGame() || this.isEndingTurn) return;
                     await this.drawCard(this.enemy, 1);
                 } else {
                     this.enemy.hand.push(picked);
                     drawPool.forEach(c => { if(c !== picked) this.enemy.deck.push(c); });
                 }
             }
-
             await this.enemyAI();
         }
     }
@@ -1072,628 +720,207 @@ async drawCard(entity, count) {
     checkPlayable() {
         if(this.turn !== 'player' || this.isEndingTurn) return;
         if(this.player.ap < 2 || this.player.hand.length === 0) {
-            this.isEndingTurn = true;
-            this.log("카드를 낼 수 없어 턴을 종료합니다.");
+            this.isEndingTurn = true; this.log("카드를 낼 수 없어 턴을 종료합니다.");
             setTimeout(() => this.endTurn(), 1000);
         }
     }
 
     confirmPlayCard(card, index) {
         if(this.turn !== 'player' || this.isEndingTurn) return;
-        if(this.player.ap < 2) {
-            this.log("AP가 부족합니다.");
-            this.playShakeOnly(); 
-            return;
-        }
-
+        if(this.player.ap < 2) { this.log("AP가 부족합니다."); this.playShakeOnly(); return; }
         const modal = document.getElementById('modal-play');
         const container = document.getElementById('play-card-container');
         container.innerHTML = '';
-
         let el = document.createElement('div');
         el.className = `card-detail ${this.getBgClass(card.tags)}`;
         el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
-        
-        el.onclick = async (e) => {
-            e.stopPropagation(); 
-            modal.classList.remove('active');
-            await this.playCard(index);
-        };
-
-        container.appendChild(el);
-        modal.classList.add('active');
+        el.onclick = async (e) => { e.stopPropagation(); modal.classList.remove('active'); await this.playCard(index); };
+        container.appendChild(el); modal.classList.add('active');
     }
 
     async playCard(index) {
         if(this.turn !== 'player' || this.player.ap < 2) return;
         const card = this.player.hand.splice(index, 1)[0];
-        this.player.ap -= 2;
-        
-        this.log(`👉 <b>[${card.name}]</b> 사용!`);
-        
-        // ✨ 발동 주체(this.player)를 전달
+        this.player.ap -= 2; this.log(`👉 <b>[${card.name}]</b> 사용!`);
         await this.triggerCardActionAnim(card, this.player);
-        
         await this.executeCard(card, this.player, this.enemy);
-        
-        this.player.grave.push(card);
-        await this.triggerGraveEffect(this.player, card); 
-        
-        this.updateBattleUI();
-        this.isProcessing = false; // ✨ 처리가 다 끝났으므로 자물쇠 풀기
-        
-        if(this.checkEndGame()) return;
-        setTimeout(() => this.checkPlayable(), 500);
+        this.player.grave.push(card); await this.triggerGraveEffect(this.player, card); 
+        this.updateBattleUI(); this.isProcessing = false;
+        if(this.checkEndGame()) return; setTimeout(() => this.checkPlayable(), 500);
     }
 
-    // --- 신규 UI 액션 함수들 ---
     stageCard(idx) {
-        // ✨ 신규: 플레이어 턴이 아니거나, 턴 종료 중이거나, 카드 처리 중일 때는 터치 무시
         if(this.turn !== 'player' || this.isEndingTurn || this.isProcessing) return;
-        this.stagedCardIndex = idx;
-        this.updateBattleUI(); 
+        this.stagedCardIndex = idx; this.updateBattleUI(); 
     }
 
-    // ✨ 누가 썼는지(entity) 인자 추가
     async triggerCardActionAnim(card, entity) {
         const stageSlot = document.getElementById('staged-card-slot');
         let tagClass = this.getTagClass(card.tags);
-        
         let glowColor = 'rgba(255, 255, 255, 0.5)';
         if(card.tags.includes('공격')) glowColor = 'rgba(255, 77, 77, 0.8)';
         if(card.tags.includes('유틸리티')) glowColor = 'rgba(77, 166, 255, 0.8)';
         if(card.tags.includes('버프')) glowColor = 'rgba(255, 204, 0, 0.8)';
         if(card.tags.includes('엘리트')) glowColor = 'rgba(204, 51, 255, 0.9)';
-
-        // 내부 카드 div에 CSS transition(부드러운 이동) 속성 추가
         stageSlot.innerHTML = `<div id="anim-card-inner" class="card-mini ${tagClass}" style="width: 100%; height: 100%; max-width: none; font-size: 1.05rem; pointer-events: none; transition: transform 0.4s ease-in, opacity 0.4s ease-in;">${card.name}</div>`;
         stageSlot.style.border = 'none';
-        
         const innerCard = document.getElementById('anim-card-inner');
-        
-        // 1. 후광 및 약간 커짐 (시전 대기)
-        innerCard.style.boxShadow = `0 0 25px 5px ${glowColor}`;
-        innerCard.style.transform = 'scale(1.15)';
-        
-        await sleep(300); // 플레이어가 카드를 인식하는 0.3초 대기
-        
-        // ✨ 2. 화면 밖으로 슬라이드 이동하며 소멸
-        if (entity === this.player) {
-            innerCard.style.transform = 'translate(-250px, 0) scale(1.15)'; // 플레이어는 좌측 밖으로
-        } else {
-            innerCard.style.transform = 'translate(250px, 0) scale(1.15)';  // 적은 우측 밖으로
-        }
-        innerCard.style.opacity = '0'; // 서서히 투명해짐
-        
-        await sleep(400); // 날아가는 시간 0.4초 대기
-        
-        stageSlot.innerHTML = ''; // 슬롯 완전히 비우기
+        innerCard.style.boxShadow = `0 0 25px 5px ${glowColor}`; innerCard.style.transform = 'scale(1.15)';
+        await sleep(300);
+        if (entity === this.player) innerCard.style.transform = 'translate(-250px, 0) scale(1.15)';
+        else innerCard.style.transform = 'translate(250px, 0) scale(1.15)';
+        innerCard.style.opacity = '0'; await sleep(400); stageSlot.innerHTML = '';
     }
-
 
     playStagedCard() {
         if(this.turn !== 'player' || this.isEndingTurn || this.stagedCardIndex === -1 || this.isProcessing) return;
-        if(this.player.ap < 2) {
-            this.log("AP가 부족합니다.");
-            this.playShakeOnly(); 
-            return;
-        }
-        this.isProcessing = true; // ✨ 신규: 카드를 내는 순간 다른 행동 못하게 자물쇠 닫기
-        let idx = this.stagedCardIndex;
-        this.stagedCardIndex = -1; 
-        this.playCard(idx); 
+        if(this.player.ap < 2) { this.log("AP가 부족합니다."); this.playShakeOnly(); return; }
+        this.isProcessing = true; let idx = this.stagedCardIndex; this.stagedCardIndex = -1; this.playCard(idx); 
     }
 
-// ✨ 수정됨: 데미지 뿐만 아니라 회복, Guard 등 다양한 텍스트를 띄우도록 변경
+    cancelStagedCard() {
+        if(this.turn !== 'player' || this.isEndingTurn || this.isProcessing) return;
+        this.stagedCardIndex = -1; this.updateBattleUI(); 
+    }
+
     showFloatingText(entity, text, color = '#ff4d4d') {
         const targetId = entity === this.player ? 'player-info' : 'enemy-info';
         const box = document.getElementById(targetId);
-        
-        // 텍스트 내용에 따라 박스 흔들림/확대 연출 분기
-        if (text === 'Guard!') {
-            box.classList.remove('anim-guard', 'anim-shake');
-            void box.offsetWidth;
-            box.classList.add('anim-guard');
-        } else if (color !== '#00ff00') { // 회복(초록색)일 때는 박스를 흔들지 않음
-            box.classList.remove('anim-guard', 'anim-shake');
-            void box.offsetWidth;
-            box.classList.add('anim-shake');
-        }
-
-        const floatEl = document.createElement('div');
-        floatEl.className = 'floating-dmg';
-        floatEl.style.color = color;
-        floatEl.innerText = text;
-        
-        const container = document.getElementById('game-container');
-        const boxRect = box.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-
-        floatEl.style.left = (boxRect.left - containerRect.left + boxRect.width / 2) + 'px';
-        floatEl.style.top = (boxRect.top - containerRect.top + 20) + 'px'; 
-
-        container.appendChild(floatEl);
-        
-        setTimeout(() => { if(floatEl.parentNode) floatEl.remove(); }, 1000);
+        if (text === 'Guard!') { box.classList.remove('anim-guard', 'anim-shake'); void box.offsetWidth; box.classList.add('anim-guard'); }
+        else if (color !== '#00ff00') { box.classList.remove('anim-guard', 'anim-shake'); void box.offsetWidth; box.classList.add('anim-shake'); }
+        const floatEl = document.createElement('div'); floatEl.className = 'floating-dmg'; floatEl.style.color = color; floatEl.innerText = text;
+        const container = document.getElementById('game-container'); const boxRect = box.getBoundingClientRect(); const containerRect = container.getBoundingClientRect();
+        floatEl.style.left = (boxRect.left - containerRect.left + boxRect.width / 2) + 'px'; floatEl.style.top = (boxRect.top - containerRect.top + 20) + 'px'; 
+        container.appendChild(floatEl); setTimeout(() => floatEl.parentNode && floatEl.remove(), 1000);
     }
 
-    // ✨ 신규: 덱에서 카드가 뽑혀나오는 연출
     async playDrawAnim() {
-        const deckBtn = document.getElementById('btn-deck');
-        const container = document.getElementById('game-container');
+        const deckBtn = document.getElementById('btn-deck'); const container = document.getElementById('game-container');
         if (!deckBtn || !container) return;
-
-        const btnRect = deckBtn.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-
-        const fly = document.createElement('div');
-        fly.className = 'draw-anim-card';
-        // 덱 버튼의 중앙 즈음에서 생성
-        fly.style.left = (btnRect.left - containerRect.left + 15) + 'px';
-        fly.style.top = (btnRect.top - containerRect.top + 5) + 'px';
-
-        container.appendChild(fly);
-        setTimeout(() => { if (fly.parentNode) fly.remove(); }, 300);
+        const btnRect = deckBtn.getBoundingClientRect(); const containerRect = container.getBoundingClientRect();
+        const fly = document.createElement('div'); fly.className = 'draw-anim-card';
+        fly.style.left = (btnRect.left - containerRect.left + 15) + 'px'; fly.style.top = (btnRect.top - containerRect.top + 5) + 'px';
+        container.appendChild(fly); setTimeout(() => fly.parentNode && fly.remove(), 300);
     }
 
     async enemyAI() {
         while(this.enemy.ap >= 2 && this.enemy.hand.length > 0 && !this.isEndingTurn) {
             const idx = Math.floor(Math.random() * this.enemy.hand.length);
             const card = this.enemy.hand.splice(idx, 1)[0];
-            this.enemy.ap -= 2;
-
-            this.log(`💀 적 <b>[${card.name}]</b> 사용!`);
-            
-            // ✨ 발동 주체(this.enemy)를 전달
+            this.enemy.ap -= 2; this.log(`💀 적 <b>[${card.name}]</b> 사용!`);
             await this.triggerCardActionAnim(card, this.enemy);
-
             await this.executeCard(card, this.enemy, this.player);
-            
-            this.enemy.grave.push(card);
-            await this.triggerGraveEffect(this.enemy, card);
-
-            this.updateBattleUI();
-            if(this.checkEndGame()) return;
-            await sleep(300); 
+            this.enemy.grave.push(card); await this.triggerGraveEffect(this.enemy, card);
+            this.updateBattleUI(); if(this.checkEndGame()) return; await sleep(300); 
         }
-        
-        if (!this.isEndingTurn) {
-            this.log("적 턴 종료.");
-            await sleep(1000);
-            this.endTurn();
-        }
+        if (!this.isEndingTurn) { this.log("적 턴 종료."); await sleep(1000); this.endTurn(); }
     }
 
     async dealDamage(target, amount, type, statusType = '', isMultiHit = false, isReflection = false) {
-        if (this.globalStatus.blindness > 0) {
-            this.log(` 🕶️ 실명 효과로 인해 피해 무효화!`); return;
-        }
-
+        if (this.globalStatus.blindness > 0) { this.log(` 🕶️ 실명 효과로 인해 피해 무효화!`); return; }
         let opponent = target === this.player ? this.enemy : this.player;
         let reflectDmg = 0;
-
         if (type === 'physical') {
-            if (!isReflection && target.statuses.thorn_armor > 0) {
-                reflectDmg = Math.floor(amount / 2);
-                amount -= reflectDmg;
-                this.log(` 🛡️ [가시갑옷] 물리피해 ${reflectDmg} 감소 및 반사!`);
-            }
-
+            if (!isReflection && target.statuses.thorn_armor > 0) { reflectDmg = Math.floor(amount / 2); amount -= reflectDmg; this.log(` 🛡️ [가시갑옷] 물리피해 ${reflectDmg} 감소 및 반사!`); }
             if (target.statuses.patience_turns > 0) {
-                target.statuses.patience_val += amount;
-                this.log(` 🕸️ [인내] ${amount} 피해 누적! (현재: ${target.statuses.patience_val})`);
-                
-                if (target.statuses.patience_val >= 400) {
-                    this.log(` <b style="color:#ff4d4d;">🕸️ 누적된 피해가 400을 초과하여 거미줄이 끊어졌습니다! 강제 결산!</b>`);
-                    let snapDmg = target.statuses.patience_val;
-                    target.statuses.patience_turns = 0;
-                    target.statuses.patience_val = 0;
-                    await this.dealDamage(target, snapDmg, 'status', 'patience');
-                }
+                target.statuses.patience_val += amount; this.log(` 🕸️ [인내] ${amount} 피해 누적! (현재: ${target.statuses.patience_val})`);
+                if (target.statuses.patience_val >= 400) { this.log(` <b style="color:#ff4d4d;">🕸️ 누적 피해 400 초과, 거미줄 파괴! 강제 결산!</b>`); let snapDmg = target.statuses.patience_val; target.statuses.patience_turns = 0; target.statuses.patience_val = 0; await this.dealDamage(target, snapDmg, 'status', 'patience'); }
             } else {
-                let finalDmg = Math.max(0, amount - target.defense);
-                let blocked = amount - finalDmg;
-                target.hp -= finalDmg;
-                target.defense = Math.max(0, target.defense - amount);
-                
-                if (finalDmg > 0) {
-                    this.log(` ⚔️ ${target.name}에게 ${finalDmg}의 물리피해!` + (blocked > 0 ? ` (방어도 ${blocked} 상쇄)` : ``));
-                    // ✨ 텍스트 팝업 함수명 변경 반영
-                    this.showFloatingText(target, `-${finalDmg}`, '#ff4d4d'); 
-                    await this.playPhysicalFX(isMultiHit);
-                } else {
-                    this.log(` 🛡️ 방어력에 막혀 피해를 주지 못했습니다! (방어도 ${blocked} 상쇄)`);
-                    // ✨ 신규: 물리 피해를 완전히 막았을 때 Guard 연출
-                    if (amount > 0) {
-                        this.showFloatingText(target, 'Guard!', '#4da6ff');
-                    }
-                }
+                let finalDmg = Math.max(0, amount - target.defense); let blocked = amount - finalDmg;
+                target.hp -= finalDmg; target.defense = Math.max(0, target.defense - amount);
+                if (finalDmg > 0) { this.log(` ⚔️ ${target.name}에게 ${finalDmg}의 물리피해!` + (blocked > 0 ? ` (방어도 ${blocked} 상쇄)` : ``)); this.showFloatingText(target, `-${finalDmg}`, '#ff4d4d'); await this.playPhysicalFX(isMultiHit); }
+                else { this.log(` 🛡️ 방어력 상쇄!`); if (amount > 0) this.showFloatingText(target, 'Guard!', '#4da6ff'); }
             }
-
-            if (reflectDmg > 0 && !this.checkEndGame()) {
-                await this.dealDamage(opponent, reflectDmg, 'physical', '', false, true);
-            }
-
+            if (reflectDmg > 0 && !this.checkEndGame()) await this.dealDamage(opponent, reflectDmg, 'physical', '', false, true);
         } else if (type === 'status') {
-            if (!isReflection && target.statuses.silent_night > 0) {
-                reflectDmg = Math.floor(amount / 2);
-                amount -= reflectDmg;
-                this.log(` 🌙 [고요한 밤] 상태이상 피해 ${reflectDmg} 감소 및 반사!`);
-            }
-
-            target.hp -= amount;
-            this.log(` 🩸 ${target.name}에게 ${amount}의 상태이상 피해!`);
-            
-            // ✨ 상태이상 데미지 플로팅 출력 (보라색 계열)
-            this.showFloatingText(target, amount, '#cc33ff'); 
-            
-            await this.playStatusFX(statusType);
-            
-            if (reflectDmg > 0 && !this.checkEndGame()) {
-                await this.dealDamage(opponent, reflectDmg, 'status', statusType, false, true);
-            }
+            if (!isReflection && target.statuses.silent_night > 0) { reflectDmg = Math.floor(amount / 2); amount -= reflectDmg; this.log(` 🌙 [고요한 밤] 상태이상 피해 ${reflectDmg} 감소 및 반사!`); }
+            target.hp -= amount; this.log(` 🩸 ${target.name}에게 ${amount}의 상태이상 피해!`);
+            this.showFloatingText(target, amount, '#cc33ff'); await this.playStatusFX(statusType);
+            if (reflectDmg > 0 && !this.checkEndGame()) await this.dealDamage(opponent, reflectDmg, 'status', statusType, false, true);
         }
-        
-        this.updateBattleUI();
-        await sleep(300); 
+        this.updateBattleUI(); await sleep(300); 
     }
 
-async executeCard(card, caster, target) {
+    async executeCard(card, caster, target) {
         let isSpecialCard = false;
-
         if (card.name === "선견지명") {
             let stepIdx = caster.deck.findIndex(c => c.name === "스텝 밟기");
-            if (stepIdx > -1) {
-                let stepCard = caster.deck.splice(stepIdx, 1)[0];
-                caster.hand.push(stepCard);
-                this.log(` 👁️ 덱에서 [스텝 밟기]를 찾아 드로우했습니다.`);
-            } else {
-                this.log(` 👁️ 덱에 [스텝 밟기]가 없어 효과가 발동되지 않았습니다.`);
-            }
-            caster.ap += 4;
-            this.log(` ⚡ AP 4 회복!`);
-            isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
-        
-        } else if (card.name === "스텝 밟기") {
-            await this.drawCard(caster, 2);
-            caster.ap += 3;
-            this.log(` 🃏 2장 드로우 & ⚡ AP 3 회복!`);
-            isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
-
-        } else if (card.name === "전술적 구르기" || card.name === "감각 개화" || card.name === "주변 맴돌기") {
-            await this.drawCard(caster, 1);
-            caster.ap += 3;
-            this.log(` 🃏 1장 드로우 & ⚡ AP 3 회복!`);
-            isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
-
-        } else if (card.name === "토끼기사의 지혜") {
-            this.log(` 🐇 사용됨. (데미지 0)`);
-            isSpecialCard = true;
+            if (stepIdx > -1) { caster.hand.push(caster.deck.splice(stepIdx, 1)[0]); this.log(` 👁️ [스텝 밟기] 서치 성공.`); }
+            else this.log(` 👁️ [스텝 밟기]가 덱에 없습니다.`);
+            caster.ap += 4; this.log(` ⚡ AP 4 회복!`); isSpecialCard = true; this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy');
+        } else if (card.name === "스텝 밟기") { await this.drawCard(caster, 2); caster.ap += 3; this.log(` 🃏 2장 드로우 & ⚡ AP 3 회복!`); isSpecialCard = true; this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy');
+        } else if (card.name === "전술적 구르기" || card.name === "감각 개화" || card.name === "주변 맴돌기") { await this.drawCard(caster, 1); caster.ap += 3; this.log(` 🃏 1장 드로우 & ⚡ AP 3 회복!`); isSpecialCard = true; this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy');
+        } else if (card.name === "토끼기사의 지혜") { this.log(` 🐇 사용됨. (효과 없음)`); isSpecialCard = true;
         } else if (card.name === "구사일생") {
             let totalDmg = 0;
-            this.playerDeck.forEach(c => {
-                if (c.tags.includes("공격")) {
-                    let m = c.desc.match(/물리피해 (\d+)/);
-                    if (m) {
-                        let d = parseInt(m[1]);
-                        if(c.desc.includes("15x2")) d = 30;
-                        if(c.desc.includes("14x2")) d = 28;
-                        if(c.desc.includes("16x2")) d = 32;
-                        totalDmg += d;
-                    }
-                }
-            });
-            this.log(` 🆘 [구사일생] 공격 총 위력: ${totalDmg}!`);
-            await this.dealDamage(target, totalDmg, 'physical');
-            isSpecialCard = true;
-} else if (card.name === "절체절명") {
-            this.log(` 🌟 [절체절명] 모든 상태이상을 결산합니다!`);
+            this.playerDeck.forEach(c => { if (c.tags.includes("공격")) { let m = c.desc.match(/물리피해 (\d+)/); if (m) { let d = parseInt(m[1]); if(c.desc.includes("15x2")) d = 30; if(c.desc.includes("14x2")) d = 28; if(c.desc.includes("16x2")) d = 32; totalDmg += d; } } });
+            this.log(` 🆘 [구사일생] 총 위력: ${totalDmg}!`); await this.dealDamage(target, totalDmg, 'physical'); isSpecialCard = true;
+        } else if (card.name === "절체절명") {
+            this.log(` 🌟 [절체절명] 결산 시작!`);
             let pDmg = 0; let eDmg = 0;
-            
-            // ✨ 화상, 중독, 저주, 최후통첩, 인내까지 모두 결산 딜에 합산
-            ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k], this.player); });
-            ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { eDmg += this.calcSettlement(k, this.enemy.statuses[k], this.enemy); });
-            
-            if (pDmg > 0) await this.dealDamage(this.player, pDmg, 'physical');
-            if (eDmg > 0) await this.dealDamage(this.enemy, eDmg, 'physical');
-            
+            ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k], this.player); eDmg += this.calcSettlement(k, this.enemy.statuses[k], this.enemy); });
+            if (pDmg > 0) await this.dealDamage(this.player, pDmg, 'physical'); if (eDmg > 0) await this.dealDamage(this.enemy, eDmg, 'physical');
             if (this.player.hp <= 0 || this.enemy.hp <= 0) { isSpecialCard = true; return; }
-            
-            // ✨ 글로벌 상태이상(실명, 부채계약) 정화 로직 추가
-            this.globalStatus.blindness = 0;
-            this.globalStatus.debt_contract = 0;
-            
-            // ✨ 가시갑옷, 고요한 밤 포함 모두 초기화
+            this.globalStatus.blindness = 0; this.globalStatus.debt_contract = 0;
             this.player.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.enemy.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
+            let pHeal = this.player.maxHp - this.player.hp; let eHeal = this.enemy.maxHp - this.enemy.hp;
             this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
-            
-            let pHeal = this.player.maxHp - this.player.hp;
-            let eHeal = this.enemy.maxHp - this.enemy.hp;
-            
-            this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
-            if (pHeal > 0) this.showFloatingText(this.player, `+${pHeal}`, '#00ff00');
-            if (eHeal > 0) this.showFloatingText(this.enemy, `+${eHeal}`, '#00ff00');
-
-            this.log(` 🌟 [절체절명] 모든 상태이상 및 버프가 제거되고 양측 체력이 100% 회복되었습니다!`);
-            isSpecialCard = true;
-            
-        } else if (card.name === "중독") {
-            target.statuses.poison += 3; this.log(` ☠️ 중독 스택 3 부여!`); isSpecialCard = true;
-        } else if (card.name === "화상") {
-            target.statuses.burn += 4; this.log(` 🔥 화상 스택 4 부여!`); isSpecialCard = true;
-        } else if (card.name === "저주") {
-            target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
-        } else if (card.name === "기사의 신조") {
-            // ✨ 실명, 부채계약, 최후통첩, 인내 포함 모두 정화 가능
-            let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse', 'patience_turns', 'ultimatum'].includes(k) && caster.statuses[k] > 0);
-            if (this.globalStatus.blindness > 0) active.push('blindness');
-            if (this.globalStatus.debt_contract > 0) active.push('debt_contract');
-
-            if (active.length > 0) {
-                let toRemove = active[Math.floor(Math.random() * active.length)]; 
-                
-                if (toRemove === 'blindness') {
-                    this.globalStatus.blindness = 0;
-                } else if (toRemove === 'debt_contract') {
-                    this.globalStatus.debt_contract = 0;
-                } else {
-                    caster.statuses[toRemove] = 0; 
-                    if (toRemove === 'patience_turns') caster.statuses.patience_val = 0;
-                }
-                
-                let krName = toRemove === 'poison' ? '중독' : toRemove === 'burn' ? '화상' : toRemove === 'curse' ? '저주' : toRemove === 'patience_turns' ? '인내' : toRemove === 'ultimatum' ? '최후통첩' : toRemove === 'blindness' ? '실명' : '부채계약';
-                this.log(` ✨ ${caster.name}의 [${krName}] 상태이상이 정화되었습니다!`);
-            } else { this.log(` ✨ 정화할 상태이상이 없습니다.`); }
-            isSpecialCard = true;
-        } else if (card.name === "이행") {
-            // ✨ 최후통첩, 인내 포함하여 랜덤 폭발
-            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
-            if (active.length > 0) {
-                let toRemove = active[Math.floor(Math.random() * active.length)];
-                let dmg = this.calcSettlement(toRemove, target.statuses[toRemove], target);
-                
-                this.log(` ⚡ [이행] 무작위 상태이상 폭발!`);
-                await this.dealDamage(target, dmg, 'physical');
-
-                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
-                if (this.globalStatus.debt_contract <= 0) {
-                    target.statuses[toRemove] = 0;
-                    if (toRemove === 'patience_turns') target.statuses.patience_val = 0;
-                } else {
-                    this.log(` 📜 [부채계약] 효과로 폭발한 스택이 사라지지 않습니다!`);
-                }
-            }
-            isSpecialCard = true;
-        } else if (card.name === "결산") {
-            // ✨ 최후통첩, 인내 포함하여 모두 폭발
-            let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
-            let totalDmg = 0;
-            for (let k of active) { 
-                totalDmg += this.calcSettlement(k, target.statuses[k], target); 
-                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
-                if (this.globalStatus.debt_contract <= 0) {
-                    target.statuses[k] = 0;
-                    if (k === 'patience_turns') target.statuses.patience_val = 0;
-                }
-            }
-            if (totalDmg > 0) {
-                this.log(` 💥 [결산] 모든 상태이상 폭발!`);
-                await this.dealDamage(target, totalDmg, 'physical');
-                if (this.globalStatus.debt_contract > 0) {
-                    this.log(` 📜 [부채계약] 효과로 폭발한 모든 스택이 사라지지 않습니다!`);
-                }
-            }
-            isSpecialCard = true;
-        } else if (card.name === "거미줄을 딛고") {
-            caster.statuses.patience_turns = 4; this.log(` 🕸️ 4턴간 [인내] 상태 돌입.`); isSpecialCard = true;
-        } else if (card.name === "부채계약") {
-            this.globalStatus.debt_contract = 3; this.log(` 📜 [부채계약] 3턴 체결.`); isSpecialCard = true; // ✨ 3턴으로 변경됨
-        } else if (card.name === "실명") {
-            this.globalStatus.blindness = 2; this.log(` 🕶️ [실명] 발동.`); isSpecialCard = true;
-            this.playBlindAnim();
-        } else if (card.name === "가시갑옷") {
-            caster.statuses.thorn_armor += 3; this.log(` 🛡️ [가시갑옷] 3턴간 물리피해 50% 반사!`); isSpecialCard = true;
-        } else if (card.name === "고요한 밤") {
-            caster.statuses.silent_night += 3; this.log(` 🌙 [고요한 밤] 3턴간 상태이상 피해 50% 반사!`); isSpecialCard = true;
-            this.playNightAnim();
-        } else if (card.name === "깨달음") {
-            let pool = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.tags.includes("공격") && !this.playerDeck.some(pd => pd.id === c.id));
-            if (pool.length > 0) {
-                let picked = pool[Math.floor(Math.random() * pool.length)];
-                this.log(` 💡 [깨달음] 발동! 랜덤 공격 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가: 덱에서 튀어나와서 시전됨!
-                await this.executeCard(picked, caster, target);
-            } else { this.log(` 💡 [깨달음] 시전할 수 있는 카드가 없습니다.`); }
-            isSpecialCard = true;
-        } else if (card.name === "호기심") {
-            let pool = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.tags.includes("유틸리티") && !this.playerDeck.some(pd => pd.id === c.id));
-            if (pool.length > 0) {
-                let picked = pool[Math.floor(Math.random() * pool.length)];
-                this.log(` 💡 [호기심] 발동! 랜덤 유틸 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
-                await this.executeCard(picked, caster, target);
-            } else { this.log(` 💡 [호기심] 시전할 수 있는 카드가 없습니다.`); }
-            isSpecialCard = true;
-        } else if (card.name === "성급한 결정") {
-            let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); 
-            if (pool.length > 0) {
-                let picked = pool[Math.floor(Math.random() * pool.length)];
-                this.log(` 💡 [성급한 결정] 발동! 랜덤 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
-                await this.executeCard(picked, caster, target);
-            }
-            isSpecialCard = true;
-        } else if (card.name === "성급한 결정") {
-            let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); // 무한 루프 방지
-            if (pool.length > 0) {
-                let picked = pool[Math.floor(Math.random() * pool.length)];
-                this.log(` 💡 [성급한 결정] 발동! 랜덤 카드 [${picked.name}] 시전!`);
-                await this.executeCard(picked, caster, target);
-            }
-            isSpecialCard = true;
-        } else if (card.name === "만류귀종") {
-            target.statuses.ultimatum = (target.statuses.ultimatum || 0) + 1;
-            this.log(` ⏳ [만류귀종] ${target.name}에게 최후통첩 1 부여!`);
+            if (pHeal > 0) this.showFloatingText(this.player, `+${pHeal}`, '#00ff00'); if (eHeal > 0) this.showFloatingText(this.enemy, `+${eHeal}`, '#00ff00');
+            this.log(` 🌟 HP 완전 회복 및 정화 완료.`); isSpecialCard = true;
+        } else if (card.name === "중독") { target.statuses.poison += 3; isSpecialCard = true;
+        } else if (card.name === "화상") { target.statuses.burn += 4; isSpecialCard = true;
+        } else if (card.name === "저주") { target.statuses.curse += 7; isSpecialCard = true;
+        } else if (card.name === "실명") { this.globalStatus.blindness = 2; isSpecialCard = true; this.playBlindAnim();
+        } else if (card.name === "고요한 밤") { caster.statuses.silent_night += 3; isSpecialCard = true; this.playNightAnim();
+        } else if (card.name === "가시갑옷") { caster.statuses.thorn_armor += 3; isSpecialCard = true;
+        } else if (card.name === "깨달음" || card.name === "호기심" || card.name === "성급한 결정") {
+            let pool;
+            if (card.name === "깨달음") pool = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.tags.includes("공격") && !this.playerDeck.some(pd => pd.id === c.id));
+            else if (card.name === "호기심") pool = CARD_DB.filter(c => !c.tags.includes("엘리트") && c.tags.includes("유틸리티") && !this.playerDeck.some(pd => pd.id === c.id));
+            else pool = CARD_DB.filter(c => c.name !== "성급한 결정");
+            if (pool.length > 0) { let picked = pool[Math.floor(Math.random() * pool.length)]; this.log(` 💡 [${card.name}] 발동! [${picked.name}] 시전!`); await this.triggerCardActionAnim(picked, caster); await this.executeCard(picked, caster, target); }
             isSpecialCard = true;
         }
-
         if (!isSpecialCard) {
-            let dmgMatch = card.desc.match(/물리피해 (\d+)/);
-            if(dmgMatch) {
-                let dmg = parseInt(dmgMatch[1]);
-                let isMulti = false;
-                if(card.desc.includes("15x2")) { dmg = 30; isMulti = true; }
-                if(card.desc.includes("14x2")) { dmg = 28; isMulti = true; }
-                if(card.desc.includes("16x2")) { dmg = 32; isMulti = true; }
-                await this.dealDamage(target, dmg, 'physical', '', isMulti);
-            }
-            
-            let drawMatch = card.desc.match(/(\d+)장 드로우/);
-            if (drawMatch) { 
-                await this.drawCard(caster, parseInt(drawMatch[1]));
-                this.log(` 🃏 ${drawMatch[1]}장 드로우!`);
-            }
-            let apMatch = card.desc.match(/AP (\d+) 회복/);
-            if (apMatch) {
-                caster.ap += parseInt(apMatch[1]);
-                this.log(` ⚡ AP ${apMatch[1]} 회복!`);
-                this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy');
-            }
+            let dmgM = card.desc.match(/물리피해 (\d+)/);
+            if(dmgM) { let dmg = parseInt(dmgM[1]); if(card.desc.includes("15x2")) dmg = 30; if(card.desc.includes("14x2")) dmg = 28; if(card.desc.includes("16x2")) dmg = 32; await this.dealDamage(target, dmg, 'physical', '', card.desc.includes("x2")); }
+            let drawM = card.desc.match(/(\d+)장 드로우/); if (drawM) await this.drawCard(caster, parseInt(drawM[1]));
+            let apM = card.desc.match(/AP (\d+) 회복/); if (apM) { caster.ap += parseInt(apM[1]); this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); }
         }
-
-        let defMatch = card.desc.match(/방어도 (\d+)/);
-        if(defMatch) { caster.defense += parseInt(defMatch[1]); this.log(` 🛡️ 방어도 증가.`); }
-
-        let healMatch = card.desc.match(/HP회복 (\d+)|HP (\d+) 회복/);
-        if(healMatch) {
-            let heal = parseInt(healMatch[1] || healMatch[2]);
-            let oldHp = caster.hp;
-            caster.hp = Math.min(caster.maxHp, caster.hp + heal);
-            
-            // ✨ 신규: 실제 회복된 만큼만 +숫자로 표기
-        let actualHeal = caster.hp - oldHp;
-        if (actualHeal > 0) {
-            this.log(` 💚 HP ${actualHeal} 회복.`);
-            this.showFloatingText(caster, `+${actualHeal}`, '#00ff00');
-            }
-        }
-
-        this.updateBattleUI();
-        await sleep(300);
+        let defM = card.desc.match(/방어도 (\d+)/); if(defM) caster.defense += parseInt(defM[1]);
+        let healM = card.desc.match(/HP회복 (\d+)|HP (\d+) 회복/);
+        if(healM) { let heal = parseInt(healM[1] || healM[2]); let old = caster.hp; caster.hp = Math.min(caster.maxHp, caster.hp + heal); let act = caster.hp - old; if (act > 0) this.showFloatingText(caster, `+${act}`, '#00ff00'); }
+        this.updateBattleUI(); await sleep(300);
     }
 
     async processEndTurnStatuses(entity) {
-        let tookDamage = false;
-        let keepStack = this.globalStatus.debt_contract > 0; 
-
-        if (entity.statuses.poison > 0) {
-            this.log(`[상태이상] ☠️중독 발동!`);
-            await this.dealDamage(entity, entity.statuses.poison * 8, 'status', 'poison');
-            if (!keepStack) entity.statuses.poison--;
-            tookDamage = true;
-        }
-        if (entity.statuses.burn > 0) {
-            this.log(`[상태이상] 🔥화상 발동!`);
-            await this.dealDamage(entity, entity.statuses.burn * 6, 'status', 'burn');
-            if (!keepStack) entity.statuses.burn--;
-            tookDamage = true;
-        }
-        if (entity.statuses.curse > 0) {
-            this.log(`[상태이상] 🔮저주 발동!`);
-            await this.dealDamage(entity, entity.statuses.curse * 3, 'status', 'curse');
-            if (!keepStack) entity.statuses.curse--;
-            tookDamage = true;
-        }
-
-        if (entity.statuses.ultimatum > 0) {
-            this.log(`[상태이상] ⏳최후통첩(선고) 발동!`);
-            let sentenceDmg = 0;
-            CARD_DB.forEach(c => {
-                if (c.tags.includes("공격") && !c.tags.includes("엘리트") && !c.tags.includes("버프") && !c.tags.includes("유틸리티")) {
-                    let m = c.desc.match(/물리피해 (\d+)/);
-                    if (m) {
-                        let d = parseInt(m[1]);
-                        if(c.desc.includes("15x2")) d = 30;
-                        if(c.desc.includes("14x2")) d = 28;
-                        if(c.desc.includes("16x2")) d = 32;
-                        sentenceDmg += d;
-                    }
-                }
-            });
-            await this.dealDamage(entity, sentenceDmg, 'status', 'curse');
-            if (!keepStack) entity.statuses.ultimatum--;
-            tookDamage = true;
-        }
-
-        if (entity.statuses.patience_turns > 0) {
-            if (!keepStack) entity.statuses.patience_turns--;
-            if (entity.statuses.patience_turns <= 0) {
-                if (entity.statuses.patience_val > 0) {
-                    this.log(`[상태이상] 🕸️인내 결산!`);
-                    await this.dealDamage(entity, entity.statuses.patience_val, 'status', 'patience');
-                }
-                entity.statuses.patience_val = 0;
-                tookDamage = true;
-            }
-        }
-        
-        if (entity.statuses.thorn_armor > 0) {
-            entity.statuses.thorn_armor--;
-            if (entity.statuses.thorn_armor <= 0) this.log(`[버프 종료] 🛡️가시갑옷이 해제되었습니다.`);
-        }
-        if (entity.statuses.silent_night > 0) {
-            entity.statuses.silent_night--;
-            if (entity.statuses.silent_night <= 0) this.log(`[버프 종료] 🌙고요한 밤이 해제되었습니다.`);
-        }
-
-        if (tookDamage) await sleep(500);
+        let took = false; let keep = this.globalStatus.debt_contract > 0; 
+        if (entity.statuses.poison > 0) { await this.dealDamage(entity, entity.statuses.poison * 8, 'status', 'poison'); if (!keep) entity.statuses.poison--; took = true; }
+        if (entity.statuses.burn > 0) { await this.dealDamage(entity, entity.statuses.burn * 6, 'status', 'burn'); if (!keep) entity.statuses.burn--; took = true; }
+        if (entity.statuses.curse > 0) { await this.dealDamage(entity, entity.statuses.curse * 3, 'status', 'curse'); if (!keep) entity.statuses.curse--; took = true; }
+        if (entity.statuses.patience_turns > 0) { if (!keep) entity.statuses.patience_turns--; if (entity.statuses.patience_turns <= 0) { if (entity.statuses.patience_val > 0) await this.dealDamage(entity, entity.statuses.patience_val, 'status', 'patience'); entity.statuses.patience_val = 0; took = true; } }
+        if (entity.statuses.thorn_armor > 0) entity.statuses.thorn_armor--;
+        if (entity.statuses.silent_night > 0) entity.statuses.silent_night--;
+        if (took) await sleep(500);
     }
 
-async endTurn() {
-        let currentEntity = this.turn === 'player' ? this.player : this.enemy;
-        await this.processEndTurnStatuses(currentEntity);
-
+    async endTurn() {
+        let current = this.turn === 'player' ? this.player : this.enemy;
+        await this.processEndTurnStatuses(current);
         if(this.checkEndGame()) return;
-
-        // ✨ 실명은 부채계약이 없을 때만 턴이 감소합니다.
-        if (this.globalStatus.blindness > 0 && this.globalStatus.debt_contract <= 0) {
-            this.globalStatus.blindness--;
-        }
-        // 부채계약 턴 자체는 매 턴마다 자연 감소합니다.
-        if (this.globalStatus.debt_contract > 0) {
-            this.globalStatus.debt_contract--;
-        }
-
+        if (this.globalStatus.blindness > 0 && this.globalStatus.debt_contract <= 0) this.globalStatus.blindness--;
+        if (this.globalStatus.debt_contract > 0) this.globalStatus.debt_contract--;
         this.turn = this.turn === 'player' ? 'enemy' : 'player';
         this.runTurn();
     }
 
-checkEndGame() {
-        if (this.isGameOver) return true; // ✨ 1번 판정이 났으면 무조건 통과 (중복 실행 방지)
-
-        if (this.player.hp <= 0 && this.enemy.hp <= 0) {
+    checkEndGame() {
+        if (this.isGameOver) return true;
+        if (this.player.hp <= 0 || this.enemy.hp <= 0) {
             this.isGameOver = true;
-            this.log("<br><b style='color:#ff4d4d'>동시 사망! (플레이어 패배 판정)</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
-            return true;
-        }
-        if(this.enemy.hp <= 0) {
-            this.isGameOver = true;
-            this.log("<br><b style='color:#00ff00'>전투 승리!</b>");
-            if (this.enemy.isBoss) this.bossKills++; 
-            this.score++;
-            this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp, isBoss: this.enemy.isBoss }; 
-            setTimeout(() => this.startRewardPhase(), 1500);
-            return true;
-        }
-        if(this.player.hp <= 0) {
-            this.isGameOver = true;
-            this.log("<br><b style='color:#ff4d4d'>전투 패배...</b>");
-            setTimeout(() => { document.getElementById('final-score').innerText = `격파한 적: ${this.score}명`; this.changeScreen('gameover'); }, 2000);
+            if (this.enemy.hp <= 0) { this.log("<br><b style='color:#00ff00'>승리!</b>"); if (this.enemy.isBoss) this.bossKills++; this.score++; this.lastEnemyData = { name: this.enemy.name, maxHp: this.enemy.maxHp, isBoss: this.enemy.isBoss }; setTimeout(() => this.startRewardPhase(), 1500); }
+            else { this.log("<br><b style='color:#ff4d4d'>패배...</b>"); setTimeout(() => { document.getElementById('final-score').innerText = `격파 수: ${this.score}`; this.changeScreen('gameover'); }, 2000); }
             return true;
         }
         return false;
@@ -1701,143 +928,61 @@ checkEndGame() {
 
     formatStatus(entity) {
         let res = [];
-        // ✨ 상태이상을 아이콘+수치 형태로 극한의 압축
-        if(entity.statuses.poison > 0) res.push(`<span style="color:#00ff00;" title="중독">☠️${entity.statuses.poison}</span>`);
-        if(entity.statuses.burn > 0) res.push(`<span style="color:#ff4d4d;" title="화상">🔥${entity.statuses.burn}</span>`);
-        if(entity.statuses.curse > 0) res.push(`<span style="color:#cc33ff;" title="저주">🔮${entity.statuses.curse}</span>`);
-        if(entity.statuses.ultimatum > 0) res.push(`<span style="color:#ffaa00;" title="최후통첩">⏳${entity.statuses.ultimatum}</span>`);
-        if(entity.statuses.patience_turns > 0) res.push(`<span style="color:#aaaaaa;" title="인내">🕸️${entity.statuses.patience_val}(${entity.statuses.patience_turns}턴)</span>`);
-        if(entity.statuses.thorn_armor > 0) res.push(`<span style="color:#cccccc;" title="가시갑옷">🛡️${entity.statuses.thorn_armor}</span>`);
-        if(entity.statuses.silent_night > 0) res.push(`<span style="color:#99ccff;" title="고요한 밤">🌙${entity.statuses.silent_night}</span>`);
+        if(entity.statuses.poison > 0) res.push(`<span style="color:#00ff00;">☠️${entity.statuses.poison}</span>`);
+        if(entity.statuses.burn > 0) res.push(`<span style="color:#ff4d4d;">🔥${entity.statuses.burn}</span>`);
+        if(entity.statuses.curse > 0) res.push(`<span style="color:#cc33ff;">🔮${entity.statuses.curse}</span>`);
+        if(entity.statuses.patience_turns > 0) res.push(`<span style="color:#aaaaaa;">🕸️${entity.statuses.patience_val}(${entity.statuses.patience_turns})</span>`);
+        if(entity.statuses.thorn_armor > 0) res.push(`<span style="color:#cccccc;">🛡️${entity.statuses.thorn_armor}</span>`);
+        if(entity.statuses.silent_night > 0) res.push(`<span style="color:#99ccff;">🌙${entity.statuses.silent_night}</span>`);
         return res.join(' ');
     }
 
-updateBattleUI() {
+    updateBattleUI() {
         let pStatus = this.formatStatus(this.player);
         let eStatus = this.formatStatus(this.enemy);
-
-        let globalEffects = [];
-        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff;" title="실명">🕶️${this.globalStatus.blindness}</span>`);
-        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00;" title="부채계약">📜${this.globalStatus.debt_contract}</span>`);
-        let globalStr = globalEffects.join(' ');
-
-        // ✨ 수정됨: 플레이어와 적 양쪽 모두에게 글로벌 효과를 병합하여 표기
-        let pCombinedStatus = [globalStr, pStatus].filter(s => s).join(' '); 
-        let eCombinedStatus = [globalStr, eStatus].filter(s => s).join(' '); 
-
-        let eBox = document.getElementById('enemy-info');
-        let pBox = document.getElementById('player-info');
-        
-        if (this.turn === 'player') {
-            pBox.style.borderColor = '#4da6ff'; 
-            eBox.style.borderColor = '#444';
-        } else if (this.turn === 'enemy') {
-            pBox.style.borderColor = '#444';
-            eBox.style.borderColor = '#ff4d4d'; 
-        }
-
-        let eNameDisplay = this.enemy.isBoss ? `<span style="color:#cc33ff;">${this.enemy.name}</span>` : this.enemy.name;
-        
-        let pStatusHTML = pCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${pCombinedStatus}</div>` : '';
-        // ✨ 수정됨: eStatus 대신 eCombinedStatus 적용
-        let eStatusHTML = eCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${eCombinedStatus}</div>` : ''; 
-
-        eBox.innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어: ${this.enemy.defense}${eStatusHTML}`;
-        pBox.innerHTML = `<b>${this.player.name}</b><br>HP: ${this.player.hp} | 방어: ${this.player.defense}${pStatusHTML}`;
-        
+        let gEff = [];
+        if (this.globalStatus.blindness > 0) gEff.push(`<span style="color:#fff;">🕶️${this.globalStatus.blindness}</span>`);
+        if (this.globalStatus.debt_contract > 0) gEff.push(`<span style="color:#ffcc00;">📜${this.globalStatus.debt_contract}</span>`);
+        let gStr = gEff.join(' ');
+        let eBox = document.getElementById('enemy-info'), pBox = document.getElementById('player-info');
+        if (this.turn === 'player') { pBox.style.borderColor = '#4da6ff'; eBox.style.borderColor = '#444'; }
+        else { pBox.style.borderColor = '#444'; eBox.style.borderColor = '#ff4d4d'; }
+        eBox.innerHTML = `<b>${this.enemy.isBoss ? `<span style="color:#cc33ff;">${this.enemy.name}</span>` : this.enemy.name}</b><br>HP: ${this.enemy.hp} | 방어: ${this.enemy.defense}<br>${[gStr, eStatus].filter(s=>s).join(' ')}`;
+        pBox.innerHTML = `<b>${this.player.name}</b><br>HP: ${this.player.hp} | 방어: ${this.player.defense}<br>${[gStr, pStatus].filter(s=>s).join(' ')}`;
         document.getElementById('btn-deck').innerHTML = `덱<br>(${this.player.deck.length})`;
         document.getElementById('btn-grave').innerHTML = `무덤<br>(${this.player.grave.length})`;
-
-        const handBox = document.getElementById('hand-box');
-        handBox.innerHTML = '';
+        const handBox = document.getElementById('hand-box'); handBox.innerHTML = '';
         this.player.hand.forEach((card, idx) => {
-            if (idx === this.stagedCardIndex) return; 
-            let tagClass = this.getTagClass(card.tags);
-            let el = document.createElement('div');
-            el.className = `card-mini ${tagClass}`;
-            el.innerText = card.name;
-            el.onclick = () => this.stageCard(idx); 
-            handBox.appendChild(el);
+            if (idx === this.stagedCardIndex) return;
+            let el = document.createElement('div'); el.className = `card-mini ${this.getTagClass(card.tags)}`; el.innerText = card.name;
+            el.onclick = () => this.stageCard(idx); handBox.appendChild(el);
         });
-
         const stageSlot = document.getElementById('staged-card-slot');
         if (this.stagedCardIndex !== -1) {
             let card = this.player.hand[this.stagedCardIndex];
-            let tagClass = this.getTagClass(card.tags);
-            stageSlot.innerHTML = `<div class="card-mini ${tagClass}" style="width: 100%; height: 100%; max-width: none; font-size: 1rem;">${card.name}</div>`;
-            stageSlot.style.border = 'none';
-            stageSlot.onclick = () => this.showCardDetail(card); 
-
-            document.getElementById('btn-use-card').disabled = false;
+            stageSlot.innerHTML = `<div class="card-mini ${this.getTagClass(card.tags)}" style="width: 100%; height: 100%; max-width: none; font-size: 1rem;">${card.name}</div>`;
+            stageSlot.style.border = 'none'; stageSlot.onclick = () => this.showCardDetail(card);
+            document.getElementById('btn-use-card').disabled = false; document.getElementById('btn-cancel-card').disabled = false;
         } else {
             stageSlot.innerHTML = `<span style="color: #777;">카드 올리기</span>`;
-            stageSlot.style.border = '2px dashed #555';
-            stageSlot.onclick = null;
-
-            document.getElementById('btn-use-card').disabled = true;
+            stageSlot.style.border = '2px dashed #555'; stageSlot.onclick = null;
+            document.getElementById('btn-use-card').disabled = true; document.getElementById('btn-cancel-card').disabled = true;
         }
     }
 
-    triggerFX(className) {
-        const oldFx = document.getElementById('fx-layer');
-        const newFx = oldFx.cloneNode(true);
-        newFx.className = `hit-effect ${className}`;
-        oldFx.parentNode.replaceChild(newFx, oldFx);
-    }
-
-    playShakeOnly() {
-        const c = document.getElementById('game-container');
-        c.classList.remove('anim-shake', 'anim-shake-double'); 
-        void c.offsetWidth; 
-        c.classList.add('anim-shake');
-    }
-
-    async playPhysicalFX(isMultiHit) {
-        const c = document.getElementById('game-container');
-        c.classList.remove('anim-shake', 'anim-shake-double'); 
-        void c.offsetWidth; 
-        c.classList.add(isMultiHit ? 'anim-shake-double' : 'anim-shake');
-    }
-
-    async playStatusFX(type) {
-        let colorClass = ''; 
-        if(type === 'poison') colorClass = 'tint-green';
-        else if(type === 'burn') colorClass = 'tint-red';
-        else if(type === 'curse') colorClass = 'tint-purple';
-        else if(type === 'patience') colorClass = 'tint-white';
-        
-        this.triggerFX(colorClass);
-        await sleep(20);
-    }
-
-    getTagClass(tags) {
-        if(!tags) return "";
-        if(tags.includes("공격")) return "tag-atk";
-        if(tags.includes("유틸리티")) return "tag-util";
-        if(tags.includes("버프")) return "tag-buff";
-        if(tags.includes("엘리트")) return "tag-elite";
-        return "";
-    }
-
-    getBgClass(tags) {
-        if(!tags) return "";
-        if(tags.includes("공격")) return "bg-atk";
-        if(tags.includes("유틸리티")) return "bg-util";
-        if(tags.includes("버프")) return "bg-buff";
-        if(tags.includes("엘리트")) return "bg-elite";
-        return "";
-    }
+    triggerFX(className) { const old = document.getElementById('fx-layer'), next = old.cloneNode(true); next.className = `hit-effect ${className}`; old.parentNode.replaceChild(next, old); }
+    playShakeOnly() { const c = document.getElementById('game-container'); c.classList.remove('anim-shake', 'anim-shake-double'); void c.offsetWidth; c.classList.add('anim-shake'); }
+    async playPhysicalFX(isMulti) { const c = document.getElementById('game-container'); c.classList.remove('anim-shake', 'anim-shake-double'); void c.offsetWidth; c.classList.add(isMulti ? 'anim-shake-double' : 'anim-shake'); }
+    async playStatusFX(type) { let cls = ''; if(type === 'poison') cls = 'tint-green'; else if(type === 'burn') cls = 'tint-red'; else if(type === 'curse') cls = 'tint-purple'; else if(type === 'patience') cls = 'tint-white'; this.triggerFX(cls); await sleep(20); }
+    getTagClass(tags) { if(!tags) return ""; if(tags.includes("공격")) return "tag-atk"; if(tags.includes("유틸리티")) return "tag-util"; if(tags.includes("버프")) return "tag-buff"; if(tags.includes("엘리트")) return "tag-elite"; return ""; }
+    getBgClass(tags) { if(!tags) return ""; if(tags.includes("공격")) return "bg-atk"; if(tags.includes("유틸리티")) return "bg-util"; if(tags.includes("버프")) return "bg-buff"; if(tags.includes("엘리트")) return "bg-elite"; return ""; }
 
     showListModal(title, cards) {
-        const modal = document.getElementById('modal-view');
-        document.getElementById('view-title').innerText = title;
-        const list = document.getElementById('view-list');
-        list.innerHTML = '';
-        
+        const modal = document.getElementById('modal-view'); document.getElementById('view-title').innerText = title;
+        const list = document.getElementById('view-list'); list.innerHTML = '';
         cards.forEach(card => {
-            let el = document.createElement('div');
-            el.className = `card-mini ${this.getTagClass(card.tags)}`;
-            el.innerText = card.name;
+            let el = document.createElement('div'); el.className = `card-mini ${this.getTagClass(card.tags)}`; el.innerText = card.name;
+            el.onclick = () => this.showCardDetail(card); // ✨ 추가: 덱 목록 상세 보기
             list.appendChild(el);
         });
         modal.classList.add('active');
@@ -1845,20 +990,10 @@ updateBattleUI() {
 
     openDrawModalAsync(cards) {
         return new Promise(resolve => {
-            const modal = document.getElementById('modal-draw');
-            const list = document.getElementById('draw-list');
-            list.innerHTML = '';
-            
+            const modal = document.getElementById('modal-draw'); const list = document.getElementById('draw-list'); list.innerHTML = '';
             cards.forEach(card => {
-                let el = document.createElement('div');
-                el.className = `card-detail ${this.getBgClass(card.tags)}`;
-                el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem; font-weight:normal;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
-                
-                el.onclick = () => {
-                    modal.classList.remove('active');
-                    resolve(card);
-                };
-                list.appendChild(el);
+                let el = document.createElement('div'); el.className = `card-detail ${this.getBgClass(card.tags)}`; el.innerHTML = `<div class="name">${card.name} <span style="font-size:0.7rem;">${card.tags.map(t=>'#'+t).join(' ')}</span></div><div class="desc">${card.desc}</div>`;
+                el.onclick = () => { modal.classList.remove('active'); resolve(card); }; list.appendChild(el);
             });
             modal.classList.add('active');
         });
@@ -1866,50 +1001,34 @@ updateBattleUI() {
 
     async startRewardPhase() {
         this.changeScreen('reward');
-        const titleEl = document.getElementById('reward-title');
-        const listEl = document.getElementById('reward-list');
-        
-        titleEl.innerText = "승리 보상: 덱에 추가할 카드를 선택하세요.";
+        const titleEl = document.getElementById('reward-title'), listEl = document.getElementById('reward-list');
+        // ✨ 3층 단위 특수 보상 체크
+        let isSpecialReward = this.starterCategory && this.score > 0 && this.score % 3 === 0;
+        if (isSpecialReward) titleEl.innerHTML = `<span style="color:#ffcc00;">[특수 보상]</span> ${this.starterCategory} 팩 카드 중 선택하세요.`;
+        else titleEl.innerText = "승리 보상: 덱에 추가할 카드를 선택하세요.";
         listEl.innerHTML = '';
-
-        const rewardPool = CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
+        let pool = isSpecialReward ? CARD_DB.filter(c => c.category === this.starterCategory) : CARD_DB.filter(c => c.category !== "기본" && c.category !== "적");
         let choices = [];
-        for(let i=0; i<3; i++) choices.push(getCard(rewardPool[Math.floor(Math.random() * rewardPool.length)].name));
-
+        for(let i=0; i<3; i++) choices.push(getCard(pool[Math.floor(Math.random() * pool.length)].name));
         const newCard = await new Promise(resolve => {
             choices.forEach(card => {
-                let el = document.createElement('div');
-                el.className = `card-detail ${this.getBgClass(card.tags)}`;
-                el.innerHTML = `<div class="name">${card.name}</div><div class="desc">${card.desc}</div>`;
-                el.onclick = () => resolve(card);
-                listEl.appendChild(el);
+                let el = document.createElement('div'); el.className = `card-detail ${this.getBgClass(card.tags)}`; el.innerHTML = `<div class="name">${card.name}</div><div class="desc">${card.desc}</div>`;
+                el.onclick = () => resolve(card); listEl.appendChild(el);
             });
         });
-
         this.playerDeck.push(newCard); 
-
-        titleEl.innerText = "덱 압축: 버릴 카드를 1장 선택하세요.";
-        listEl.innerHTML = '';
-
+        titleEl.innerText = "덱 압축: 버릴 카드를 1장 선택하세요."; listEl.innerHTML = '';
         const removeIdx = await new Promise(resolve => {
             this.playerDeck.forEach((card, idx) => {
-                let el = document.createElement('div');
-                el.className = `card-detail ${this.getBgClass(card.tags)}`;
-                el.innerHTML = `<div class="name">${card.name}</div><div class="desc">${card.desc}</div>`;
-                el.onclick = () => resolve(idx);
-                listEl.appendChild(el);
+                let el = document.createElement('div'); el.className = `card-detail ${this.getBgClass(card.tags)}`; el.innerHTML = `<div class="name">${card.name}</div><div class="desc">${card.desc}</div>`;
+                el.onclick = () => resolve(idx); listEl.appendChild(el);
             });
         });
-
-        this.playerDeck.splice(removeIdx, 1); 
-
-        this.showIntermission();
+        this.playerDeck.splice(removeIdx, 1); this.showIntermission();
     }
 }
-
-window.onload = () => {
-    window.game = new Game();
-};
+window.onload = () => { window.game = new Game(); };
 </script>
 </body>
 </html>
+
