@@ -249,7 +249,7 @@
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
             <span style="font-size: 1.2rem; color: #888;">beta-0.51</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 글로벌 상태이상 표기수정, 인트로 AP 해설</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 실명,부채계약 표기수정, 인트로 AP해설</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -574,7 +574,7 @@ class Game {
         textEl.innerHTML = ""; 
         btn.style.display = "none";
         
-        const introText = "덱빌딩의 세계에 오신 것을 환영합니다.<br><br>당신은 10장의 카드를 갖습니다.<br>카드를 1장 낼 때마다 행동력(AP)을 2 소비합니다.<br>매 턴마다 AP 2를 얻고 카드를 사용하세요.<br>카드를 낼 수 없게 될 때까지 카드를 사용해야 합니다.<br>전투에서 승리하면 새로운 카드를 얻고,<br>기존 카드를 버려 덱을 압축할 수 있습니다.<br><br>과연 몇 명의 적을 쓰러뜨릴 수 있을까요?";
+        const introText = "덱빌딩의 세계에 오신 것을 환영합니다.<br><br>당신은 10장의 카드를 갖습니다.<br>카드를 1장 낼 때마다 행동력(AP)을 2 소비합니다. 매 턴마다 AP 2를 얻고 카드를 사용하세요.<br>카드를 낼 수 없게 될 때까지 카드를 사용해야 합니다.<br>전투에서 승리하면 새로운 카드를 얻고,<br>기존 카드를 버려 덱을 압축할 수 있습니다.<br><br>과연 몇 명의 적을 쓰러뜨릴 수 있을까요?";
         
         let currentHTML = "";
         for(let i=0; i<introText.length; i++) {
