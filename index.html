@@ -248,8 +248,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.50</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 토끼기사 연출픽스, 경례 버튼</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.51</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 글로벌 상태이상 표기수정, 인트로 AP 해설</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -1717,8 +1717,8 @@ updateBattleUI() {
         let eStatus = this.formatStatus(this.enemy);
 
         let globalEffects = [];
-        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff;" title="실명">🕶️${this.globalStatus.blindness}턴</span>`);
-        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00;" title="부채계약">📜${this.globalStatus.debt_contract}턴</span>`);
+        if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff;" title="실명">🕶️${this.globalStatus.blindness}</span>`);
+        if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00;" title="부채계약">📜${this.globalStatus.debt_contract}</span>`);
         let globalStr = globalEffects.join(' ');
 
         // ✨ 수정됨: 플레이어와 적 양쪽 모두에게 글로벌 효과를 병합하여 표기
