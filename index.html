@@ -158,7 +158,8 @@
         }
         
                 /* --- 신규 전투 UI 레이아웃 --- */
-        .top-status-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 130px; flex-shrink: 0; margin-bottom: 10px; }
+        /* ✨ 수정됨: 상태창 전체 영역의 높이를 145px로 넉넉하게 늘림 */
+        .top-status-area { display: flex; justify-content: space-between; gap: 10px; width: 100%; height: 150px; flex-shrink: 0; margin-bottom: 15px; }
         .status-box { flex: 1; border: 1px solid #444; border-radius: 8px; background-color: #222; text-align: center; padding: 10px; display: flex; flex-direction: column; justify-content: center; font-size: 0.95rem; position: relative; }
         
         #center-stage { flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
@@ -188,6 +189,13 @@
             0% { transform: translate(0, 0) scale(1); opacity: 1; } 
             100% { transform: translate(-50px, -20px) scale(0.6) rotate(-20deg); opacity: 0; } 
         }
+
+        /* ✨ 신규: AP 보석 UI 스타일 */
+        /* ✨ 수정됨: AP 보석 UI 컨테이너 (여백 조정) */
+        .ap-container { display: flex; justify-content: center; gap: 5px; margin-top: 8px; margin-bottom: 2px; }
+        .ap-slot { width: 12px; height: 12px; border-radius: 50%; background-color: #333; border: 1px solid #555; box-sizing: border-box; transition: all 0.2s ease; }
+        .ap-gem-player { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; border-color: #fff; }
+        .ap-gem-enemy { background-color: #ff4d4d; box-shadow: 0 0 5px #ff4d4d; border-color: #fff; }
 
         /* ✨ 신규: AP 회복 테두리 색조 및 상승선 연출 */
         .ap-effect-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 150; overflow: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
@@ -248,8 +256,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.60</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 패배 시 재도전 가능.</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.64</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 상태창,보석 위치수정</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -282,9 +290,20 @@
     </div>
 
     <div id="screen-battle" class="screen">
-        <div class="top-status-area">
-            <div id="enemy-info" class="status-box">적 정보</div>
-            <div id="player-info" class="status-box" style="border-color: #4da6ff;">플레이어 정보</div>
+
+<div class="top-status-area">
+            <!-- 적 상태창 영역 -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <!-- ✨ 수정됨: flex-grow: 1 을 추가하여 박스 세로 길이를 최대로 늘림 -->
+                <div id="enemy-info" class="status-box" style="flex-grow: 2;">적 정보</div>
+                <div id="enemy-ap"></div>
+            </div>
+            <!-- 플레이어 상태창 영역 -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <!-- ✨ 수정됨: flex-grow: 1 을 추가하여 박스 세로 길이를 최대로 늘림 -->
+                <div id="player-info" class="status-box" style="border-color: #4da6ff; flex-grow: 2;">플레이어 정보</div>
+                <div id="player-ap"></div>
+            </div>
         </div>
         
         <div id="center-stage">
@@ -1192,7 +1211,10 @@ async drawCard(entity, count) {
                 entity.grave = [];
                 if(entity === this.player) this.log("[시스템] 무덤을 덱으로 섞었습니다.");
             }
-            const card = entity.deck.pop();
+
+            const randIdx = Math.floor(Math.random() * entity.deck.length);
+            const card = entity.deck.splice(randIdx, 1)[0];
+            
             
             // ✨ 신규: 카드 한 장 뽑을 때마다 회색 카드 날아가는 연출 (플레이어, 적 모두 적용)
             this.playDrawAnim();
@@ -1211,7 +1233,7 @@ async drawCard(entity, count) {
         }
     }
 
-    async runTurn() {
+async runTurn() {
         this.isEndingTurn = false;
         this.isProcessing = false; // ✨ 신규: 턴이 넘어올 때 자물쇠 풀기
         this.rabbitCount = 0; 
@@ -1222,14 +1244,16 @@ async drawCard(entity, count) {
             this.updateBattleUI();
             await sleep(500);
 
-            // ... (이하 기존 drawPool 로직 동일) ...
             let drawPool = [];
             for(let i=0; i<3; i++) {
                 if(this.player.deck.length === 0 && this.player.grave.length > 0) {
                     this.player.deck = [...this.player.grave].sort(()=>0.5-Math.random());
                     this.player.grave = [];
                 }
-                if(this.player.deck.length > 0) drawPool.push(this.player.deck.pop());
+                if(this.player.deck.length > 0) {
+                    const rIdx = Math.floor(Math.random() * this.player.deck.length);
+                    drawPool.push(this.player.deck.splice(rIdx, 1)[0]);
+                }
             }
 
             if(drawPool.length > 0) {
@@ -1260,16 +1284,18 @@ async drawCard(entity, count) {
             
             await sleep(800);
 
-            // ... (이하 drawPool 로직 동일)
-
             let drawPool = [];
             for(let i=0; i<2; i++) {
                 if(this.enemy.deck.length === 0 && this.enemy.grave.length > 0) {
                     this.enemy.deck = [...this.enemy.grave].sort(()=>0.5-Math.random());
                     this.enemy.grave = [];
                 }
-                if(this.enemy.deck.length > 0) drawPool.push(this.enemy.deck.pop());
+                if(this.enemy.deck.length > 0) {
+                    const rIdx = Math.floor(Math.random() * this.enemy.deck.length);
+                    drawPool.push(this.enemy.deck.splice(rIdx, 1)[0]);
+                }
             }
+
             if(drawPool.length > 0) {
                 const picked = drawPool[Math.floor(Math.random() * drawPool.length)];
                 if (picked.name === "토끼기사의 지혜") {
@@ -1569,24 +1595,25 @@ async executeCard(card, caster, target) {
             } else {
                 this.log(` 👁️ 덱에 [스텝 밟기]가 없어 효과가 발동되지 않았습니다.`);
             }
-            caster.ap += 4;
+            // ✨ 수정됨: 최대 AP 상한 7
+            caster.ap = Math.min(7, caster.ap + 4); 
             this.log(` ⚡ AP 4 회복!`);
             isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
+            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); 
         
         } else if (card.name === "스텝 밟기") {
             await this.drawCard(caster, 2);
-            caster.ap += 3;
+            caster.ap = Math.min(7, caster.ap + 3); 
             this.log(` 🃏 2장 드로우 & ⚡ AP 3 회복!`);
             isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
+            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); 
 
         } else if (card.name === "전술적 구르기" || card.name === "감각 개화" || card.name === "주변 맴돌기") {
             await this.drawCard(caster, 1);
-            caster.ap += 3;
+            caster.ap = Math.min(7, caster.ap + 3); 
             this.log(` 🃏 1장 드로우 & ⚡ AP 3 회복!`);
             isSpecialCard = true;
-            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); // ✨ 연출 추가!
+            this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy'); 
 
         } else if (card.name === "토끼기사의 지혜") {
             this.log(` 🐇 사용됨. (데미지 0)`);
@@ -1608,11 +1635,10 @@ async executeCard(card, caster, target) {
             this.log(` 🆘 [구사일생] 공격 총 위력: ${totalDmg}!`);
             await this.dealDamage(target, totalDmg, 'physical');
             isSpecialCard = true;
-} else if (card.name === "절체절명") {
+        } else if (card.name === "절체절명") {
             this.log(` 🌟 [절체절명] 모든 상태이상을 결산합니다!`);
             let pDmg = 0; let eDmg = 0;
             
-            // ✨ 화상, 중독, 저주, 최후통첩, 인내까지 모두 결산 딜에 합산
             ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { pDmg += this.calcSettlement(k, this.player.statuses[k], this.player); });
             ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].forEach(k => { eDmg += this.calcSettlement(k, this.enemy.statuses[k], this.enemy); });
             
@@ -1621,11 +1647,9 @@ async executeCard(card, caster, target) {
             
             if (this.player.hp <= 0 || this.enemy.hp <= 0) { isSpecialCard = true; return; }
             
-            // ✨ 글로벌 상태이상(실명, 부채계약) 정화 로직 추가
             this.globalStatus.blindness = 0;
             this.globalStatus.debt_contract = 0;
             
-            // ✨ 가시갑옷, 고요한 밤 포함 모두 초기화
             this.player.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.enemy.statuses = { poison: 0, burn: 0, curse: 0, patience_turns: 0, patience_val: 0, thorn_armor: 0, silent_night: 0, ultimatum: 0 };
             this.player.hp = this.player.maxHp; this.enemy.hp = this.enemy.maxHp;
@@ -1647,70 +1671,48 @@ async executeCard(card, caster, target) {
         } else if (card.name === "저주") {
             target.statuses.curse += 7; this.log(` 🔮 저주 스택 7 부여!`); isSpecialCard = true;
         } else if (card.name === "기사의 신조") {
-            // ✨ 실명, 부채계약, 최후통첩, 인내 포함 모두 정화 가능
             let active = Object.keys(caster.statuses).filter(k => ['poison', 'burn', 'curse', 'patience_turns', 'ultimatum'].includes(k) && caster.statuses[k] > 0);
             if (this.globalStatus.blindness > 0) active.push('blindness');
             if (this.globalStatus.debt_contract > 0) active.push('debt_contract');
 
             if (active.length > 0) {
                 let toRemove = active[Math.floor(Math.random() * active.length)]; 
-                
-                if (toRemove === 'blindness') {
-                    this.globalStatus.blindness = 0;
-                } else if (toRemove === 'debt_contract') {
-                    this.globalStatus.debt_contract = 0;
-                } else {
-                    caster.statuses[toRemove] = 0; 
-                    if (toRemove === 'patience_turns') caster.statuses.patience_val = 0;
-                }
+                if (toRemove === 'blindness') { this.globalStatus.blindness = 0; } 
+                else if (toRemove === 'debt_contract') { this.globalStatus.debt_contract = 0; } 
+                else { caster.statuses[toRemove] = 0; if (toRemove === 'patience_turns') caster.statuses.patience_val = 0; }
                 
                 let krName = toRemove === 'poison' ? '중독' : toRemove === 'burn' ? '화상' : toRemove === 'curse' ? '저주' : toRemove === 'patience_turns' ? '인내' : toRemove === 'ultimatum' ? '최후통첩' : toRemove === 'blindness' ? '실명' : '부채계약';
                 this.log(` ✨ ${caster.name}의 [${krName}] 상태이상이 정화되었습니다!`);
             } else { this.log(` ✨ 정화할 상태이상이 없습니다.`); }
             isSpecialCard = true;
         } else if (card.name === "이행") {
-            // ✨ 최후통첩, 인내 포함하여 랜덤 폭발
             let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
             if (active.length > 0) {
                 let toRemove = active[Math.floor(Math.random() * active.length)];
                 let dmg = this.calcSettlement(toRemove, target.statuses[toRemove], target);
-                
                 this.log(` ⚡ [이행] 무작위 상태이상 폭발!`);
                 await this.dealDamage(target, dmg, 'physical');
-
-                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
-                if (this.globalStatus.debt_contract <= 0) {
-                    target.statuses[toRemove] = 0;
-                    if (toRemove === 'patience_turns') target.statuses.patience_val = 0;
-                } else {
-                    this.log(` 📜 [부채계약] 효과로 폭발한 스택이 사라지지 않습니다!`);
-                }
+                if (this.globalStatus.debt_contract <= 0) { target.statuses[toRemove] = 0; if (toRemove === 'patience_turns') target.statuses.patience_val = 0; } 
+                else { this.log(` 📜 [부채계약] 효과로 폭발한 스택이 사라지지 않습니다!`); }
             }
             isSpecialCard = true;
         } else if (card.name === "결산") {
-            // ✨ 최후통첩, 인내 포함하여 모두 폭발
             let active = Object.keys(target.statuses).filter(k => ['poison', 'burn', 'curse', 'ultimatum', 'patience_turns'].includes(k) && target.statuses[k] > 0);
             let totalDmg = 0;
             for (let k of active) { 
                 totalDmg += this.calcSettlement(k, target.statuses[k], target); 
-                // ✨ 부채계약이 없을 때만 스택 차감 (콤보 성립)
-                if (this.globalStatus.debt_contract <= 0) {
-                    target.statuses[k] = 0;
-                    if (k === 'patience_turns') target.statuses.patience_val = 0;
-                }
+                if (this.globalStatus.debt_contract <= 0) { target.statuses[k] = 0; if (k === 'patience_turns') target.statuses.patience_val = 0; }
             }
             if (totalDmg > 0) {
                 this.log(` 💥 [결산] 모든 상태이상 폭발!`);
                 await this.dealDamage(target, totalDmg, 'physical');
-                if (this.globalStatus.debt_contract > 0) {
-                    this.log(` 📜 [부채계약] 효과로 폭발한 모든 스택이 사라지지 않습니다!`);
-                }
+                if (this.globalStatus.debt_contract > 0) { this.log(` 📜 [부채계약] 효과로 폭발한 모든 스택이 사라지지 않습니다!`); }
             }
             isSpecialCard = true;
         } else if (card.name === "거미줄을 딛고") {
             caster.statuses.patience_turns = 4; this.log(` 🕸️ 4턴간 [인내] 상태 돌입.`); isSpecialCard = true;
         } else if (card.name === "부채계약") {
-            this.globalStatus.debt_contract = 3; this.log(` 📜 [부채계약] 3턴 체결.`); isSpecialCard = true; // ✨ 3턴으로 변경됨
+            this.globalStatus.debt_contract = 3; this.log(` 📜 [부채계약] 3턴 체결.`); isSpecialCard = true; 
         } else if (card.name === "실명") {
             this.globalStatus.blindness = 2; this.log(` 🕶️ [실명] 발동.`); isSpecialCard = true;
             this.playBlindAnim();
@@ -1724,7 +1726,7 @@ async executeCard(card, caster, target) {
             if (pool.length > 0) {
                 let picked = pool[Math.floor(Math.random() * pool.length)];
                 this.log(` 💡 [깨달음] 발동! 랜덤 공격 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가: 덱에서 튀어나와서 시전됨!
+                await this.triggerCardActionAnim(picked, caster); 
                 await this.executeCard(picked, caster, target);
             } else { this.log(` 💡 [깨달음] 시전할 수 있는 카드가 없습니다.`); }
             isSpecialCard = true;
@@ -1733,21 +1735,12 @@ async executeCard(card, caster, target) {
             if (pool.length > 0) {
                 let picked = pool[Math.floor(Math.random() * pool.length)];
                 this.log(` 💡 [호기심] 발동! 랜덤 유틸 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
+                await this.triggerCardActionAnim(picked, caster); 
                 await this.executeCard(picked, caster, target);
             } else { this.log(` 💡 [호기심] 시전할 수 있는 카드가 없습니다.`); }
             isSpecialCard = true;
         } else if (card.name === "성급한 결정") {
             let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); 
-            if (pool.length > 0) {
-                let picked = pool[Math.floor(Math.random() * pool.length)];
-                this.log(` 💡 [성급한 결정] 발동! 랜덤 카드 [${picked.name}] 시전!`);
-                await this.triggerCardActionAnim(picked, caster); // ✨ 추가
-                await this.executeCard(picked, caster, target);
-            }
-            isSpecialCard = true;
-        } else if (card.name === "성급한 결정") {
-            let pool = CARD_DB.filter(c => c.name !== "성급한 결정"); // 무한 루프 방지
             if (pool.length > 0) {
                 let picked = pool[Math.floor(Math.random() * pool.length)];
                 this.log(` 💡 [성급한 결정] 발동! 랜덤 카드 [${picked.name}] 시전!`);
@@ -1778,7 +1771,8 @@ async executeCard(card, caster, target) {
             }
             let apMatch = card.desc.match(/AP (\d+) 회복/);
             if (apMatch) {
-                caster.ap += parseInt(apMatch[1]);
+                // ✨ 수정됨: 텍스트에서 회복하는 일반 카드들도 최대 상한 7 적용
+                caster.ap = Math.min(7, caster.ap + parseInt(apMatch[1])); 
                 this.log(` ⚡ AP ${apMatch[1]} 회복!`);
                 this.playAPRecoveryAnim(caster === this.player ? 'player' : 'enemy');
             }
@@ -1793,11 +1787,10 @@ async executeCard(card, caster, target) {
             let oldHp = caster.hp;
             caster.hp = Math.min(caster.maxHp, caster.hp + heal);
             
-            // ✨ 신규: 실제 회복된 만큼만 +숫자로 표기
-        let actualHeal = caster.hp - oldHp;
-        if (actualHeal > 0) {
-            this.log(` 💚 HP ${actualHeal} 회복.`);
-            this.showFloatingText(caster, `+${actualHeal}`, '#00ff00');
+            let actualHeal = caster.hp - oldHp;
+            if (actualHeal > 0) {
+                this.log(` 💚 HP ${actualHeal} 회복.`);
+                this.showFloatingText(caster, `+${actualHeal}`, '#00ff00');
             }
         }
 
@@ -1966,12 +1959,10 @@ updateBattleUI() {
         let eStatus = this.formatStatus(this.enemy);
 
         let globalEffects = [];
-        // ✨ 수정됨: 글로벌 효과 아이콘에도 클릭 속성 추가
         if (this.globalStatus.blindness > 0) globalEffects.push(`<span style="color:#fff; cursor:pointer;" onclick="window.game.showStatusInfo('blind')">🕶️${this.globalStatus.blindness}</span>`);
         if (this.globalStatus.debt_contract > 0) globalEffects.push(`<span style="color:#ffcc00; cursor:pointer;" onclick="window.game.showStatusInfo('debt')">📜${this.globalStatus.debt_contract}</span>`);
         let globalStr = globalEffects.join(' ');
 
-        // ✨ 수정됨: 플레이어와 적 양쪽 모두에게 글로벌 효과를 병합하여 표기
         let pCombinedStatus = [globalStr, pStatus].filter(s => s).join(' '); 
         let eCombinedStatus = [globalStr, eStatus].filter(s => s).join(' '); 
 
@@ -1989,11 +1980,26 @@ updateBattleUI() {
         let eNameDisplay = this.enemy.isBoss ? `<span style="color:#cc33ff;">${this.enemy.name}</span>` : this.enemy.name;
         
         let pStatusHTML = pCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${pCombinedStatus}</div>` : '';
-        // ✨ 수정됨: eStatus 대신 eCombinedStatus 적용
         let eStatusHTML = eCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${eCombinedStatus}</div>` : ''; 
 
+        // ✨ 신규: 7칸의 AP 보석 HTML 생성기
+        const generateAPGems = (ap, type) => {
+            let html = '<div class="ap-container">';
+            let gemClass = type === 'player' ? 'ap-gem-player' : 'ap-gem-enemy';
+            for (let i = 0; i < 7; i++) {
+                html += `<div class="ap-slot ${i < ap ? gemClass : ''}"></div>`;
+            }
+            html += '</div>';
+            return html;
+        };
+
+// ✨ 수정됨: 상태창 박스 안에는 순수하게 텍스트 정보만 넣습니다.
         eBox.innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어: ${this.enemy.defense}${eStatusHTML}`;
         pBox.innerHTML = `<b>${this.player.name}</b><br>HP: ${this.player.hp} | 방어: ${this.player.defense}${pStatusHTML}`;
+        
+        // ✨ 신규: 박스 바깥(아래)에 만들어둔 전용 div 영역에 보석을 따로 그립니다.
+        document.getElementById('enemy-ap').innerHTML = generateAPGems(this.enemy.ap, 'enemy');
+        document.getElementById('player-ap').innerHTML = generateAPGems(this.player.ap, 'player');
         
         document.getElementById('btn-deck').innerHTML = `덱<br>(${this.player.deck.length})`;
         document.getElementById('btn-grave').innerHTML = `무덤<br>(${this.player.grave.length})`;
