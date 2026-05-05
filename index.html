@@ -197,6 +197,21 @@
         .ap-gem-player { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; border-color: #fff; }
         .ap-gem-enemy { background-color: #ff4d4d; box-shadow: 0 0 5px #ff4d4d; border-color: #fff; }
 
+        /* ✨ 신규: AP 보석 증감 애니메이션 */
+        @keyframes gem-gain {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.6); filter: brightness(2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .anim-gem-gain { animation: gem-gain 0.3s ease-out; }
+
+        @keyframes gem-loss {
+            0% { transform: scale(1); background-color: #fff; }
+            50% { transform: scale(0.4); background-color: #555; }
+            100% { transform: scale(1); }
+        }
+        .anim-gem-loss { animation: gem-loss 0.3s ease-out; }
+
         /* ✨ 신규: AP 회복 테두리 색조 및 상승선 연출 */
         .ap-effect-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 150; overflow: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .ap-effect-player { box-shadow: inset 0 0 80px rgba(77, 166, 255, 0.4); }
@@ -256,8 +271,8 @@
             토끼 기사를<br>
             <span style="font-size: 1.2rem; color: #eebd1b;"></span>사용하려<br>
             하지 마<br>
-            <span style="font-size: 1.2rem; color: #888;">beta-0.64</span>
-            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 상태창,보석 위치수정</span>
+            <span style="font-size: 1.2rem; color: #888;">beta-0.65</span>
+            <br> <span style="font-size: 0.8rem; color: #888;">주요패치 : 보석 가시성 연출</span>
         </h1>
         <button id="btn-start">게임 시작</button>
     </div>
@@ -1353,6 +1368,7 @@ async runTurn() {
         if(this.turn !== 'player' || this.player.ap < 2) return;
         const card = this.player.hand.splice(index, 1)[0];
         this.player.ap -= 2;
+        this.updateBattleUI();
         
         this.log(`👉 <b>[${card.name}]</b> 사용!`);
         
@@ -1486,6 +1502,7 @@ async runTurn() {
             const idx = Math.floor(Math.random() * this.enemy.hand.length);
             const card = this.enemy.hand.splice(idx, 1)[0];
             this.enemy.ap -= 2;
+            this.updateBattleUI();
 
             this.log(`💀 적 <b>[${card.name}]</b> 사용!`);
             
@@ -1982,24 +1999,47 @@ updateBattleUI() {
         let pStatusHTML = pCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${pCombinedStatus}</div>` : '';
         let eStatusHTML = eCombinedStatus ? `<br><div style="margin-top: 5px; line-height: 1.4;">${eCombinedStatus}</div>` : ''; 
 
-        // ✨ 신규: 7칸의 AP 보석 HTML 생성기
-        const generateAPGems = (ap, type) => {
-            let html = '<div class="ap-container">';
-            let gemClass = type === 'player' ? 'ap-gem-player' : 'ap-gem-enemy';
-            for (let i = 0; i < 7; i++) {
-                html += `<div class="ap-slot ${i < ap ? gemClass : ''}"></div>`;
-            }
-            html += '</div>';
-            return html;
-        };
-
-// ✨ 수정됨: 상태창 박스 안에는 순수하게 텍스트 정보만 넣습니다.
+// 텍스트 정보 업데이트
         eBox.innerHTML = `<b>${eNameDisplay}</b><br>HP: ${this.enemy.hp} | 방어: ${this.enemy.defense}${eStatusHTML}`;
         pBox.innerHTML = `<b>${this.player.name}</b><br>HP: ${this.player.hp} | 방어: ${this.player.defense}${pStatusHTML}`;
         
-        // ✨ 신규: 박스 바깥(아래)에 만들어둔 전용 div 영역에 보석을 따로 그립니다.
-        document.getElementById('enemy-ap').innerHTML = generateAPGems(this.enemy.ap, 'enemy');
-        document.getElementById('player-ap').innerHTML = generateAPGems(this.player.ap, 'player');
+        // ✨ 신규: 보석의 변화(증감)를 감지하고 애니메이션 클래스를 붙여주는 로직
+        const updateAPGems = (ap, type) => {
+            const containerId = type === 'player' ? 'player-ap' : 'enemy-ap';
+            const container = document.getElementById(containerId);
+            
+            // 최초 1회 빈 슬롯 7개 생성
+            if (container.children.length === 0) {
+                let html = '<div class="ap-container">';
+                for (let i = 0; i < 7; i++) html += `<div class="ap-slot"></div>`;
+                html += '</div>';
+                container.innerHTML = html;
+            }
+            
+            const slots = container.querySelectorAll('.ap-slot');
+            const activeClass = type === 'player' ? 'ap-gem-player' : 'ap-gem-enemy';
+            
+            slots.forEach((slot, index) => {
+                const isActive = index < ap;
+                const wasActive = slot.classList.contains(activeClass);
+                
+                // 보석이 켜질 때 (AP 회복)
+                if (isActive && !wasActive) {
+                    slot.classList.add(activeClass, 'anim-gem-gain');
+                    setTimeout(() => slot.classList.remove('anim-gem-gain'), 300);
+                } 
+                // 보석이 꺼질 때 (AP 소비)
+                else if (!isActive && wasActive) {
+                    slot.classList.remove(activeClass);
+                    slot.classList.add('anim-gem-loss');
+                    setTimeout(() => slot.classList.remove('anim-gem-loss'), 300);
+                }
+            });
+        };
+
+        // 적과 플레이어의 보석 업데이트 실행
+        updateAPGems(this.enemy.ap, 'enemy');
+        updateAPGems(this.player.ap, 'player');
         
         document.getElementById('btn-deck').innerHTML = `덱<br>(${this.player.deck.length})`;
         document.getElementById('btn-grave').innerHTML = `무덤<br>(${this.player.grave.length})`;
