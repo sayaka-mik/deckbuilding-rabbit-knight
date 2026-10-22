@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sir Mad Boomer: Rabbit Knight (v0.66)</title>
+  <style>
+    body { background: #111; color: #eee; font-family: sans-serif; padding: 20px; }
+    .rules-box { background: #222; padding: 15px; border-radius: 6px; line-height: 1.6; }
+    button { padding: 8px 16px; margin-top: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="intro-screen">
+    <h2>Sir Mad Boomer: Rabbit Knight</h2>
+    <div class="rules-box">
+      <p>낙원은 붕괴하고 모든 토끼들이 세상으로 내던져졌다. 세상은 바야흐로 토끼의 시대.</p>
+      <hr>
+      <p><strong>[게임 규칙]</strong></p>
+      <ul>
+        <li>덱 20장 (동명 카드 최대 3장)</li>
+        <li>턴 시작 시 3장 드로우, 턴 종료 시 남은 패 묘지행</li>
+        <li>카드가 부족할 때 묘지 셔플</li>
+        <li>기본 활력 3 회복, 최대 1 이월 (상한선 4)</li>
+      </ul>
+    </div>
+    <button id="btn-start" onclick="initBattle()">전투 시작</button>
+  </div>
+</div>
+
+<script>
+// 1. 단일 게임 상태 객체 (Context)
+const game = {
+  playerHP: 150,
+  enemyHP: 130,
+  stamina: 3,
+  turnContext: {
+    lowCostExtraHits: 0
+  },
+  playerBuffs: {},   // { thorn: 1 }
+  enemyDebuffs: {},  // { curse: 5, bleeding: 2, contract: 2 }
+
+  // 피해 계산 파이프라인
+  dealDamage(baseDamage, hits, isPhysical = true) {
+    let finalHits = hits;
+    // 턴 컨텍스트 적용: 1코 이하 타수 증가 보정
+    if (this.turnContext.lowCostExtraHits > 0 && hits > 0) {
+      finalHits += this.turnContext.lowCostExtraHits;
+      this.turnContext.lowCostExtraHits = 0; // 1회성 소모
+    }
+
+    const totalDamage = baseDamage * finalHits;
+    this.enemyHP -= totalDamage;
+    console.log(`적에게 ${baseDamage} x ${finalHits} = 총 ${totalDamage} 피해! (적 잔여 HP: ${this.enemyHP})`);
+
+    // 피격 시 적의 반격/도깨비바늘 판정
+    if (this.enemyBuffs && this.enemyBuffs.thorn && isPhysical) {
+      const counterDmg = this.enemyBuffs.thorn * 5 * finalHits;
+      this.playerHP -= counterDmg;
+      console.log(`반격 발동! 플레이어 ${counterDmg} 피해`);
+    }
+  },
+
+  // 디버프 부여
+  applyDebuff(target, statusId, stacks) {
+    if (target === "enemy") {
+      this.enemyDebuffs[statusId] = (this.enemyDebuffs[statusId] || 0) + stacks;
+      console.log(`적에게 ${statusId} ${stacks}스택 부여 (현재: ${this.enemyDebuffs[statusId]})`);
+    }
+  },
+
+  // 강제정산용 남은 도트 합산
+  calculateRemainingDot() {
+    let total = 0;
+    // 저주: 틱당 2 (삼각수 합산)
+    if (this.enemyDebuffs.curse) {
+      const n = this.enemyDebuffs.curse;
+      total += (n * (n + 1) / 2) * 2;
+    }
+    // 출혈: 틱당 8
+    if (this.enemyDebuffs.bleeding) {
+      const n = this.enemyDebuffs.bleeding;
+      total += (n * (n + 1) / 2) * 8;
+    }
+    return total;
+  },
+
+  clearEnemyDebuffs() {
+    this.enemyDebuffs = {};
+  }
+};
+
+// 2. 카드 카탈로그 (Array 형태 유지, onPlay 콜백 일원화)
+const CARDS = [
+  { id: "001", type: "attack", name: "연속 때리기", cost: 1, desc: "10의 물리피해 2회", onPlay: (ctx) => { ctx.dealDamage(10, 2, true); } },
+  { id: "002", type: "magic",  name: "토끼의 투지", cost: 1, desc: "다음 1코 공격 타수 +1", onPlay: (ctx) => { ctx.turnContext.lowCostExtraHits += 1; } },
+  { id: "003", type: "magic",  name: "저주",       cost: 1, desc: "저주 5 부여", onPlay: (ctx) => { ctx.applyDebuff("enemy", "curse", 5); } },
+  { id: "004", type: "magic",  name: "강제정산",   cost: 3, desc: "디버프 전액 정산", onPlay: (ctx) => {
+      const dot = ctx.calculateRemainingDot();
+      ctx.clearEnemyDebuffs();
+      ctx.dealDamage(dot, 1, false);
+    } 
+  },
+  { id: "005", type: "magic",  name: "출혈",       cost: 1, desc: "출혈 2 부여", onPlay: (ctx) => { ctx.applyDebuff("enemy", "bleeding", 2); } },
+  { id: "006", type: "magic",  name: "보존계약",   cost: 2, desc: "보존계약 2 부여", onPlay: (ctx) => { ctx.applyDebuff("enemy", "contract", 2); } },
+  { id: "007", type: "magic",  name: "반격",       cost: 2, desc: "도깨비바늘 1 획득", onPlay: (ctx) => { ctx.playerBuffs.thorn = (ctx.playerBuffs.thorn || 0) + 1; } }
+];
+
+// 3. 카드 사용 함수
+function playCard(cardId) {
+  const card = CARDS.find(c => c.id === cardId);
+  if (!card) {
+    console.error("존재하지 않는 카드 ID:", cardId);
+    return;
+  }
+  if (game.stamina < card.cost) {
+    console.warn("활력 부족!");
+    return;
+  }
+  game.stamina -= card.cost;
+  console.log(`[${card.name}] 사용 (남은 활력: ${game.stamina})`);
+  card.onPlay(game);
+}
+
+function initBattle() {
+  document.getElementById('intro-screen').style.display = 'none';
+  console.log("전투가 시작되었습니다.");
+}
+</script>
+</body>
+</html>
