@@ -1662,22 +1662,36 @@ const RogueManager = {
     this.renderPathSelection();
   },
 
-  generatePathsForCurrentFloor() {
+    generatePathsForCurrentFloor() {
     const floor = this.state.floor;
+    
+    // 1. 보스층 처리 (10, 20, 30층...)
     if (floor % 10 === 0) {
       this.currentPaths = ['BOSS'];
       return;
     }
-    const optionCount = RNG.randInt(1, 3);
-    const pool = ['NORMAL', 'NORMAL', 'ELITE', 'CAMP'];
-    const options = [];
-    for (let i = 0; i < optionCount; i++) options.push(RNG.pickRandom(pool));
 
-    const isCampMilestone = (floor % 9 === 0) || (floor % 10 === 9);
-    if ((isCampMilestone || this.hasRelic('006')) && !options.includes('CAMP')) {
+    // 2. 방 개수는 무조건 2~3개로 고정 (외길 선택권 박탈 방지)
+    const optionCount = RNG.randInt(2, 3);
+
+    // 3. 중복 없는 방 후보군 풀 설정 (1, 11, 21층 등 각 구역 첫 층은 엘리트 제외 끔살 방지)
+    const pool = (floor % 10 === 1) ? ['NORMAL', 'CAMP'] : ['NORMAL', 'ELITE', 'CAMP'];
+
+    // 4. 후보군에서 중복 없이 뽑기 (동일한 방이 2~3개 뜨는 현상 해결)
+    let options = RNG.sampleUnique(pool, Math.min(optionCount, pool.length));
+
+    // 5. 요람사진(006) 유물 또는 보스 직전 층(9, 19, 29...) 확정 캠프 룰 적용
+    const isCampMilestone = (floor % 10 === 9);
+    const forceCamp = isCampMilestone || this.hasRelic('006');
+
+    if (forceCamp && !options.includes('CAMP')) {
+      // 이미 서로 다른 방이 보장되어 있으므로, 
+      // 랜덤한 방 1개를 덮어써도 일반 전투나 엘리트 전투가 최소 1개는 반드시 살아남음
       options[RNG.randInt(0, options.length - 1)] = 'CAMP';
     }
-    this.currentPaths = options;
+
+    // 6. 배열을 한 번 더 섞어서 UI상 캠프의 위치가 랜덤하게 나오도록 처리
+    this.currentPaths = RNG.sampleUnique(options, options.length);
   },
 
   renderPathSelection() {
