@@ -2,235 +2,414 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.73</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sir Mad Boomer: Rabbit Knight - v0.74 Mobile UI</title>
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --bg-outer: #0b0c10;
+      --bg-app: #13141c;
+      --bg-panel: #1a1b26;
+      --bg-card: #24283b;
+      --border: #414868;
+      --text-main: #c0caf5;
+      --text-sub: #787c99;
+      --accent: #7aa2f7;
+
+      /* 5대 연출 색상 */
+      --fx-red: #f7768e;    /* HP 감소 */
+      --fx-green: #9ece6a;  /* HP 증가 */
+      --fx-purple: #bb9af7; /* 디버프 획득 */
+      --fx-blue: #7dcfff;   /* 버프/방어 획득 */
+      --fx-yellow: #e0af68; /* 기타 카드 사용 */
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
+      background: var(--bg-outer); color: var(--text-main);
       font-family: 'Pretendard', monospace, sans-serif;
-      background: #13141c; color: #c0caf5;
-      margin: 0; padding: 14px;
-      display: flex; flex-direction: column; align-items: center;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; height: 100dvh; overflow: hidden;
     }
-    .app-container { width: 100%; max-width: 1040px; display: flex; flex-direction: column; gap: 12px; }
-    .header-bar {
-      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-      background: #1a1b26; border: 1px solid #414868; padding: 10px 16px; border-radius: 6px;
+
+    #app {
+      width: 100%; max-width: 440px; height: 100%;
+      background: var(--bg-app); border: 1px solid var(--border);
+      position: relative; display: flex; flex-direction: column; overflow: hidden;
     }
-    .header-bar h1 { margin: 0; font-size: 17px; color: #7aa2f7; }
-    button {
-      background: #292e42; color: #c0caf5; border: 1px solid #565f89;
-      padding: 7px 13px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12.5px;
+
+    .screen {
+      display: none; flex-direction: column;
+      width: 100%; height: 100%; padding: 12px; gap: 10px;
     }
-    button:hover:not(:disabled) { border-color: #7aa2f7; color: #fff; }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.primary { background: #7aa2f7; color: #13141c; border-color: #7aa2f7; }
-    button.primary:hover:not(:disabled) { background: #89ddff; }
-    button.danger { background: #f7768e; color: #13141c; border-color: #f7768e; }
+    .screen.active { display: flex; }
     .hidden { display: none !important; }
 
-    /* 로비 뷰 */
-    .lobby-view { display: flex; gap: 12px; flex-wrap: wrap; }
-    .lobby-col {
-      flex: 1; min-width: 290px; background: #1a1b26; border: 1px solid #414868;
-      border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    button {
+      background: var(--bg-card); color: var(--text-main);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 14px; font-size: 13px; font-weight: bold; cursor: pointer;
     }
-    .lobby-col h2 { margin: 0; font-size: 15px; color: #e0af68; border-bottom: 1px solid #292e42; padding-bottom: 6px; }
-    textarea.save-io {
-      width: 100%; height: 190px; background: #111218; color: #9ece6a;
-      border: 1px solid #414868; border-radius: 4px; padding: 8px;
-      font-family: monospace; font-size: 11.5px; resize: vertical;
-    }
-    .chapter-item {
-      display: flex; justify-content: space-between; align-items: center;
-      background: #24283b; border: 1px solid #414868; padding: 10px 12px; border-radius: 4px;
+    button:active:not(:disabled) { transform: scale(0.97); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    button.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+
+    /* 1. 시작 / 서브 화면 */
+    .menu-stack { display: flex; flex-direction: column; gap: 10px; width: 88%; margin: auto; }
+    .menu-stack button { padding: 15px; font-size: 14.5px; }
+    .screen-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .scroll-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+    .list-btn { text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+    textarea.notepad {
+      flex: 1; width: 100%; background: #0d0e14; color: var(--fx-green);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+      font-family: monospace; font-size: 12px; resize: none; user-select: text;
     }
 
-    /* 로그라이크 상단 상태바 */
-    .rogue-hud {
-      background: #1f2335; border: 1px solid #565f89; border-radius: 6px;
-      padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;
+    /* 비주얼 노벨 화면 */
+    .vn-illust-area {
+      flex: 1; background: var(--bg-panel); border: 1px dashed var(--border);
+      border-radius: 6px; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; gap: 12px;
     }
-    .rogue-hud-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-weight: bold; font-size: 13.5px; }
-    .rogue-subpanel {
-      background: #1a1b26; border: 1px solid #414868; border-radius: 6px;
-      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    .vn-textbox {
+      min-height: 34%; background: #0e1017; border: 2px solid var(--accent);
+      border-radius: 6px; padding: 14px; display: flex; flex-direction: column;
+      justify-content: space-between; cursor: pointer;
     }
-    .rogue-subpanel h2 { margin: 0; font-size: 16px; color: #e0af68; }
-    .choice-grid { display: flex; gap: 12px; flex-wrap: wrap; }
-    .choice-card {
-      flex: 1; min-width: 210px; background: #24283b; border: 1px solid #565f89;
-      border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px;
-      cursor: pointer; transition: 0.12s;
-    }
-    .choice-card:hover { border-color: #7aa2f7; transform: translateY(-2px); }
-
-    /* 전투 & 비주얼노벨 스테이지 뷰 */
-    .stage-view { display: flex; flex-direction: column; gap: 12px; }
-    .vn-stage-box {
-      background: #1a1b26; border: 1px solid #414868; border-radius: 6px;
-      padding: 14px; display: flex; flex-direction: column; gap: 12px;
-    }
-    .standing-row { display: flex; justify-content: space-between; align-items: stretch; gap: 14px; min-height: 125px; flex-wrap: wrap; }
-    .actor-slot {
-      flex: 1; min-width: 280px; background: #16161e; border: 1px dashed #414868;
-      border-radius: 6px; padding: 12px; display: flex; gap: 12px; align-items: center;
-    }
-    .sprite-placeholder {
-      width: 68px; height: 68px; background: #24283b; border: 1px solid #565f89;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; color: #7dcfff; text-align: center; flex-shrink: 0;
-    }
-    .actor-info { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-    .actor-name { font-weight: bold; color: #e0af68; font-size: 15px; }
-    .intent-box {
-      display: inline-block; background: #2e2236; border: 1px solid #bb9af7;
-      color: #ff9e64; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 4px;
-    }
-    .stat-line { display: flex; gap: 12px; font-size: 13px; font-weight: bold; flex-wrap: wrap; }
-    .badge-row { display: flex; flex-wrap: wrap; gap: 4px; min-height: 22px; }
-    .badge { font-size: 11px; padding: 2px 6px; border-radius: 3px; }
-    .badge.buff { background: #1b382c; color: #73daca; border: 1px solid #41a6b5; }
-    .badge.debuff { background: #3b2229; color: #f7768e; border: 1px solid #db4b4b; }
-    .badge.context { background: #2e2c44; color: #bb9af7; border: 1px solid #9d7cd8; }
-    .badge.relic { background: #382e1e; color: #e0af68; border: 1px solid #e0af68; }
-    .badge.trait { background: #1e2d3d; color: #7dcfff; border: 1px solid #7dcfff; }
-
-    .vn-dialogue-box {
-      background: #111218; border: 2px solid #7aa2f7; border-radius: 6px;
-      padding: 14px 16px; min-height: 100px; display: flex; flex-direction: column;
-      justify-content: space-between; cursor: pointer; user-select: none;
-    }
-    .vn-speaker { font-weight: bold; color: #e0af68; font-size: 14px; margin-bottom: 5px; }
-    .vn-text { font-size: 13.5px; line-height: 1.5; color: #c0caf5; }
-    .vn-next-indicator { align-self: flex-end; font-size: 12px; color: #7aa2f7; margin-top: 6px; }
     .vn-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-    .vn-choice-btn { text-align: left; background: #1f2335; border: 1px solid #7aa2f7; padding: 8px 12px; }
+    .vn-choice-btn { text-align: left; background: #1f2335; border: 1px solid var(--accent); padding: 9px 12px; font-size: 12.5px; }
 
-    .combat-board { display: flex; gap: 12px; flex-wrap: wrap; }
-    .hand-panel {
-      flex: 1.3; min-width: 320px; background: #1a1b26; border: 1px solid #414868;
-      border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
-    }
-    .hand-header { display: flex; justify-content: space-between; align-items: center; }
-    .hand-panel h3, .log-panel h3 { margin: 0; font-size: 14px; color: #7aa2f7; }
-    .hand-cards { display: flex; gap: 8px; flex-wrap: wrap; min-height: 115px; align-items: stretch; }
-    .card {
-      background: #24283b; border: 1px solid #7aa2f7; border-radius: 5px;
-      padding: 9px; width: 168px; cursor: pointer; transition: 0.12s; display: flex; flex-direction: column;
-    }
-    .card:hover { transform: translateY(-2px); background: #292e42; }
-    .card.disabled { opacity: 0.4; cursor: not-allowed; border-color: #414868; }
-    .card-cost {
-      float: right; background: #7aa2f7; color: #13141c; border-radius: 50%;
-      width: 20px; height: 20px; text-align: center; line-height: 20px; font-weight: bold; font-size: 12px;
-    }
-    .card-title { font-weight: bold; color: #e0af68; font-size: 12.5px; margin-bottom: 3px; }
-    .card-meta { font-size: 10.5px; color: #7dcfff; margin-bottom: 5px; }
-    .card-desc { font-size: 11px; color: #a9b1d6; line-height: 1.35; }
+    /* 2. 전투 화면 (15% : 35% : 35% : 15%) */
+    #screen-combat { padding: 8px; gap: 6px; position: relative; }
 
-    .log-panel {
-      flex: 1; min-width: 290px; background: #1a1b26; border: 1px solid #414868;
-      border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    .actor-box {
+      height: 15%; min-height: 82px;
+      background: var(--bg-panel); border: 2px solid var(--border); border-radius: 6px;
+      padding: 8px 10px; display: flex; gap: 10px; align-items: center;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .log-box {
-      background: #111218; border: 1px solid #292e42; border-radius: 4px;
-      padding: 8px; height: 195px; overflow-y: auto; font-family: monospace; font-size: 12px; line-height: 1.45;
+    .avatar-slot {
+      width: 56px; height: 56px; background: #111218; border: 1px solid var(--border);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      font-size: 10.5px; color: var(--text-sub); flex-shrink: 0; text-align: center;
+      image-rendering: pixelated;
     }
-    .log-hit { color: #f7768e; }
-    .log-sys { color: #7dcfff; }
-    .log-status { color: #e0af68; }
-    .log-story { color: #9ece6a; }
-    .log-passive { color: #bb9af7; }
+    .actor-detail { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+    .actor-top-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; }
+
+    .hp-bar-outer {
+      width: 100%; height: 14px; background: #0d0e14; border: 1px solid #2f3549;
+      border-radius: 3px; position: relative; overflow: hidden;
+    }
+    .hp-bar-fill {
+      height: 100%; width: 100%; background: linear-gradient(90deg, #db4b4b, #f7768e);
+      transition: width 0.25s ease-out;
+    }
+    .hp-bar-text {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000;
+    }
+
+    .meta-row { display: flex; justify-content: space-between; align-items: center; min-height: 18px; gap: 6px; }
+    .ap-gems { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+    .ap-gem {
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #232634; border: 1px solid #414868; transition: 0.15s;
+    }
+    .ap-gem.on {
+      background: #41f075; border-color: #d5ffdf;
+      box-shadow: 0 0 6px #41f075;
+    }
+    .status-mini { display: flex; gap: 4px; font-size: 10.5px; overflow-x: auto; }
+    .s-tag {
+      padding: 2px 6px; border-radius: 3px; background: #292e42;
+      border: 1px solid #414868; cursor: pointer; white-space: nowrap; font-size: 10.5px;
+    }
+    .s-tag.buff { border-color: var(--fx-blue); color: var(--fx-blue); }
+    .s-tag.debuff { border-color: var(--fx-purple); color: var(--fx-purple); }
+    .s-tag.context { border-color: var(--fx-yellow); color: var(--fx-yellow); }
+
+    /* 상단 35%: 적 예고 + 로그 + 메뉴 버튼 */
+    .log-section {
+      height: 35%; background: #0f1016; border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; position: relative;
+    }
+    .intent-header { display: flex; gap: 6px; align-items: stretch; }
+    .intent-banner {
+      flex: 1; background: #261f33; border: 1px solid var(--fx-purple);
+      border-radius: 4px; padding: 5px 8px; display: flex; flex-direction: column; justify-content: center;
+    }
+    .intent-label { font-size: 10px; color: var(--fx-purple); font-weight: bold; }
+    .intent-main { font-size: 12.5px; font-weight: 900; color: var(--fx-yellow); margin-top: 2px; line-height: 1.25; }
+    .menu-trigger-btn {
+      padding: 0 10px; font-size: 11.5px; background: #1f2335; border-color: #565f89; white-space: nowrap;
+    }
+    .log-scroll {
+      flex: 1; overflow-y: auto; font-family: monospace;
+      font-size: 11px; color: var(--text-sub); line-height: 1.45;
+      display: flex; flex-direction: column; gap: 2px; padding: 2px 4px;
+    }
+    .log-scroll div.recent { color: var(--text-main); font-weight: bold; }
+
+    /* 전투 중 비주얼노벨 대사 오버레이 (스토리 모드 전용) */
+    .combat-vn-overlay {
+      position: absolute; inset: 6px; background: rgba(14, 16, 23, 0.95);
+      border: 2px solid var(--accent); border-radius: 6px; padding: 12px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      cursor: pointer; z-index: 20;
+    }
+
+    /* 하단 35%: 손패 그리드 + 실행 바 */
+    .hand-section {
+      height: 35%; background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .hand-grid {
+      flex: 1; display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px; overflow-y: auto; align-content: start;
+    }
+    .hand-card {
+      background: var(--bg-card); border: 1.5px solid #414868; border-radius: 5px;
+      padding: 6px; display: flex; flex-direction: column; gap: 3px;
+      cursor: pointer; min-height: 78px; position: relative;
+    }
+    .hand-card.selected {
+      border-color: var(--fx-yellow); background: #2f334d;
+      box-shadow: 0 0 8px rgba(224, 175, 104, 0.35);
+    }
+    .c-cost {
+      position: absolute; top: 4px; right: 4px; width: 17px; height: 17px;
+      border-radius: 50%; background: var(--accent); color: #111;
+      font-size: 10.5px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+    }
+    .c-name { font-size: 11px; font-weight: bold; color: var(--fx-yellow); padding-right: 18px; word-break: keep-all; }
+    .c-type { font-size: 9.5px; color: var(--fx-blue); }
+    .c-desc { font-size: 9.5px; color: #a9b1d6; line-height: 1.25; margin-top: 2px; }
+
+    .action-bar { display: flex; gap: 6px; height: 36px; flex-shrink: 0; }
+    .action-bar button { flex: 1; padding: 0; font-size: 12px; }
+    #btn-exec-card { flex: 1.7; }
+
+    /* 3. 5색 시각 연출 */
+    @keyframes box-shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .fx-red {
+      animation: box-shake 0.32s ease-in-out;
+      border-color: var(--fx-red) !important;
+      box-shadow: inset 0 0 22px rgba(247, 118, 142, 0.55) !important;
+    }
+    .fx-green {
+      border-color: var(--fx-green) !important;
+      box-shadow: inset 0 0 22px rgba(158, 206, 106, 0.5) !important;
+    }
+    .fx-purple {
+      border-color: var(--fx-purple) !important;
+      box-shadow: inset 0 0 22px rgba(187, 154, 247, 0.5) !important;
+    }
+    .fx-blue {
+      border-color: var(--fx-blue) !important;
+      box-shadow: inset 0 0 22px rgba(125, 207, 255, 0.5) !important;
+    }
+    .fx-yellow {
+      border-color: var(--fx-yellow) !important;
+      box-shadow: inset 0 0 22px rgba(224, 175, 104, 0.5) !important;
+    }
+
+    /* 모달 */
+    .modal-overlay {
+      position: absolute; inset: 0; background: rgba(0, 0, 0, 0.82);
+      display: none; flex-direction: column; justify-content: center; align-items: center;
+      padding: 16px; z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      width: 100%; max-height: 82%; background: var(--bg-panel);
+      border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+    }
   </style>
 </head>
 <body>
 
-<div class="app-container">
-  <!-- 상단 공통 헤더 -->
-  <div class="header-bar">
-    <h1>🐰 Sir Mad Boomer: Rabbit Knight <span style="font-size:13px; color:#9ece6a;">v0.73 (티어 가산)</span></h1>
+<div id="app">
+
+  <!-- [1] 게임 시작 화면 -->
+  <div id="screen-start" class="screen active">
+    <div style="margin: auto 0 10px 0; text-align: center;">
+      <div style="width:96px; height:96px; margin:0 auto 12px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-sub);">[메인 도트]<br>토끼기사</div>
+      <h1 style="font-size: 20px; color: var(--accent);">Sir Mad Boomer</h1>
+      <p id="start-subtitle" style="font-size: 11.5px; color: var(--text-sub); margin-top: 6px; line-height: 1.4;">Rabbit Knight</p>
+    </div>
+    <div class="menu-stack">
+      <button onclick="AppUI.go('screen-save')">💾 세이브 관리 (기록장)</button>
+      <button onclick="AppUI.go('screen-story-list')">📖 스토리 모드</button>
+      <button id="btn-rogue-continue" class="primary hidden" onclick="RogueManager.continueFromSave()">⚔️ 기사도 이어하기</button>
+      <button class="primary" onclick="RogueManager.startNewRun()">⚔️ 새 기사도 시작 (1층)</button>
+    </div>
+  </div>
+
+  <!-- [2] 세이브 관리 -->
+  <div id="screen-save" class="screen">
+    <div class="screen-header">
+      <strong style="color:var(--fx-yellow);">💾 세이브 기록장</strong>
+      <button onclick="AppUI.go('screen-start')">뒤로</button>
+    </div>
+    <div style="font-size:11.5px; color:var(--text-sub);">직접 텍스트를 수정하거나 복사/붙여넣기하여 상태를 덮어씁니다. (# 주석 무시)</div>
+    <textarea id="save-textarea" class="notepad" spellcheck="false"></textarea>
     <div style="display:flex; gap:8px;">
-      <button id="btn-toggle-deck" class="hidden" onclick="RogueManager.toggleDeckModal()">덱 확인 / 관리</button>
-      <button id="btn-return-lobby" class="hidden" onclick="AppUI.returnToLobby()">세이브 & 로비로</button>
+      <button class="primary" style="flex:1;" onclick="AppUI.handleSaveImport()">기록 적용하기</button>
+      <button style="flex:1;" onclick="AppUI.copySaveText()">전체 복사</button>
     </div>
   </div>
 
-  <!-- [뷰 1] 메인 로비 화면 -->
-  <div id="view-lobby" class="lobby-view">
-    <div class="lobby-col">
-      <h2>💾 세이브 관리 (SaveLedger)</h2>
-      <div style="font-size:12px; color:#a9b1d6;">스토리 진행도 및 로그라이크(기사도) 계승 데이터가 순수 텍스트로 저장됩니다.</div>
-      <textarea id="save-textarea" class="save-io" spellcheck="false"></textarea>
-      <div style="display:flex; gap:8px;">
-        <button class="primary" style="flex:1;" onclick="AppUI.handleSaveImport()">텍스트 불러오기 (Import)</button>
-        <button style="flex:1;" onclick="AppUI.refreshSaveTextarea()">현재 상태 내보내기</button>
+  <!-- [3] 스토리 챕터 선택 -->
+  <div id="screen-story-list" class="screen">
+    <div class="screen-header">
+      <strong style="color:var(--fx-yellow);">📖 스토리 선택</strong>
+      <button onclick="AppUI.go('screen-start')">뒤로</button>
+    </div>
+    <div id="story-chapter-list" class="scroll-list"></div>
+  </div>
+
+  <!-- [4] 스토리 비주얼 노벨 화면 -->
+  <div id="screen-vn" class="screen">
+    <div class="screen-header">
+      <span id="vn-chapter-title" style="font-size:12px; color:var(--text-sub);">스토리</span>
+      <button onclick="AppUI.returnToLobby()" style="padding:4px 8px; font-size:11px;">포기 / 로비</button>
+    </div>
+    <div class="vn-illust-area">
+      <div id="vn-sprite-slot" class="avatar-slot" style="width:96px; height:96px;">[스탠딩 도트]<br>토끼기사</div>
+      <div style="font-size:11px; color:var(--text-sub);">(비주얼 노벨 연출 영역)</div>
+    </div>
+    <div class="vn-textbox" onclick="StorySequencer.onUserClickDialogue()">
+      <div>
+        <div id="vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:6px;"></div>
+        <div id="vn-text" style="font-size:13px; line-height:1.5;"></div>
+        <div id="vn-choices" class="vn-choices hidden" onclick="event.stopPropagation()"></div>
       </div>
-    </div>
-
-    <div class="lobby-col">
-      <h2>📖 모드 선택 - 스토리</h2>
-      <div style="font-size:12px; color:#a9b1d6;">StoryDB에 등록된 챕터를 재생합니다.</div>
-      <div id="story-chapter-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-    </div>
-
-    <div class="lobby-col">
-      <h2>⚔️ 모드 선택 - 로그라이크 (기사도)</h2>
-      <div id="rogue-lobby-info" style="font-size:12px; color:#a9b1d6; line-height:1.5;"></div>
-      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
-        <button id="btn-rogue-continue" class="primary hidden" onclick="RogueManager.continueFromSave()">저장된 기사도 이어하기 (계승 등반)</button>
-        <button class="primary" onclick="RogueManager.startNewRun()">새 기사도 시작 (1층부터)</button>
-      </div>
+      <div id="vn-next-hint" style="align-self:flex-end; font-size:11px; color:var(--accent); margin-top:6px;">다음 ▶</div>
     </div>
   </div>
 
-  <!-- [뷰 2] 로그라이크 진행 허브 (길 선택 / 캠프 / 보상 / 덱 확인) -->
-  <div id="view-rogue-hub" class="stage-view hidden">
-    <div id="rogue-hud" class="rogue-hud"></div>
-    <div id="rogue-content" class="rogue-subpanel"></div>
-    <div id="rogue-deck-modal" class="rogue-subpanel hidden"></div>
-  </div>
+  <!-- [5] 전투 화면 (15% : 35% : 35% : 15%) -->
+  <div id="screen-combat" class="screen">
 
-  <!-- [뷰 3] 스테이지 화면 (비주얼 노벨 + 전투 겸용) -->
-  <div id="view-stage" class="stage-view hidden">
-    <div id="stage-rogue-hud" class="rogue-hud hidden"></div>
-    <div class="vn-stage-box">
-      <div class="standing-row">
-        <div class="actor-slot">
-          <div class="sprite-placeholder" id="sprite-player">[도트 슬롯]<br>토끼기사</div>
-          <div class="actor-info" id="info-player"></div>
+    <!-- (최상단 15%) 적 박스 -->
+    <div id="box-enemy" class="actor-box">
+      <div id="sprite-enemy" class="avatar-slot">[적 도트]<br>64×64</div>
+      <div class="actor-detail">
+        <div class="actor-top-row">
+          <span id="enemy-name-label" style="color:var(--fx-red);">적</span>
+          <span id="enemy-armor-label" style="color:var(--fx-blue); font-size:12px;">🛡️ 방어 0</span>
         </div>
-        <div class="actor-slot">
-          <div class="sprite-placeholder" id="sprite-enemy">[도트 슬롯]<br>적</div>
-          <div class="actor-info" id="info-enemy"></div>
+        <div class="hp-bar-outer">
+          <div id="enemy-hp-fill" class="hp-bar-fill" style="width: 100%;"></div>
+          <div id="enemy-hp-text" class="hp-bar-text">0 / 0</div>
+        </div>
+        <div class="meta-row">
+          <div id="enemy-status-list" class="status-mini"></div>
         </div>
       </div>
+    </div>
 
-      <!-- 비주얼 노벨 대사창 (스토리 모드 시 표시) -->
-      <div id="vn-dialogue-box" class="vn-dialogue-box hidden" onclick="StorySequencer.onUserClickDialogue()">
+    <!-- (상단 35%) 적 예고 + 상세 로그 + 통합 메뉴 버튼 -->
+    <div class="log-section">
+      <div class="intent-header">
+        <div class="intent-banner">
+          <span id="intent-title" class="intent-label">적 다음 행동 예고</span>
+          <span id="intent-main" class="intent-main">-</span>
+        </div>
+        <button class="menu-trigger-btn" onclick="AppUI.openTacticalMenu()">
+          📋 메뉴<br><span id="deck-grave-Summary" style="font-size:10px; color:var(--text-sub);">덱0/묘0</span>
+        </button>
+      </div>
+
+      <div id="log-box" class="log-scroll"></div>
+
+      <!-- 스토리 모드 전투 중 대사 오버레이 -->
+      <div id="combat-vn-overlay" class="combat-vn-overlay hidden" onclick="StorySequencer.onUserClickDialogue()">
         <div>
-          <div id="vn-speaker" class="vn-speaker"></div>
-          <div id="vn-text" class="vn-text"></div>
-          <div id="vn-choices" class="vn-choices hidden" onclick="event.stopPropagation()"></div>
+          <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:4px;"></div>
+          <div id="combat-vn-text" style="font-size:12.5px; line-height:1.45; color:var(--text-main);"></div>
         </div>
-        <div id="vn-next-hint" class="vn-next-indicator">클릭하여 계속 ▶</div>
+        <div id="combat-vn-hint" style="align-self:flex-end; font-size:11px; color:var(--accent);">터치하여 계속 ▶</div>
       </div>
     </div>
 
-    <!-- 전투 조작 보드 -->
-    <div id="combat-board" class="combat-board hidden">
-      <div class="hand-panel">
-        <div class="hand-header">
-          <h3>🃏 플레이어 손패 <span id="hand-guide" style="font-size:12px; color:#e0af68; font-weight:normal;"></span></h3>
-          <button id="btn-end-turn" class="primary" onclick="AppUI.engine.endPlayerTurn()">턴 종료</button>
-        </div>
-        <div id="hand-cards" class="hand-cards"></div>
-      </div>
-      <div class="log-panel">
-        <h3>📜 전투 및 연출 로그</h3>
-        <div id="log-box" class="log-box"></div>
+    <!-- (하단 35%) 플레이어 손패 + 선택 후 실행 바 -->
+    <div class="hand-section">
+      <div id="hand-grid" class="hand-grid"></div>
+      <div class="action-bar">
+        <button id="btn-exec-card" class="primary" disabled onclick="AppUI.executeSelectedCard()">카드를 선택하세요</button>
+        <button id="btn-end-turn" onclick="AppUI.onClickEndTurn()">턴 종료</button>
       </div>
     </div>
+
+    <!-- (최하단 15%) 플레이어 박스 -->
+    <div id="box-player" class="actor-box">
+      <div id="sprite-player" class="avatar-slot">[내 도트]<br>토끼기사</div>
+      <div class="actor-detail">
+        <div class="actor-top-row">
+          <span id="player-name-label" style="color:var(--fx-yellow);">토끼기사</span>
+          <span id="player-armor-label" style="color:var(--fx-blue); font-size:12px;">🛡️ 방어 0</span>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="player-hp-fill" class="hp-bar-fill" style="width: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
+          <div id="player-hp-text" class="hp-bar-text">150 / 150</div>
+        </div>
+        <div class="meta-row">
+          <div id="player-ap-gems" class="ap-gems"></div>
+          <div id="player-status-list" class="status-mini"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
+
+  <!-- [6] 길 선택 / 캠프 / 보상 선택 화면 -->
+  <div id="screen-choice" class="screen">
+    <div class="screen-header">
+      <strong id="choice-header-title" style="color:var(--fx-yellow);">🧭 진행 선택</strong>
+      <div style="display:flex; gap:6px;">
+        <button onclick="AppUI.openTacticalMenu()" style="padding:6px 10px; font-size:11.5px;">📋 상태/덱</button>
+        <button onclick="AppUI.returnToLobby()" style="padding:6px 10px; font-size:11.5px;">로비로</button>
+      </div>
+    </div>
+    <div id="choice-subtitle" style="font-size:12px; color:var(--text-sub); line-height:1.4;"></div>
+    <div id="choice-list" class="scroll-list"></div>
+  </div>
+
+  <!-- [모달 1] 통합 전술 메뉴 (특성/유물 터치 설명 + 덱/무덤 카드 조회) -->
+  <div id="modal-menu" class="modal-overlay" onclick="AppUI.toggleModal('modal-menu', false)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="screen-header">
+        <strong>📋 전술 메뉴 & 상태</strong>
+        <button onclick="AppUI.toggleModal('modal-menu', false)" style="padding:4px 10px;">닫기</button>
+      </div>
+      <div id="menu-status-summary" style="font-size:12px; display:flex; flex-direction:column; gap:8px;"></div>
+      <hr style="border-color:var(--border);">
+      <div id="menu-pile-buttons" style="display:flex; gap:6px;"></div>
+      <button class="primary" onclick="AppUI.toggleModal('modal-menu', false); AppUI.returnToLobby();">💾 세이브 후 타이틀로 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- [모달 2] 상태이상 / 유물 / 특성 / 카드 목록 팝업 -->
+  <div id="modal-info" class="modal-overlay" onclick="AppUI.toggleModal('modal-info', false)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="screen-header">
+        <strong id="info-title" style="color:var(--fx-yellow); font-size:14px;">제목</strong>
+        <button onclick="AppUI.toggleModal('modal-info', false)" style="padding:4px 10px;">확인</button>
+      </div>
+      <div id="info-desc" style="font-size:12.5px; color:var(--text-main); line-height:1.5; max-height: 60vh; overflow-y: auto;">설명</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -589,6 +768,25 @@ const StatusDB = {
   }
 };
 
+const StatusMeta = {
+  CURSE: { icon: '💀', desc: '보유자의 턴이 끝날 때 스택×2 상태이상 피해를 입고 스택이 1 감소합니다.' },
+  BLEED: { icon: '🩸', desc: '보유자의 턴이 끝날 때 스택×8 상태이상 피해를 입고 스택이 1 감소합니다.' },
+  CONTRACT: { icon: '📜', desc: '보유자의 턴 종료 시 스택 1 감소. 유지되는 동안 다른 디버프 스택이 감소하지 않습니다.' },
+  DELIRIUM: { icon: '🧪', desc: '보유자의 턴이 끝날 때 스택×5 상태이상 피해를 입고 스택이 1 증가합니다.' },
+  BRAWL: { icon: '💢', desc: '시전자의 턴 시작 시 스택 1 감소. 보유 중에는 마법 카드를 사용할 수 없습니다.' },
+  BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 피해에 면역이 됩니다. (체력 상실 제외)' },
+  CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 턴 시작 시 기본 활력 회복량이 0이 됩니다.' },
+  GOBLIN_NEEDLE: { icon: '🌵', desc: '피격될 때마다 공격자에게 스택×5 물리 피해를 입힙니다.' },
+  VIPER_BLADE: { icon: '🗡️', desc: '타격할 때마다 대상에게 추가 물리 피해 7을 입히고 스택이 1 감소합니다.' },
+  PATIENCE: { icon: '🛡️', desc: '턴 종료 시 스택 1 감소. 입는 물리 피해를 0으로 만들고 누적(최대 400)하며, 해제될 때 누적 수치만큼 상태이상 피해를 입습니다.' },
+  REGEN: { icon: '💚', desc: '보유자의 체력이 하락할 때 HP를 7 회복하고 스택이 1 감소합니다.' },
+  BABA_YAGA: { icon: '🪞', desc: '턴 시작마다 스택 1 감소. 입는 모든 피해를 누적하며, 해제될 때 누적 수치만큼 적에게 물리 피해를 입힙니다.' },
+  SULLIVAN: { icon: '⚡', desc: '체력이 하락할 때 스택 1 감소. 해제될 때 적에게 뇌진탕 1을 부여합니다.' },
+  CTX_FIGHTING_SPIRIT: { icon: '🔥', desc: '이번 턴 동안 자신이 사용하는 1코스트 공격 카드의 타수가 +1 증가합니다.' },
+  CTX_BLESSING_IN_DISGUISE: { icon: '🃏', desc: '자신의 다음 턴이 끝날 때까지 상태이상 피해를 입을 때마다 카드를 1장 뽑습니다.' },
+  CTX_MIST_FORTRESS: { icon: '❄️', desc: '자신의 다음 턴이 끝날 때까지 입는 모든 피해가 22 감소합니다.' }
+};
+
 const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
   k => StatusDB[k].category === STATUS_CATEGORY.BUFF || StatusDB[k].category === STATUS_CATEGORY.DEBUFF
 );
@@ -938,6 +1136,9 @@ class StatusManager {
       target.statuses.push(inst);
     }
     this.engine.emitLog(`📌 [상태 부여] ${target.name} <- [${def.name} ${finalStacks}] (현재:${inst.stacks})`, 'log-status');
+    // 버프면 파란색(fx-blue), 디버프면 보라색(fx-purple), 턴맥락이면 노란색(fx-yellow) 연출
+    const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
+    this.engine.emitFx(target, fx);
     this.engine.notifyRender();
   }
 
@@ -1040,6 +1241,13 @@ class CombatEngine {
     return hits;
   }
 
+  // CombatEngine 클래스 내부에 메서드 추가
+  emitFx(targetEntity, fxClass) {
+    if (this.onFxCallback && targetEntity) {
+      this.onFxCallback(targetEntity === this.player ? 'box-player' : 'box-enemy', fxClass);
+    }
+  }
+
   executeAttack(user, target, damageOrFn, currentCard = this.activeCard) {
     const isCardAttack = user === this.player && currentCard;
     const hits = isCardAttack ? this.getEffectiveHits(user, currentCard) : 1;
@@ -1101,6 +1309,9 @@ class CombatEngine {
         if (def.onHpDecreased) def.onHpDecreased(this, target, actualLost, inst);
       });
     }
+    if (actualLost > 0 || packet.amount > 0) {
+      this.emitFx(target, 'fx-red');
+    }
     if (packet.isStrike && source !== target) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
@@ -1128,6 +1339,7 @@ class CombatEngine {
   gainArmor(target, amount, reason) {
     target.armor += amount;
     this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
+    this.emitFx(target, 'fx-blue');
     this.notifyRender();
   }
 
@@ -1135,12 +1347,14 @@ class CombatEngine {
     const prev = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + amount);
     this.emitLog(`💚 [${reason}] ${target.name} HP +${target.hp - prev} 회복`, 'log-sys');
+    this.emitFx(target, 'fx-green');
     this.notifyRender();
   }
 
   recoverEnergy(user, amount) {
     user.energy = Math.min(user.maxEnergy, user.energy + amount);
     this.emitLog(`⚡ ${user.name} 활력 +${amount} (현재:${user.energy}/${user.maxEnergy})`, 'log-sys');
+    this.emitFx(user, 'fx-yellow');
     this.notifyRender();
   }
 
@@ -1326,7 +1540,7 @@ class CombatEngine {
 
 /**
  * ============================================================================
- * 6. RogueManager (로그라이크 '기사도' 진행, 길 선택, 보상 큐, 세이브 계승)
+ * 6. RogueManager (모바일 세로형 #screen-choice 연동 버전)
  * ============================================================================
  */
 const RogueManager = {
@@ -1335,45 +1549,29 @@ const RogueManager = {
   BASE_MAX_DECK_SIZE: 21,
 
   state: {
-    active: false,
-    floor: 1,
-    hp: 150,
-    maxHp: 150,
-    hitTakenCount: 0,
-    deck: [],
-    relics: [],
-    traits: [],
-    clearedBosses: []
+    active: false, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
+    deck: [], relics: [], traits: [], clearedBosses: []
   },
-
   currentPaths: [],
-  activeNodeQueue: [],
-  currentNodeType: null,
   rewardQueue: [],
 
   getMaxFloor() {
-    const bossCount = Object.values(EnemyDB).filter(e => e.isBoss).length;
-    return bossCount * 10;
+    return Object.values(EnemyDB).filter(e => e.isBoss).length * 10;
   },
-
   getMaxDeckSize() {
     let max = this.BASE_MAX_DECK_SIZE;
     this.state.traits.forEach(tid => {
-      const def = TraitDB[tid];
-      if (def && def.modifyMaxDeckSize) max = def.modifyMaxDeckSize(max);
+      if (TraitDB[tid]?.modifyMaxDeckSize) max = TraitDB[tid].modifyMaxDeckSize(max);
     });
     return max;
   },
-
   getRewardCardChoiceCount() {
     let cnt = 3;
     this.state.traits.forEach(tid => {
-      const def = TraitDB[tid];
-      if (def && def.modifyRewardCardChoices) cnt = def.modifyRewardCardChoices(cnt);
+      if (TraitDB[tid]?.modifyRewardCardChoices) cnt = TraitDB[tid].modifyRewardCardChoices(cnt);
     });
     return cnt;
   },
-
   hasRelic(id) { return this.state.relics.includes(id); },
   hasTrait(id) { return this.state.traits.includes(id); },
 
@@ -1405,126 +1603,147 @@ const RogueManager = {
 
   startNewRun() {
     this.state = {
-      active: true,
-      floor: 1,
-      hp: 150,
-      maxHp: 150,
-      hitTakenCount: 0,
-      deck: [...this.STARTER_DECK],
-      relics: [],
-      traits: [],
-      clearedBosses: []
+      active: true, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
+      deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: []
     };
     this.syncToSaveLedger();
-    AppUI.showRogueHubView();
-    this.renderStartingTraitSelection(); // 길 선택 대신 특성 선택 화면 렌더링
+    AppUI.mode = 'ROGUE_HUB';
+    AppUI.go('screen-choice');
+    this.renderStartingTraitSelection();
   },
 
   continueFromSave() {
     this.loadFromSaveLedger();
     this.state.active = true;
-    this.enterHubForCurrentFloor();
+    AppUI.mode = 'ROGUE_HUB';
+    AppUI.go('screen-choice');
+    if (this.state.traits.length === 0 && this.state.floor === 1) {
+      this.renderStartingTraitSelection();
+    } else {
+      this.enterHubForCurrentFloor();
+    }
   },
 
   renderStartingTraitSelection() {
-    this.renderHud();
-    const allTraits = Object.keys(TraitDB);
-    // 무작위로 중복 없는 특성 3개 추출
-    const offeredIds = RNG.sampleUnique(allTraits, 3);
-
-    const html = offeredIds.map(tid => {
-      const t = TraitDB[tid];
-      return `
-        <div class="choice-card" onclick="RogueManager.pickStartingTrait('${tid}')">
-          <div style="font-weight:bold; color:#7dcfff;">🧬 [${t.id}] ${t.name}</div>
-          <div style="font-size:12px; color:#a9b1d6;">${t.desc}</div>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🌟 기사도 시작 — 초기 특성 선택 (3택 1)</h2>
-      <div style="font-size:12px; color:#9ece6a;">이번 여정을 함께할 특성을 하나 선택하십시오.</div>
-      <div class="choice-grid">${html}</div>
-    `;
+    const offeredIds = RNG.sampleUnique(Object.keys(TraitDB), 3);
+    AppUI.setChoiceScreen(
+      '🌟 초기 특성 선택 (3택 1)',
+      '이번 기사도 여정을 함께할 고유 특성을 1개 선택하십시오.',
+      offeredIds.map(tid => {
+        const t = TraitDB[tid];
+        return {
+          title: `🧬 [${t.id}] ${t.name}`,
+          desc: t.desc,
+          borderColor: 'var(--fx-blue)',
+          onClick: () => this.pickStartingTrait(tid)
+        };
+      })
+    );
   },
 
   pickStartingTrait(traitId) {
-    this.state.traits.push(traitId);
-    
-    // 빳빳한 털(+50 HP), 빠른 발굽(-50 HP) 등의 획득 즉시 반영 효과 실행
-    const def = TraitDB[traitId];
-    if (def && def.onAcquire) def.onAcquire(this.state);
-    
+    if (!this.hasTrait(traitId)) {
+      this.state.traits.push(traitId);
+      if (TraitDB[traitId]?.onAcquire) TraitDB[traitId].onAcquire(this.state);
+    }
     this.syncToSaveLedger();
-    
-    // 특성을 골랐으므로 정상적인 1층 길 선택 화면으로 진입
     this.enterHubForCurrentFloor();
   },
 
   enterHubForCurrentFloor() {
-    AppUI.showRogueHubView();
+    AppUI.mode = 'ROGUE_HUB';
+    AppUI.go('screen-choice');
     const maxFloor = this.getMaxFloor();
-
-    // 구현된 최고층을 돌파한 경우: 다음 층 진행 불가 & 세이브/계승 안내 화면
     if (this.state.floor > maxFloor) {
       this.renderMaxFloorReached(maxFloor);
       return;
     }
-
     this.generatePathsForCurrentFloor();
     this.renderPathSelection();
   },
 
   generatePathsForCurrentFloor() {
     const floor = this.state.floor;
-    
-    // 1. 보스층 처리
     if (floor % 10 === 0) {
       this.currentPaths = ['BOSS'];
       return;
     }
+    const optionCount = RNG.randInt(1, 3);
+    const pool = ['NORMAL', 'NORMAL', 'ELITE', 'CAMP'];
+    const options = [];
+    for (let i = 0; i < optionCount; i++) options.push(RNG.pickRandom(pool));
 
-    // 2. 방 개수는 무조건 2~3개로 고정 (선택권 박탈 방지)
-    const optionCount = RNG.randInt(2, 3);
-
-    // 3. 중복 없는 방 후보군 풀 설정 (1층은 끔살 방지를 위해 엘리트 제외)
-    const pool = (floor % 10 === 1) ? ['NORMAL', 'CAMP'] : ['NORMAL', 'ELITE', 'CAMP'];
-
-    // 4. 후보군에서 중복 없이 뽑기 (똑같은 방 2~3개 뜨는 바보 현상 해결)
-    let options = RNG.sampleUnique(pool, Math.min(optionCount, pool.length));
-
-    // 5. 요람사진(006) 유물 또는 9층 확정 캠프 룰 적용
-    const isCampMilestone = (floor % 10 === 9);
-    const forceCamp = isCampMilestone || this.hasRelic('006');
-
-    if (forceCamp && !options.includes('CAMP')) {
-      // 이미 2~3개의 서로 다른 방이 보장되어 있으므로, 
-      // 랜덤한 방 1개를 덮어써도 일반 전투나 엘리트 전투가 최소 1개는 반드시 살아남음
+    const isCampMilestone = (floor % 9 === 0) || (floor % 10 === 9);
+    if ((isCampMilestone || this.hasRelic('006')) && !options.includes('CAMP')) {
       options[RNG.randInt(0, options.length - 1)] = 'CAMP';
     }
-
-    // 배열을 한 번 더 섞어서 UI상 캠프의 위치가 랜덤하게 나오도록 처리
-    this.currentPaths = RNG.sampleUnique(options, options.length);
+    this.currentPaths = options;
   },
 
-  selectPath(type) {
-    this.currentNodeType = type;
-    if (type === 'CAMP') {
-      this.renderCampView();
+  renderPathSelection() {
+    const meta = {
+      NORMAL: { title: '⚔️ 일반 전투', desc: '일반 적과 교전합니다. (승리 시 카드 보상)', color: 'var(--accent)' },
+      ELITE: { title: '🔥 엘리트 전투', desc: '강력한 적과 교전합니다. (승리 시 카드 + 유물 보상)', color: 'var(--fx-purple)' },
+      CAMP: { title: '⛺ 캠프 (정비소)', desc: '체력 35% 회복 또는 덱에서 카드 1장을 제거합니다.', color: 'var(--fx-green)' },
+      BOSS: { title: '👑 보스 결전', desc: '층의 지배자와 결전을 치릅니다. (HP 50% 회복 + 카드 + 유물 + 특성)', color: 'var(--fx-red)' }
+    };
+    AppUI.setChoiceScreen(
+      `🧭 ${this.state.floor}층 갈림길 선택`,
+      `현재 HP: ${this.state.hp}/${this.state.maxHp} | 덱: ${this.state.deck.length}/${this.getMaxDeckSize()}장`,
+      this.currentPaths.map(type => ({
+        title: meta[type].title,
+        desc: meta[type].desc,
+        borderColor: meta[type].color,
+        onClick: () => type === 'CAMP' ? this.renderCampView() : this.startCombatNode(type)
+      }))
+    );
+  },
+
+  renderCampView() {
+    const healAmt = Math.floor(this.state.maxHp * 0.35);
+    const canRemove = this.state.deck.length > this.MIN_DECK_SIZE;
+    const items = [
+      {
+        title: `💚 휴식: 체력 35% 회복 (+${healAmt} HP)`,
+        desc: `체력을 ${Math.min(this.state.maxHp, this.state.hp + healAmt)} / ${this.state.maxHp}(으)로 회복하고 다음 층으로 이동합니다.`,
+        borderColor: 'var(--fx-green)',
+        onClick: () => {
+          this.state.hp = Math.min(this.state.maxHp, this.state.hp + healAmt);
+          this.advanceFloor();
+        }
+      }
+    ];
+
+    if (canRemove) {
+      this.state.deck.forEach((cid, idx) => {
+        const c = CardDB[cid];
+        items.push({
+          title: `🗑️ 카드 제거: [${c.id}] ${c.name} (코스트 ${c.cost})`,
+          desc: c.desc,
+          borderColor: 'var(--fx-red)',
+          onClick: () => {
+            this.state.deck.splice(idx, 1);
+            this.advanceFloor();
+          }
+        });
+      });
     } else {
-      this.startCombatNode(type);
+      items.push({
+        title: `🚫 카드 제거 불가 (최소 덱 ${this.MIN_DECK_SIZE}장 제한)`,
+        desc: '현재 덱이 최소 매수이므로 카드를 더 제거할 수 없습니다.',
+        disabled: true
+      });
     }
+
+    AppUI.setChoiceScreen(`⛺ ${this.state.floor}층 캠프`, '체력을 회복하거나 덱의 카드 1장을 제거하십시오.', items);
   },
 
   startCombatNode(type) {
     let enemyId = 'COAL_MOLE';
     if (type === 'NORMAL') {
-      const normals = Object.values(EnemyDB).filter(e => !e.isBoss && !e.isElite);
-      enemyId = RNG.pickRandom(normals).id;
+      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => !e.isBoss && !e.isElite)).id;
     } else if (type === 'ELITE') {
-      const elites = Object.values(EnemyDB).filter(e => e.isElite);
-      enemyId = RNG.pickRandom(elites).id;
+      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => e.isElite)).id;
     } else if (type === 'BOSS') {
       const allBosses = Object.values(EnemyDB).filter(e => e.isBoss);
       const uncleared = allBosses.filter(b => !this.state.clearedBosses.includes(b.id));
@@ -1536,9 +1755,9 @@ const RogueManager = {
     eng.turn = 1;
     eng.replayDepth = 0;
 
-    // 플레이어 엔티티 구성 및 유물/특성 장착
     eng.player = new Entity('토끼기사', this.state.maxHp, true);
     eng.player.hp = this.state.hp;
+    eng.player.energy = 0; // 첫 턴 3 활력 시작 보장
     eng.player.runTrackers.hitTakenCount = this.state.hitTakenCount;
 
     this.state.traits.forEach(tid => {
@@ -1556,35 +1775,22 @@ const RogueManager = {
       eng.player.relics.push(inst);
     });
 
-    eng.player.energy = 0;
     const shuffledIds = RNG.sampleUnique(this.state.deck, this.state.deck.length);
     eng.player.deck = shuffledIds.map(cid => eng.createCardInstance(cid));
 
-    // 적 엔티티 구성
-    // const eDef = EnemyDB[enemyId];
-    // eng.enemy = new Entity(eDef.name, eDef.maxHp, false);
-    // eng.enemy.enemyId = enemyId;
-
+    // 티어 스케일링 적용 (10층마다 체력 1.45배, 물리 공격력 +3)
     const eDef = EnemyDB[enemyId];
-    
-    // 1~10층 = 0 / 11~20층 = 1 / 21~30층 = 2
-    const tier = Math.floor((this.state.floor - 1) / 10); 
-    
-    // 최대 HP 1.45배 복리 스케일링 (소수점 버림)
+    const tier = Math.floor((this.state.floor - 1) / 10);
     const scaledHp = Math.floor(eDef.maxHp * Math.pow(1.45, tier));
-    
     eng.enemy = new Entity(eDef.name, scaledHp, false);
     eng.enemy.enemyId = enemyId;
-    
-    // 적 엔티티에 티어당 물리 데미지 +3 가산 속성 부여
     eng.enemy.tierDamageBonus = tier * 3;
 
     eng.onCardPlayedCallback = null;
     eng.onCombatEndCallback = (victory) => this.onCombatFinished(victory, type, enemyId);
 
     AppUI.enterRogueCombatView();
-    AppUI.clearLogs();
-    eng.emitLog(`⚔️ [${this.state.floor}층 ${type} 전투] ${eDef.name} (HP ${eDef.maxHp}) 등장!`, 'log-sys');
+    eng.emitLog(`⚔️ [${this.state.floor}층] ${eDef.name} (HP ${scaledHp}) 전투 개시!`, 'log-sys');
     eng.startPlayerTurn();
   },
 
@@ -1596,333 +1802,180 @@ const RogueManager = {
     if (!victory) {
       this.state.active = false;
       this.syncToSaveLedger();
-      AppUI.showRogueHubView();
-      document.getElementById('rogue-content').innerHTML = `
-        <h2>💀 기사도 등반 실패 (${this.state.floor}층)</h2>
-        <div>적의 공세에 쓰러졌습니다. 로비로 돌아가 새로운 런을 시작할 수 있습니다.</div>
-        <div><button class="primary" onclick="AppUI.returnToLobby()">로비로 돌아가기</button></div>
-      `;
-      this.renderHud();
+      AppUI.mode = 'ROGUE_HUB';
+      AppUI.go('screen-choice');
+      AppUI.setChoiceScreen('💀 기사도 등반 실패', `${this.state.floor}층에서 쓰러졌습니다.`, [
+        { title: '🏠 타이틀로 돌아가기', desc: '세이브를 정리하고 메인 화면으로 이동합니다.', borderColor: 'var(--fx-red)', onClick: () => AppUI.returnToLobby() }
+      ]);
       return;
     }
 
-    // 승리 보상 큐 구성
     this.rewardQueue = [];
     if (nodeType === 'NORMAL') {
       this.rewardQueue.push({ type: 'CARD' });
       if (this.hasRelic('005') && RNG.randInt(1, 100) <= 10) {
-        this.rewardQueue.push({ type: 'RELIC', reason: '유물 [마도서] 10% 발동!' });
+        this.rewardQueue.push({ type: 'RELIC', note: '🏺 유물 [마도서] 10% 확률 발동!' });
       }
     } else if (nodeType === 'ELITE') {
       this.rewardQueue.push({ type: 'CARD' });
       this.rewardQueue.push({ type: 'RELIC' });
     } else if (nodeType === 'BOSS') {
-      if (!this.state.clearedBosses.includes(enemyId)) {
-        this.state.clearedBosses.push(enemyId);
-      }
+      if (!this.state.clearedBosses.includes(enemyId)) this.state.clearedBosses.push(enemyId);
       const healAmt = Math.floor(this.state.maxHp * 0.5);
       this.state.hp = Math.min(this.state.maxHp, this.state.hp + healAmt);
-      this.rewardQueue.push({ type: 'CARD', note: `보스 격파! 체력 50%(+${healAmt})가 회복되었습니다.` });
+      this.rewardQueue.push({ type: 'CARD', note: `👑 보스 격파! 체력 50%(+${healAmt}) 회복 완료` });
       this.rewardQueue.push({ type: 'RELIC' });
       this.rewardQueue.push({ type: 'TRAIT' });
     }
 
     this.syncToSaveLedger();
-    AppUI.showRogueHubView();
+    AppUI.mode = 'ROGUE_HUB';
+    AppUI.go('screen-choice');
     this.processNextReward();
   },
 
   processNextReward() {
-    this.renderHud();
     if (this.rewardQueue.length === 0) {
       this.advanceFloor();
       return;
     }
+    const next = this.rewardQueue.shift();
+    if (next.type === 'CARD') this.renderCardReward(next.note);
+    else if (next.type === 'RELIC') this.renderRelicReward(next.note);
+    else if (next.type === 'TRAIT') this.renderTraitReward();
+  },
 
-    const reward = this.rewardQueue.shift();
-    if (reward.type === 'CARD') {
-      this.renderCardReward(reward.note);
-    } else if (reward.type === 'RELIC') {
-      this.renderRelicReward(reward.reason);
-    } else if (reward.type === 'TRAIT') {
-      this.renderTraitReward();
-    }
+  renderCardReward(note = '') {
+    const choiceCount = this.getRewardCardChoiceCount();
+    const offeredIds = RNG.sampleUnique(Object.keys(CardDB), choiceCount);
+    const maxDeck = this.getMaxDeckSize();
+    const isFull = this.state.deck.length >= maxDeck;
+
+    const items = offeredIds.map(cid => {
+      const c = CardDB[cid];
+      const copies = this.state.deck.filter(x => x === cid).length;
+      const canAdd = !isFull && copies < 3;
+      return {
+        title: `🃏 [${c.id}] ${c.name} (코스트 ${c.cost} | 보유 ${copies}/3)`,
+        desc: `${c.desc}${!canAdd ? (isFull ? ' [덱 상한 도달]' : ' [동명 3장 제한]') : ''}`,
+        borderColor: 'var(--fx-yellow)',
+        disabled: !canAdd,
+        onClick: () => {
+          if (!canAdd) return;
+          this.state.deck.push(cid);
+          this.syncToSaveLedger();
+          this.processNextReward();
+        }
+      };
+    });
+
+    items.push({
+      title: '⏭️ 카드 보상 건너뛰기',
+      desc: '카드를 추가하지 않고 다음 보상으로 넘어갑니다.',
+      borderColor: 'var(--border)',
+      onClick: () => this.processNextReward()
+    });
+
+    AppUI.setChoiceScreen('🎁 전투 승리 — 카드 보상', note || `원하는 카드를 1장 선택하십시오. (현재 덱 ${this.state.deck.length}/${maxDeck}장)`, items);
+  },
+
+  renderRelicReward(note = '') {
+    const unowned = Object.keys(RelicDB).filter(id => !this.hasRelic(id));
+    if (unowned.length === 0) { this.processNextReward(); return; }
+    const offered = RNG.sampleUnique(unowned, 2);
+
+    const items = offered.map(rid => {
+      const r = RelicDB[rid];
+      return {
+        title: `🏺 [${r.id}] ${r.name}`,
+        desc: r.desc,
+        borderColor: 'var(--fx-yellow)',
+        onClick: () => {
+          if (!this.hasRelic(rid)) this.state.relics.push(rid);
+          this.syncToSaveLedger();
+          this.processNextReward();
+        }
+      };
+    });
+    items.push({
+      title: '⏭️ 유물 건너뛰기',
+      desc: '유물을 획득하지 않고 넘어갑니다.',
+      borderColor: 'var(--border)',
+      onClick: () => this.processNextReward()
+    });
+
+    AppUI.setChoiceScreen('🏺 유물 보상 (2택 1)', note || '보유하지 않은 유물 중 1개를 선택하십시오.', items);
+  },
+
+  renderTraitReward() {
+    const unowned = Object.keys(TraitDB).filter(id => !this.hasTrait(id));
+    if (unowned.length === 0) { this.processNextReward(); return; }
+    const offered = RNG.sampleUnique(unowned, 2);
+
+    const items = offered.map(tid => {
+      const t = TraitDB[tid];
+      return {
+        title: `🧬 [${t.id}] ${t.name}`,
+        desc: t.desc,
+        borderColor: 'var(--fx-blue)',
+        onClick: () => {
+          if (!this.hasTrait(tid)) {
+            this.state.traits.push(tid);
+            if (t.onAcquire) t.onAcquire(this.state);
+          }
+          this.syncToSaveLedger();
+          this.processNextReward();
+        }
+      };
+    });
+    items.push({
+      title: '⏭️ 특성 건너뛰기',
+      desc: '특성을 획득하지 않고 넘어갑니다.',
+      borderColor: 'var(--border)',
+      onClick: () => this.processNextReward()
+    });
+
+    AppUI.setChoiceScreen('🧬 보스 격파 — 특성 보상 (2택 1)', '보유하지 않은 특성 중 1개를 선택하십시오.', items);
   },
 
   advanceFloor() {
     this.state.floor += 1;
-    // 특성 001 빳빳한 털: 층을 오를 때마다 HP 7 회복
     this.state.traits.forEach(tid => {
-      const def = TraitDB[tid];
-      if (def && def.onAdvanceFloor) def.onAdvanceFloor(this.state);
+      if (TraitDB[tid]?.onAdvanceFloor) TraitDB[tid].onAdvanceFloor(this.state);
     });
     this.syncToSaveLedger();
     this.enterHubForCurrentFloor();
   },
 
-  // --- UI 렌더링 (허브/캠프/보상/덱 관리) ---
-  renderHud() {
-    const maxDeck = this.getMaxDeckSize();
-    const maxFloor = this.getMaxFloor();
-    const relicBadges = this.state.relics.map(id => `<span class="badge relic" title="${RelicDB[id]?.desc || ''}">🏺 ${RelicDB[id]?.name || id}</span>`).join('');
-    const traitBadges = this.state.traits.map(id => `<span class="badge trait" title="${TraitDB[id]?.desc || ''}">🧬 ${TraitDB[id]?.name || id}</span>`).join('');
-
-    const html = `
-      <div class="rogue-hud-top">
-        <span>🏰 층수: ${this.state.floor}층 (현재 구현 상한: ${maxFloor}층)</span>
-        <span>❤️ HP: ${this.state.hp} / ${this.state.maxHp}</span>
-        <span>🃏 덱: ${this.state.deck.length}장 (최소 ${this.MIN_DECK_SIZE} ~ 최대 ${maxDeck}장)</span>
-        <span style="color:#9ece6a;">누적 피격(복수): ${this.state.hitTakenCount}회</span>
-      </div>
-      <div class="badge-row">
-        ${traitBadges || '<span style="font-size:11px; color:#565f89;">보유 특성 없음</span>'}
-        ${relicBadges || '<span style="font-size:11px; color:#565f89; margin-left:8px;">보유 유물 없음</span>'}
-      </div>
-    `;
-    document.getElementById('rogue-hud').innerHTML = html;
-    document.getElementById('stage-rogue-hud').innerHTML = html;
-  },
-
-  renderPathSelection() {
-    this.renderHud();
-    const labelMap = {
-      NORMAL: { title: '⚔️ 일반 전투', desc: '일반 적과 교전합니다. (승리 시 카드 보상)' },
-      ELITE: { title: '🔥 엘리트 전투', desc: '강력한 엘리트 적과 교전합니다. (승리 시 카드 + 유물 보상)' },
-      CAMP: { title: '⛺ 캠프', desc: '체력 35% 회복 또는 덱에서 카드 1장을 제거합니다.' },
-      BOSS: { title: '👑 보스 전투', desc: '10층마다 등장하는 보스와 결전을 치릅니다. (HP 50% 회복 + 카드 + 유물 + 특성)' }
-    };
-
-    const cardsHtml = this.currentPaths.map((type) => {
-      const info = labelMap[type];
-      return `
-        <div class="choice-card" onclick="RogueManager.selectPath('${type}')">
-          <div style="font-weight:bold; font-size:15px; color:#7aa2f7;">${info.title}</div>
-          <div style="font-size:12px; color:#a9b1d6;">${info.desc}</div>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🧭 ${this.state.floor}층 — 길 선택 (${this.currentPaths.length}개의 갈림길)</h2>
-      <div style="font-size:12px; color:#9ece6a;">원하는 경로를 1개 선택하여 전진하십시오.</div>
-      <div class="choice-grid">${cardsHtml}</div>
-    `;
-  },
-
-  renderCampView() {
-    this.renderHud();
-    const healAmt = Math.floor(this.state.maxHp * 0.35);
-    const canRemove = this.state.deck.length > this.MIN_DECK_SIZE;
-
-    const deckButtons = this.state.deck.map((cid, idx) => {
-      const c = CardDB[cid];
-      return `
-        <button ${!canRemove ? 'disabled' : ''} onclick="RogueManager.campRemoveCard(${idx})">
-          [${c.id}] ${c.name} 제거
-        </button>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>⛺ ${this.state.floor}층 캠프 — 휴식 또는 카드 제거 (택 1)</h2>
-      <div class="choice-grid">
-        <div class="choice-card" onclick="RogueManager.campHeal(${healAmt})">
-          <div style="font-weight:bold; color:#73daca; font-size:15px;">💚 체력 35% 회복 (+${healAmt} HP)</div>
-          <div style="font-size:12px; color:#a9b1d6;">현재 체력을 ${Math.min(this.state.maxHp, this.state.hp + healAmt)} / ${this.state.maxHp}(으)로 회복하고 다음 층으로 이동합니다.</div>
-        </div>
-      </div>
-      <div style="margin-top:8px; font-size:13px; font-weight:bold; color:#f7768e;">
-        🗑️ 또는 아래에서 제거할 카드 1장 선택 ${!canRemove ? '(최소 덱 매수 9장 제한으로 현재 제거 불가)' : ''}
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:6px;">${deckButtons}</div>
-    `;
-  },
-
-  campHeal(amount) {
-    this.state.hp = Math.min(this.state.maxHp, this.state.hp + amount);
-    this.advanceFloor();
-  },
-
-  campRemoveCard(deckIndex) {
-    if (this.state.deck.length <= this.MIN_DECK_SIZE) return;
-    this.state.deck.splice(deckIndex, 1);
-    this.advanceFloor();
-  },
-
-  renderCardReward(note = '') {
-    const choiceCount = this.getRewardCardChoiceCount();
-    const allCardIds = Object.keys(CardDB);
-    const offeredIds = RNG.sampleUnique(allCardIds, choiceCount);
-    const maxDeck = this.getMaxDeckSize();
-    const isDeckFull = this.state.deck.length >= maxDeck;
-
-    const cardsHtml = offeredIds.map(cid => {
-      const c = CardDB[cid];
-      const copies = this.state.deck.filter(x => x === cid).length;
-      const canAdd = !isDeckFull && copies < 3;
-      return `
-        <div class="choice-card" style="${!canAdd ? 'opacity:0.45; cursor:not-allowed;' : ''}" onclick="${canAdd ? `RogueManager.pickCardReward('${cid}')` : ''}">
-          <div style="font-weight:bold; color:#e0af68;">[${c.id}] ${c.name} (코스트 ${c.cost})</div>
-          <div style="font-size:11px; color:#7dcfff;">${c.type} | 현재 보유: ${copies}/3장</div>
-          <div style="font-size:12px; color:#a9b1d6;">${c.desc}</div>
-          ${!canAdd ? `<div style="font-size:11px; color:#f7768e;">${isDeckFull ? '덱 상한 도달 (하단에서 기존 카드 제거 후 획득 가능)' : '동명 카드 3장 제한 도달'}</div>` : ''}
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🎁 전투 승리 — 카드 보상 (${choiceCount}택 1 또는 건너뛰기)</h2>
-      ${note ? `<div style="color:#9ece6a; font-size:13px;">${note}</div>` : ''}
-      <div class="choice-grid">${cardsHtml}</div>
-      <div><button onclick="RogueManager.processNextReward()">보상 건너뛰기 ▶</button></div>
-    `;
-  },
-
-  pickCardReward(cardId) {
-    if (this.state.deck.length >= this.getMaxDeckSize()) return;
-    const copies = this.state.deck.filter(x => x === cardId).length;
-    if (copies >= 3) return;
-    this.state.deck.push(cardId);
-    this.syncToSaveLedger();
-    this.processNextReward();
-  },
-
-  renderRelicReward(reason = '') {
-    const unowned = Object.keys(RelicDB).filter(id => !this.hasRelic(id));
-    if (unowned.length === 0) {
-      this.processNextReward();
-      return;
-    }
-    const offered = RNG.sampleUnique(unowned, 2);
-    const html = offered.map(rid => {
-      const r = RelicDB[rid];
-      return `
-        <div class="choice-card" onclick="RogueManager.pickRelicReward('${rid}')">
-          <div style="font-weight:bold; color:#e0af68;">🏺 [${r.id}] ${r.name}</div>
-          <div style="font-size:12px; color:#a9b1d6;">${r.desc}</div>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🏺 유물 보상 (2택 1 또는 건너뛰기)</h2>
-      ${reason ? `<div style="color:#bb9af7; font-size:13px;">${reason}</div>` : ''}
-      <div class="choice-grid">${html}</div>
-      <div><button onclick="RogueManager.processNextReward()">유물 건너뛰기 ▶</button></div>
-    `;
-  },
-
-  pickRelicReward(relicId) {
-    if (!this.hasRelic(relicId)) this.state.relics.push(relicId);
-    this.syncToSaveLedger();
-    this.processNextReward();
-  },
-
-  renderTraitReward() {
-    const unowned = Object.keys(TraitDB).filter(id => !this.hasTrait(id));
-    if (unowned.length === 0) {
-      this.processNextReward();
-      return;
-    }
-    const offered = RNG.sampleUnique(unowned, 2);
-    const html = offered.map(tid => {
-      const t = TraitDB[tid];
-      return `
-        <div class="choice-card" onclick="RogueManager.pickTraitReward('${tid}')">
-          <div style="font-weight:bold; color:#7dcfff;">🧬 [${t.id}] ${t.name}</div>
-          <div style="font-size:12px; color:#a9b1d6;">${t.desc}</div>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🧬 보스 격파 — 특성 보상 (2택 1 또는 건너뛰기)</h2>
-      <div class="choice-grid">${html}</div>
-      <div><button onclick="RogueManager.processNextReward()">특성 건너뛰기 ▶</button></div>
-    `;
-  },
-
-  pickTraitReward(traitId) {
-    if (!this.hasTrait(traitId)) {
-      this.state.traits.push(traitId);
-      const def = TraitDB[traitId];
-      if (def && def.onAcquire) def.onAcquire(this.state);
-    }
-    this.syncToSaveLedger();
-    this.processNextReward();
-  },
-
   renderMaxFloorReached(maxFloor) {
-    this.renderHud();
-    document.getElementById('rogue-content').innerHTML = `
-      <h2>🚩 현재 구현된 최고층(${maxFloor}층) 돌파 완료! (다음 등반 대기층: ${this.state.floor}층)</h2>
-      <div style="font-size:13px; line-height:1.6; color:#a9b1d6;">
-        현재 구현된 모든 보스(${this.state.clearedBosses.length}종)를 격파하여 <b>${this.state.floor}층</b> 입구에 도달했습니다.<br>
-        보스 개수 제한으로 현재는 ${this.state.floor}층 진입이 잠겨 있으며, <b>보유 카드(${this.state.deck.length}장), HP(${this.state.hp}/${this.state.maxHp}), 특성, 유물, 클리어 보스 기록</b>이 SaveLedger에 온전히 보존되었습니다.<br>
-        로비에서 세이브 텍스트를 백업해 두면 추후 보스가 추가되었을 때 ${this.state.floor}층부터 그대로 계승하여 오를 수 있습니다.
-      </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="primary" onclick="AppUI.returnToLobby()">세이브 보존 후 로비로 이동</button>
-      </div>
-    `;
-  },
-
-  toggleDeckModal() {
-    const modal = document.getElementById('rogue-deck-modal');
-    if (!modal.classList.contains('hidden')) {
-      modal.classList.add('hidden');
-      return;
-    }
-    modal.classList.remove('hidden');
-    this.renderDeckModal();
-  },
-
-  renderDeckModal() {
-    const modal = document.getElementById('rogue-deck-modal');
-    // canRemove 변수 선언부 삭제 (이제 쓰지 않으므로 지워도 무방합니다)
-
-    const listHtml = this.state.deck.map((cid, idx) => {
-      const c = CardDB[cid];
-      return `
-        <div style="background:#24283b; border:1px solid #414868; padding:8px; border-radius:4px; width:180px; display:flex; flex-direction:column; gap:4px;">
-          <div style="font-weight:bold; color:#e0af68; font-size:12px;">[${c.id}] ${c.name} (${c.cost})</div>
-          <div style="font-size:11px; color:#a9b1d6;">${c.desc}</div>
-          <!-- 여기에 있던 <button>덱에서 버리기</button> 코드를 삭제했습니다 -->
-        </div>
-      `;
-    }).join('');
-
-    modal.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>🃏 현재 보유 덱 (${this.state.deck.length} / ${this.getMaxDeckSize()}장)</h2>
-        <button onclick="RogueManager.toggleDeckModal()">닫기</button>
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">${listHtml}</div>
-    `;
-  },
-
-  removeDeckCardFromModal(idx) {
-    if (this.state.deck.length <= this.MIN_DECK_SIZE) return;
-    this.state.deck.splice(idx, 1);
-    this.syncToSaveLedger();
-    this.renderHud();
-    this.renderDeckModal();
+    AppUI.setChoiceScreen(
+      `🚩 구현 최고층(${maxFloor}층) 돌파 완료!`,
+      `현재 ${this.state.floor}층 대기 중 | 카드(${this.state.deck.length}장), HP(${this.state.hp}/${this.state.maxHp}), 유물(${this.state.relics.length}), 특성(${this.state.traits.length})이 모두 세이브에 보존되었습니다.`,
+      [
+        {
+          title: '💾 세이브 보존 후 로비로 이동',
+          desc: '추후 보스가 추가되면 현재 스펙 그대로 다음 층부터 이어서 등반할 수 있습니다.',
+          borderColor: 'var(--accent)',
+          onClick: () => AppUI.returnToLobby()
+        }
+      ]
+    );
   }
 };
 
 /**
  * ============================================================================
- * 7. StoryDB & StorySequencer (v0.70 1-1 시나리오 완벽 유지)
+ * 7. StoryDB & StorySequencer (#screen-vn 및 #screen-combat 오버레이 연동)
  * ============================================================================
  */
 function buildZenaComboLogs() {
   const logs = [];
   for (let i = 1; i <= 10; i++) {
-    logs.push(`[적 행동 ${i}합] 석궁병 제나가 [스텝 밟기] 사용! -> 활력 +1 회복`);
-    logs.push(`[적 행동 ${i}합] 석궁병 제나가 [토끼풀] 사용! -> 자신에게 재생 3 부여 및 덱에서 1장 드로우 (덱 압축 가속!)`);
+    logs.push(`[적 ${i}합] 제나가 [스텝 밟기] 사용! -> 활력 +1`);
+    logs.push(`[적 ${i}합] 제나가 [토끼풀] 사용! -> 재생 3 & 1드로우 (덱 압축!)`);
   }
-  logs.push(`⚡ [적 피니시] 덱을 끝까지 압축한 석궁병 제나가 축적된 활력으로 [화살 4연사] 발동!`);
-  logs.push(`💥 제나의 1타 적중! (-6) | 2타 적중! (-6) | 3타 적중! (-6) | 4타 적중! (-6) -> 총 24 데미지! (피격 횟수 +4)`);
+  logs.push(`⚡ [피니시] 덱을 압축한 제나가 [화살 4연사] 발동!`);
+  logs.push(`💥 6×4타 적중 -> 총 24 데미지! (피격 횟수 +4)`);
   return logs;
 }
 
@@ -1947,16 +2000,16 @@ const StoryDB = [
       {
         type: 'BRANCH', condition: (vars) => vars.route === 1,
         steps: [
-          { type: 'GIVE_CARD', cardId: '020', freeCost: true, prompt: '손패에 지급된 [020 무지몽매]를 클릭해 제나의 마법 연계를 봉쇄하십시오.' },
-          { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 마법을 쓰려 했으나 [난투] 효과로 인해 마법 사용이 막혔다!'] },
+          { type: 'GIVE_CARD', cardId: '020', freeCost: true, prompt: '손패의 [무지몽매]를 선택 후 실행해 제나의 마법을 봉쇄하십시오.' },
+          { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 마법을 쓰려 했으나 [난투] 효과로 막혔다!'] },
           { type: 'RIG_NEXT_RANDOM', value: 30 },
-          { type: 'GIVE_CARD', cardId: '011', freeCost: true, prompt: '손패에 지급된 [011 용자의 행운]을 클릭해 일격을 날리십시오.' }
+          { type: 'GIVE_CARD', cardId: '011', freeCost: true, prompt: '손패의 [용자의 행운]을 선택 후 실행해 일격을 날리십시오.' }
         ]
       },
       {
         type: 'BRANCH', condition: (vars) => vars.route === 2,
         steps: [
-          { type: 'GIVE_CARD', cardId: '013', freeCost: true, prompt: '손패에 지급된 [013 복수]를 클릭해 4연타 피격의 분노(8×4=32)를 되갚으십시오.' }
+          { type: 'GIVE_CARD', cardId: '013', freeCost: true, prompt: '손패의 [복수]를 선택 후 실행해 4연타 피격의 분노(8×4=32)를 되갚으십시오.' }
         ]
       },
       { type: 'TEXT', speaker: '나레이션', text: '석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 허문다.' },
@@ -1967,7 +2020,7 @@ const StoryDB = [
 
 const StorySequencer = {
   engine: null, activeChapter: null, queue: [], stageVars: {}, state: 'IDLE',
-  logTimer: null, pendingLogs: [], pendingLogAfterHook: null,
+  inCombatStage: false, logTimer: null, pendingLogs: [], pendingLogAfterHook: null,
 
   init(combatEngine) { this.engine = combatEngine; },
 
@@ -1980,23 +2033,21 @@ const StorySequencer = {
     this.queue = [...chapter.script];
     this.stageVars = {};
     this.state = 'IDLE';
+    this.inCombatStage = false;
 
     this.engine.combatEnded = false;
     this.engine.onCombatEndCallback = null;
     this.engine.onCardPlayedCallback = () => {
       if (this.state === 'WAIT_CARD') {
         this.state = 'IDLE';
-        document.getElementById('hand-guide').textContent = '';
         this.next();
       }
     };
 
-    this.engine.player = new Entity('토끼기사', 150, true);
-    this.engine.enemy = new Entity('???', 0, false);
-    AppUI.enterStoryStageView();
-    AppUI.setCombatBoardVisible(false);
+    document.getElementById('vn-chapter-title').textContent = chapter.title;
+    AppUI.mode = 'STORY';
+    AppUI.go('screen-vn');
     AppUI.clearLogs();
-    AppUI.renderStageActors();
     this.next();
   },
 
@@ -2004,8 +2055,8 @@ const StorySequencer = {
 
   next() {
     if (this.queue.length === 0) {
-      AppUI.showDialogue('시스템', `[${this.activeChapter.title}] 클리어! 세이브 데이터가 갱신되었습니다. (클릭 시 로비로 이동)`, false);
       this.state = 'WAIT_FINISH';
+      AppUI.showStoryText('시스템', `[${this.activeChapter.title}] 클리어! (터치 시 로비로 돌아갑니다)`, this.inCombatStage);
       return;
     }
     this.executeCommand(this.queue.shift());
@@ -2015,11 +2066,11 @@ const StorySequencer = {
     switch (cmd.type) {
       case 'TEXT':
         this.state = 'WAIT_TEXT';
-        AppUI.showDialogue(cmd.speaker || '나레이션', cmd.text, true);
+        AppUI.showStoryText(cmd.speaker || '나레이션', cmd.text, this.inCombatStage);
         break;
       case 'CHOICE':
         this.state = 'WAIT_CHOICE';
-        AppUI.showChoices(cmd.speaker || '선택', cmd.text, cmd.options, (opt) => {
+        AppUI.showStoryChoices(cmd.speaker || '선택', cmd.text, cmd.options, (opt) => {
           this.stageVars[cmd.varKey] = opt.value;
           if (opt.saveFlag) SaveLedger.set(opt.saveFlag.key, opt.saveFlag.val);
           this.state = 'IDLE';
@@ -2027,27 +2078,32 @@ const StorySequencer = {
         });
         break;
       case 'SETUP_STAGE':
+        this.inCombatStage = true;
         this.engine.player = new Entity(cmd.player.name, cmd.player.maxHp || cmd.player.hp, true);
         this.engine.player.hp = cmd.player.hp;
+        this.engine.player.energy = 3;
         this.engine.enemy = new Entity(cmd.enemy.name, cmd.enemy.maxHp || cmd.enemy.hp, false);
         this.engine.enemy.hp = cmd.enemy.hp;
-        AppUI.setCombatBoardVisible(true);
+        AppUI.go('screen-combat');
         AppUI.renderStageActors();
         this.next();
         break;
       case 'SCRIPTED_LOGS':
         this.state = 'WAIT_LOGS';
+        AppUI.hideCombatVnOverlay();
+        document.getElementById('intent-title').textContent = '스토리 연출 진행 중';
+        document.getElementById('intent-main').textContent = '적 연속 행동 중... (상단 대사창/영역 터치 시 스킵)';
         this.pendingLogs = [...(cmd.logs || [])];
         this.pendingLogAfterHook = () => {
           if (typeof cmd.playerHpDelta === 'number') {
             this.engine.player.hp = Math.max(0, Math.min(this.engine.player.maxHp, this.engine.player.hp + cmd.playerHpDelta));
+            this.engine.emitFx(this.engine.player, 'fx-red');
           }
           if (typeof cmd.setHitTakenCount === 'number') {
             this.engine.player.runTrackers.hitTakenCount = cmd.setHitTakenCount;
           }
           AppUI.renderStageActors();
         };
-        AppUI.showDialogue('전투 연출 진행 중', '적의 연속 행동 로그가 출력되고 있습니다... (클릭 시 즉시 완료)', true);
         this.logTimer = setInterval(() => {
           if (this.pendingLogs.length > 0) this.engine.emitLog(this.pendingLogs.shift(), 'log-story');
           else this.finishPendingLogs();
@@ -2065,12 +2121,13 @@ const StorySequencer = {
         break;
       case 'GIVE_CARD': {
         this.state = 'WAIT_CARD';
+        AppUI.hideCombatVnOverlay();
         this.engine.player.hand = [];
         const cardInst = this.engine.createCardInstance(cmd.cardId, !!cmd.freeCost);
         this.engine.player.hand.push(cardInst);
-        const guideMsg = cmd.prompt || `손패에 지급된 [${cardInst.name}] 카드를 클릭하여 사용하십시오.`;
-        document.getElementById('hand-guide').textContent = `👉 ${guideMsg}`;
-        AppUI.showDialogue('카드 사용 대기', guideMsg, false);
+        document.getElementById('intent-title').textContent = '스토리 행동 지시';
+        document.getElementById('intent-main').textContent = cmd.prompt || `[${cardInst.name}] 카드를 선택 후 실행하세요.`;
+        AppUI.selectedCardIdx = 0; // 지급된 카드를 즉시 선택 상태로 하이라이트
         AppUI.renderStageActors();
         break;
       }
@@ -2093,27 +2150,141 @@ const StorySequencer = {
   },
 
   onUserClickDialogue() {
-    if (this.state === 'WAIT_TEXT') { this.state = 'IDLE'; this.next(); }
-    else if (this.state === 'WAIT_LOGS') this.finishPendingLogs();
-    else if (this.state === 'WAIT_FINISH') { this.state = 'IDLE'; AppUI.returnToLobby(); }
+    if (this.state === 'WAIT_TEXT') {
+      this.state = 'IDLE';
+      AppUI.hideCombatVnOverlay();
+      this.next();
+    } else if (this.state === 'WAIT_LOGS') {
+      this.finishPendingLogs();
+    } else if (this.state === 'WAIT_FINISH') {
+      this.state = 'IDLE';
+      AppUI.hideCombatVnOverlay();
+      AppUI.returnToLobby();
+    }
   }
 };
 
 /**
  * ============================================================================
- * 8. AppUI (뷰 전환 및 DOM 렌더링 컨트롤러)
+ * 8. AppUI (모바일 세로형 화면 전환, 5색 연출, 2단계 카드 실행, 상세 팝업 컨트롤러)
  * ============================================================================
  */
 const AppUI = {
   engine: null,
-  mode: 'LOBBY', // 'LOBBY' | 'STORY' | 'ROGUE_HUB' | 'ROGUE_COMBAT'
+  mode: 'LOBBY',
+  selectedCardIdx: null,
 
   init() {
     this.engine = new CombatEngine();
     this.engine.onLogCallback = (msg, cls) => this.appendLog(msg, cls);
     this.engine.onRenderCallback = () => this.renderStageActors();
+    this.engine.onFxCallback = (boxId, fxClass) => this.triggerFX(boxId, fxClass);
+
     StorySequencer.init(this.engine);
     this.refreshSaveTextarea();
+  },
+
+  go(screenId) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add('active');
+    if (screenId === 'screen-start' || screenId === 'screen-save' || screenId === 'screen-story-list') {
+      this.refreshSaveTextarea();
+    }
+  },
+
+  toggleModal(id, show) {
+    document.getElementById(id).classList.toggle('open', show);
+  },
+
+  openInfo(title, descHtml) {
+    document.getElementById('info-title').textContent = title;
+    document.getElementById('info-desc').innerHTML = descHtml;
+    this.toggleModal('modal-info', true);
+  },
+
+  openStatusInfo(statusId, stacks, accumulated) {
+    const def = StatusDB[statusId];
+    const meta = StatusMeta[statusId] || { icon: '📌', desc: '상태 효과' };
+    const accText = accumulated > 0 ? `<br><br><span style="color:var(--fx-yellow);">현재 누적 수치: ${accumulated}</span>` : '';
+    this.openInfo(`${meta.icon} ${def.name} (스택: ${stacks})`, `${meta.desc}${accText}`);
+  },
+
+  // 전술 메뉴 모달 열기 (특성/유물 터치 시 설명 팝업 + 덱/무덤 카드 목록 확인)
+  openTacticalMenu() {
+    const isRogue = (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB');
+    const floorText = isRogue ? `${RogueManager.state.floor}층 (상한 ${RogueManager.getMaxFloor()}층)` : '스토리 스테이지';
+    const hitCount = this.mode === 'ROGUE_HUB' ? RogueManager.state.hitTakenCount : this.engine.player.runTrackers.hitTakenCount;
+
+    const traitIds = isRogue ? RogueManager.state.traits : this.engine.player.traits.map(t => t.id);
+    const relicIds = isRogue ? RogueManager.state.relics : this.engine.player.relics.map(r => r.id);
+
+    const traitTags = traitIds.map(tid => {
+      const t = TraitDB[tid];
+      return `<span class="s-tag buff" onclick="AppUI.openInfo('🧬 특성: ${t.name}', '${t.desc}')">🧬 ${t.name}</span>`;
+    }).join(' ') || '<span style="color:var(--text-sub);">없음</span>';
+
+    const relicTags = relicIds.map(rid => {
+      const r = RelicDB[rid];
+      return `<span class="s-tag context" onclick="AppUI.openInfo('🏺 유물: ${r.name}', '${r.desc}')">🏺 ${r.name}</span>`;
+    }).join(' ') || '<span style="color:var(--text-sub);">없음</span>';
+
+    document.getElementById('menu-status-summary').innerHTML = `
+      <div>🏰 진행 위치: <b>${floorText}</b> | 💥 누적 피격: <b>${hitCount}회</b></div>
+      <div style="font-size:11px; color:var(--text-sub);">※ 아래 특성이나 유물 배지를 터치하면 상세 효과가 표시됩니다.</div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;"><b>보유 특성:</b> ${traitTags}</div>
+      <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;"><b>보유 유물:</b> ${relicTags}</div>
+    `;
+
+    const pileBtns = document.getElementById('menu-pile-buttons');
+    if (this.mode === 'ROGUE_HUB') {
+      pileBtns.innerHTML = `
+        <button style="flex:1;" onclick="AppUI.openPileViewer('MASTER')">🃏 현재 마스터 덱 (${RogueManager.state.deck.length}장)</button>
+      `;
+    } else {
+      const p = this.engine.player;
+      pileBtns.innerHTML = `
+        <button style="flex:1;" onclick="AppUI.openPileViewer('DECK')">덱 잔량 (${p.deck.length}장)</button>
+        <button style="flex:1;" onclick="AppUI.openPileViewer('GRAVE')">무덤 (${p.graveyard.length}장)</button>
+      `;
+    }
+
+    this.toggleModal('modal-menu', true);
+  },
+
+  openPileViewer(pileType) {
+    let cards = [];
+    let title = '';
+    if (pileType === 'MASTER') {
+      title = `🃏 마스터 덱 목록 (${RogueManager.state.deck.length}장)`;
+      cards = RogueManager.state.deck.map(cid => CardDB[cid]);
+    } else if (pileType === 'DECK') {
+      title = `🃏 남은 덱 목록 (${this.engine.player.deck.length}장 - 순서 섞임)`;
+      cards = [...this.engine.player.deck].sort((a, b) => a.id.localeCompare(b.id));
+    } else if (pileType === 'GRAVE') {
+      title = `🪦 무덤 카드 목록 (${this.engine.player.graveyard.length}장)`;
+      cards = [...this.engine.player.graveyard];
+    }
+
+    if (cards.length === 0) {
+      this.openInfo(title, '<div style="color:var(--text-sub);">카드가 없습니다.</div>');
+      return;
+    }
+
+    const lastGraveUid = this.engine.player.combatTrackers?.lastGraveyardCard?.uid;
+    const html = cards.map(c => {
+      const isLast = (pileType === 'GRAVE' && c.uid && c.uid === lastGraveUid);
+      return `
+        <div style="background:var(--bg-card); border:1px solid ${isLast ? 'var(--fx-yellow)' : 'var(--border)'}; border-radius:4px; padding:8px; margin-bottom:6px;">
+          <div style="font-weight:bold; color:var(--fx-yellow); font-size:12px;">
+            [${c.id}] ${c.name} (코스트 ${c.cost}) ${isLast ? '<span style="color:var(--fx-green);">[최근 묘지행 - 끼토산 대상]</span>' : ''}
+          </div>
+          <div style="font-size:11px; color:#a9b1d6; margin-top:2px;">${c.desc}</div>
+        </div>
+      `;
+    }).join('');
+
+    this.openInfo(title, html);
   },
 
   refreshSaveTextarea() {
@@ -2125,7 +2296,13 @@ const AppUI = {
     SaveLedger.importText(document.getElementById('save-textarea').value);
     RogueManager.loadFromSaveLedger();
     this.refreshSaveTextarea();
-    alert('SaveLedger 데이터를 성공적으로 불러왔습니다.');
+    this.openInfo('💾 기록 적용 완료', '입력된 세이브 기록이 성공적으로 반영되었습니다.');
+  },
+
+  copySaveText() {
+    const val = document.getElementById('save-textarea').value;
+    navigator.clipboard?.writeText(val);
+    this.openInfo('📋 복사 완료', '세이브 텍스트가 클립보드에 복사되었습니다.');
   },
 
   renderLobbyLists() {
@@ -2133,41 +2310,26 @@ const AppUI = {
     listEl.innerHTML = StoryDB.map(ch => {
       const isCleared = SaveLedger.get(ch.saveClearKey) === true;
       return `
-        <div class="chapter-item">
-          <div>
-            <div style="font-weight:bold; font-size:14px;">${ch.title}</div>
-            <span style="font-size:11px; color:${isCleared ? '#73daca' : '#565f89'};">${isCleared ? '✔ CLEAR' : '미클리어'}</span>
-          </div>
-          <button class="primary" onclick="StorySequencer.startChapter('${ch.id}')">스토리 재생</button>
-        </div>
+        <button class="list-btn" onclick="StorySequencer.startChapter('${ch.id}')">
+          <span>${ch.title}</span>
+          <span style="color:${isCleared ? 'var(--fx-green)' : 'var(--accent)'}; font-size:11px;">${isCleared ? 'CLEAR' : '진입 가능'}</span>
+        </button>
       `;
     }).join('');
 
     RogueManager.loadFromSaveLedger();
-    const maxFloor = RogueManager.getMaxFloor();
     const continueBtn = document.getElementById('btn-rogue-continue');
-    const infoEl = document.getElementById('rogue-lobby-info');
+    const subEl = document.getElementById('start-subtitle');
+    const maxFloor = RogueManager.getMaxFloor();
 
     if (RogueManager.state.active) {
       continueBtn.classList.remove('hidden');
-      infoEl.innerHTML = `
-        <div style="color:#9ece6a; font-weight:bold;">[진행 중인 기사도 세이브 감지]</div>
-        현재 층수: <b>${RogueManager.state.floor}층</b> (구현 상한: ${maxFloor}층)<br>
-        HP: ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱: ${RogueManager.state.deck.length}장 | 유물: ${RogueManager.state.relics.length}개 | 특성: ${RogueManager.state.traits.length}개
-      `;
+      continueBtn.textContent = `⚔️ 기사도 이어하기 (${RogueManager.state.floor}층)`;
+      subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      infoEl.innerHTML = `
-        기본 HP 150 | 덱 구축: 9~21장 (동명 최대 3장)<br>
-        현재 구현된 보스 수 기준 최고층: <b>${maxFloor}층</b> (이후 층은 세이브 계승 지원)
-      `;
+      subEl.innerHTML = `현재 구현 보스 기준 최고층: ${maxFloor}층 (세이브 계승 지원)`;
     }
-  },
-
-  hideAllViews() {
-    ['view-lobby', 'view-rogue-hub', 'view-stage', 'btn-return-lobby', 'btn-toggle-deck'].forEach(id => {
-      document.getElementById(id).classList.add('hidden');
-    });
   },
 
   returnToLobby() {
@@ -2176,61 +2338,67 @@ const AppUI = {
       RogueManager.syncToSaveLedger();
     }
     this.mode = 'LOBBY';
-    this.hideAllViews();
-    document.getElementById('view-lobby').classList.remove('hidden');
-    this.refreshSaveTextarea();
-  },
-
-  showRogueHubView() {
-    this.mode = 'ROGUE_HUB';
-    this.hideAllViews();
-    document.getElementById('view-rogue-hub').classList.remove('hidden');
-    document.getElementById('btn-return-lobby').classList.remove('hidden');
-    document.getElementById('btn-toggle-deck').classList.remove('hidden');
-    RogueManager.renderHud();
+    this.selectedCardIdx = null;
+    this.go('screen-start');
   },
 
   enterRogueCombatView() {
     this.mode = 'ROGUE_COMBAT';
-    this.hideAllViews();
-    document.getElementById('view-stage').classList.remove('hidden');
-    document.getElementById('stage-rogue-hud').classList.remove('hidden');
-    document.getElementById('vn-dialogue-box').classList.add('hidden');
-    document.getElementById('combat-board').classList.remove('hidden');
-    document.getElementById('btn-end-turn').classList.remove('hidden');
-    document.getElementById('btn-return-lobby').classList.remove('hidden');
-    document.getElementById('hand-guide').textContent = '';
-    RogueManager.renderHud();
+    this.selectedCardIdx = null;
+    this.hideCombatVnOverlay();
+    this.clearLogs();
+    this.go('screen-combat');
     this.renderStageActors();
   },
 
-  enterStoryStageView() {
-    this.mode = 'STORY';
-    this.hideAllViews();
-    document.getElementById('view-stage').classList.remove('hidden');
-    document.getElementById('stage-rogue-hud').classList.add('hidden');
-    document.getElementById('vn-dialogue-box').classList.remove('hidden');
-    document.getElementById('btn-end-turn').classList.add('hidden');
-    document.getElementById('btn-return-lobby').classList.remove('hidden');
+  setChoiceScreen(headerTitle, subtitle, items) {
+    document.getElementById('choice-header-title').textContent = headerTitle;
+    document.getElementById('choice-subtitle').textContent = subtitle;
+    const listEl = document.getElementById('choice-list');
+    listEl.innerHTML = '';
+
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'list-btn';
+      div.style.cssText = `
+        background: var(--bg-card);
+        border: 1.5px solid ${item.borderColor || 'var(--border)'};
+        border-radius: 6px;
+        cursor: ${item.disabled ? 'not-allowed' : 'pointer'};
+        opacity: ${item.disabled ? '0.4' : '1'};
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      `;
+      div.innerHTML = `
+        <strong style="color:${item.borderColor || 'var(--text-main)'}; font-size:13.5px;">${item.title}</strong>
+        <span style="font-size:11.5px; color:var(--text-sub); line-height:1.35;">${item.desc}</span>
+      `;
+      if (!item.disabled && item.onClick) div.onclick = item.onClick;
+      listEl.appendChild(div);
+    });
   },
 
-  setCombatBoardVisible(visible) {
-    const board = document.getElementById('combat-board');
-    if (visible) board.classList.remove('hidden');
-    else board.classList.add('hidden');
+  // 스토리 비주얼 노벨 출력 (전투 전이면 #screen-vn, 전투 진입 후면 #combat-vn-overlay)
+  showStoryText(speaker, text, inCombat) {
+    if (inCombat) {
+      const ov = document.getElementById('combat-vn-overlay');
+      ov.classList.remove('hidden');
+      document.getElementById('combat-vn-speaker').textContent = speaker;
+      document.getElementById('combat-vn-text').textContent = text;
+    } else {
+      document.getElementById('vn-speaker').textContent = speaker;
+      document.getElementById('vn-text').textContent = text;
+      document.getElementById('vn-choices').classList.add('hidden');
+      document.getElementById('vn-next-hint').classList.remove('hidden');
+    }
   },
 
-  showDialogue(speaker, text, showNextHint = true) {
-    document.getElementById('vn-speaker').textContent = speaker;
-    document.getElementById('vn-text').textContent = text;
-    document.getElementById('vn-choices').classList.add('hidden');
-    document.getElementById('vn-choices').innerHTML = '';
-    const hint = document.getElementById('vn-next-hint');
-    if (showNextHint) hint.classList.remove('hidden');
-    else hint.classList.add('hidden');
+  hideCombatVnOverlay() {
+    document.getElementById('combat-vn-overlay').classList.add('hidden');
   },
 
-  showChoices(speaker, text, options, onSelect) {
+  showStoryChoices(speaker, text, options, onSelect) {
     document.getElementById('vn-speaker').textContent = speaker;
     document.getElementById('vn-text').textContent = text;
     document.getElementById('vn-next-hint').classList.add('hidden');
@@ -2246,79 +2414,136 @@ const AppUI = {
     });
   },
 
+  triggerFX(targetId, fxClass) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    el.classList.remove('fx-red', 'fx-green', 'fx-purple', 'fx-blue', 'fx-yellow');
+    void el.offsetWidth;
+    el.classList.add(fxClass);
+    setTimeout(() => el.classList.remove(fxClass), 380);
+  },
+
   clearLogs() { document.getElementById('log-box').innerHTML = ''; },
 
   appendLog(msg, cls = '') {
     const box = document.getElementById('log-box');
+    if (!box) return;
+    box.querySelectorAll('.recent').forEach(el => el.classList.remove('recent'));
     const div = document.createElement('div');
-    if (cls) div.className = cls;
-    div.textContent = msg;
+    div.className = `recent ${cls}`;
+    div.textContent = `▶ ${msg}`;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
+  },
+
+  selectCard(idx) {
+    this.selectedCardIdx = (this.selectedCardIdx === idx) ? null : idx;
+    this.renderStageActors();
+  },
+
+  executeSelectedCard() {
+    if (this.selectedCardIdx === null) return;
+    const idx = this.selectedCardIdx;
+    this.selectedCardIdx = null;
+    this.engine.playCardFromHand(idx);
+  },
+
+  onClickEndTurn() {
+    if (this.mode !== 'ROGUE_COMBAT' || this.engine.combatEnded) return;
+    this.selectedCardIdx = null;
+    this.engine.endPlayerTurn();
   },
 
   renderStageActors() {
     const p = this.engine.player;
     const e = this.engine.enemy;
 
-    const renderBadges = (ent) => ent.statuses.map(s => {
+    const renderStatusTags = (ent) => ent.statuses.map(s => {
       const def = StatusDB[s.id];
-      const cls = def.category === 'BUFF' ? 'buff' : def.category === 'DEBUFF' ? 'debuff' : 'context';
-      const acc = s.accumulated ? `(누적:${s.accumulated})` : '';
-      return `<span class="badge ${cls}">${def.name} ${s.stacks}${acc}</span>`;
+      const meta = StatusMeta[s.id] || { icon: '📌' };
+      const cls = def.category === 'BUFF' ? 'buff' : (def.category === 'DEBUFF' ? 'debuff' : 'context');
+      const acc = s.accumulated ? `(${s.accumulated})` : '';
+      return `<span class="s-tag ${cls}" onclick="AppUI.openStatusInfo('${s.id}', ${s.stacks}, ${s.accumulated || 0})">${meta.icon}${def.name} ${s.stacks}${acc}</span>`;
     }).join('');
 
-    document.getElementById('sprite-player').innerHTML = `[도트 슬롯]<br>${p.name}`;
-    document.getElementById('info-player').innerHTML = `
-      <div class="actor-name">${p.name}</div>
-      <div class="stat-line">
-        <span>❤️ HP: ${p.hp} / ${p.maxHp}</span>
-        <span>🛡️ 방어도: ${p.armor}</span>
-        <span>⚡ 활력: ${p.energy} / ${p.maxEnergy}</span>
-        <span style="color:#9ece6a;">덱:${p.deck.length} | 묘지:${p.graveyard.length} | 피격:${p.runTrackers.hitTakenCount}</span>
-      </div>
-      <div class="badge-row">${renderBadges(p)}</div>
-    `;
+    // 1. 적 상태 박스 업데이트
+    const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
+    document.getElementById('sprite-enemy').innerHTML = `[적 도트]<br>${e.name}`;
+    document.getElementById('enemy-name-label').textContent = `${e.name}${floorTag}`;
+    document.getElementById('enemy-armor-label').textContent = `🛡️ 방어 ${e.armor}`;
+    const ePct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.hp / e.maxHp) * 100)) : 0;
+    document.getElementById('enemy-hp-fill').style.width = `${ePct}%`;
+    document.getElementById('enemy-hp-text').textContent = `${e.hp} / ${e.maxHp}`;
+    document.getElementById('enemy-status-list').innerHTML = renderStatusTags(e);
 
-    // 적 동적 예고(Intent) 계산
-    let intentHtml = '';
-    if (e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
+    // 2. 적 예고(Intent) 및 덱/무덤 요약 업데이트
+    document.getElementById('deck-grave-Summary').textContent = `덱${p.deck.length}/묘${p.graveyard.length}`;
+    if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
       const act = EnemyDB[e.enemyId].getAction(this.engine.turn, this.engine, e, p);
-      
       let intentText = act.intent;
-      // 물리 공격을 하는 의도이고, 티어 보정치가 있다면 텍스트 뒤에 가산 표기
       if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
-        intentText += ` <span style="color:#f7768e;">(스케일링 +${e.tierDamageBonus})</span>`;
+        intentText += ` (+스케일링 ${e.tierDamageBonus})`;
       }
-      
-      intentHtml = `<div class="intent-box">예고 [${act.name}]: ${intentText}</div>`;
+      document.getElementById('intent-title').textContent = `적 다음 행동 예고 [${act.name}]`;
+      document.getElementById('intent-main').textContent = intentText;
     }
 
-    document.getElementById('sprite-enemy').innerHTML = `[도트 슬롯]<br>${e.name}`;
-    document.getElementById('info-enemy').innerHTML = e.maxHp > 0 ? `
-      <div class="actor-name">${e.name}</div>
-      ${intentHtml}
-      <div class="stat-line">
-        <span>❤️ HP: ${e.hp} / ${e.maxHp}</span>
-        <span>🛡️ 방어도: ${e.armor}</span>
-      </div>
-      <div class="badge-row">${renderBadges(e)}</div>
-    ` : `<div class="actor-name" style="color:#565f89;">대기 중</div>`;
+    // 3. 플레이어 상태 박스 & 초록 활력 보석 동적 생성 (빠른 발굽 5활력 등 자동 대응)
+    document.getElementById('player-name-label').textContent = `${p.name} (피격:${p.runTrackers.hitTakenCount})`;
+    document.getElementById('player-armor-label').textContent = `🛡️ 방어 ${p.armor}`;
+    const pPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) : 0;
+    document.getElementById('player-hp-fill').style.width = `${pPct}%`;
+    document.getElementById('player-hp-text').textContent = `${p.hp} / ${p.maxHp}`;
+    document.getElementById('player-status-list').innerHTML = renderStatusTags(p);
 
-    const handEl = document.getElementById('hand-cards');
+    const gemsEl = document.getElementById('player-ap-gems');
+    gemsEl.innerHTML = Array.from({ length: p.maxEnergy }, (_, i) =>
+      `<div class="ap-gem ${i < p.energy ? 'on' : ''}"></div>`
+    ).join('');
+
+    // 4. 손패 3열 그리드 & 2단계 실행 버튼 업데이트
     const canInteract = (this.mode === 'ROGUE_COMBAT' && !this.engine.combatEnded) || (this.mode === 'STORY' && StorySequencer.state === 'WAIT_CARD');
-    handEl.innerHTML = p.hand.map((card, idx) => {
+    if (this.selectedCardIdx !== null && !p.hand[this.selectedCardIdx]) {
+      this.selectedCardIdx = null;
+    }
+
+    const gridEl = document.getElementById('hand-grid');
+    gridEl.innerHTML = p.hand.map((card, idx) => {
       const cost = this.engine.getEffectiveCost(p, card);
       const hits = this.engine.getEffectiveHits(p, card);
-      const usable = canInteract && p.energy >= cost;
+      const isSelected = this.selectedCardIdx === idx;
       return `
-        <div class="card ${!usable ? 'disabled' : ''}" onclick="${usable ? `AppUI.engine.playCardFromHand(${idx})` : ''}">
-          <div><span class="card-cost">${cost}</span><div class="card-title">[${card.id}] ${card.name}</div></div>
-          <div class="card-meta">${card.type}${hits > 0 ? ` | 타수: ${hits}` : ''}${card.isTemporary ? ' | 임시' : ''}</div>
-          <div class="card-desc">${card.desc}</div>
+        <div class="hand-card ${isSelected ? 'selected' : ''}" onclick="${canInteract ? `AppUI.selectCard(${idx})` : ''}">
+          <div class="c-cost">${cost}</div>
+          <div class="c-name">${card.name}</div>
+          <div class="c-type">${card.type}${hits > 0 ? `(${hits}타)` : ''}</div>
+          <div class="c-desc">${card.desc}</div>
         </div>
       `;
     }).join('');
+
+    const execBtn = document.getElementById('btn-exec-card');
+    const endTurnBtn = document.getElementById('btn-end-turn');
+    endTurnBtn.disabled = (this.mode !== 'ROGUE_COMBAT' || this.engine.combatEnded);
+
+    if (canInteract && this.selectedCardIdx !== null && p.hand[this.selectedCardIdx]) {
+      const selCard = p.hand[this.selectedCardIdx];
+      const cost = this.engine.getEffectiveCost(p, selCard);
+      const blocked = p.getPassives().some(({ def, inst }) => def.canPlayCard && !def.canPlayCard(selCard, this.engine, p, inst));
+      if (blocked) {
+        execBtn.disabled = true;
+        execBtn.textContent = `사용 불가 (${selCard.name} - 난투)`;
+      } else if (p.energy < cost) {
+        execBtn.disabled = true;
+        execBtn.textContent = `활력 부족 (${selCard.name} - 필요 ${cost})`;
+      } else {
+        execBtn.disabled = false;
+        execBtn.textContent = `[${selCard.name}] 실행 (활력 ${cost})`;
+      }
+    } else {
+      execBtn.disabled = true;
+      execBtn.textContent = '카드를 선택하세요';
+    }
   }
 };
 
