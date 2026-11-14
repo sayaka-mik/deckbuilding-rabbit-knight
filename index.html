@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.74 Mobile UI</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.75 rogue UX update</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -233,6 +233,36 @@
       border: 1px solid var(--border); border-radius: 8px; padding: 14px;
       display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
     }
+
+    /* 로그 컨트롤 바 & 1줄 스텝 뷰어 */
+    .log-ctrl-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10.5px; color: var(--text-sub); border-bottom: 1px solid #1f2335; padding-bottom: 4px;
+    }
+    .log-ctrl-btns { display: flex; gap: 4px; }
+    .log-mini-btn {
+      padding: 2px 7px; font-size: 10px; border-radius: 4px;
+      background: #1f2335; border: 1px solid #414868; color: var(--text-main);
+    }
+    .log-mini-btn.active { border-color: var(--accent); color: var(--accent); }
+
+    .log-step-view {
+      flex: 1; background: #141722; border: 1.5px solid var(--border); border-radius: 5px;
+      padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;
+      cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
+    }
+    .log-step-view.waiting {
+      border-color: var(--fx-yellow); background: #1b1e2e;
+      box-shadow: inset 0 0 12px rgba(224, 175, 104, 0.18);
+    }
+    .log-step-text {
+      font-family: monospace; font-size: 12.5px; font-weight: bold;
+      color: var(--text-main); line-height: 1.45; word-break: keep-all;
+    }
+    .log-step-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10.5px; color: var(--fx-yellow);
+    }
   </style>
 </head>
 <body>
@@ -318,7 +348,7 @@
       </div>
     </div>
 
-    <!-- (상단 35%) 적 예고 + 상세 로그 + 통합 메뉴 버튼 -->
+        <!-- (상단 35%) 적 예고 + 1줄 스텝 로그 / 전체 로그 전환 + 통합 메뉴 버튼 -->
     <div class="log-section">
       <div class="intent-header">
         <div class="intent-banner">
@@ -329,6 +359,37 @@
           📋 메뉴<br><span id="deck-grave-Summary" style="font-size:10px; color:var(--text-sub);">덱0/묘0</span>
         </button>
       </div>
+
+      <!-- 로그 모드 전환 & 대기열 스킵 바 -->
+      <div class="log-ctrl-bar">
+        <span id="log-queue-status">대기 로그: 0</span>
+        <div class="log-ctrl-btns">
+          <button id="btn-skip-logs" class="log-mini-btn hidden" onclick="AppUI.flushAllLogs()">스킵 ⏭️</button>
+          <button id="btn-toggle-log-mode" class="log-mini-btn active" onclick="AppUI.toggleLogViewMode()">모드: 1줄 클릭</button>
+        </div>
+      </div>
+
+      <!-- [A] 1줄 클릭 출력 창 (기본 표시) -->
+      <div id="log-step-box" class="log-step-view" onclick="AppUI.advanceLogStep()">
+        <div id="log-step-text" class="log-step-text">전투 준비 완료</div>
+        <div class="log-step-footer">
+          <span id="log-step-counter"></span>
+          <span id="log-step-hint"></span>
+        </div>
+      </div>
+
+      <!-- [B] 전체/실시간 스크롤 로그 창 (모드 전환 시 표시) -->
+      <div id="log-box" class="log-scroll hidden" onclick="AppUI.advanceLogStep()"></div>
+
+      <!-- 스토리 모드 전투 중 대사 오버레이 -->
+      <div id="combat-vn-overlay" class="combat-vn-overlay hidden" onclick="StorySequencer.onUserClickDialogue()">
+        <div>
+          <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:4px;"></div>
+          <div id="combat-vn-text" style="font-size:12.5px; line-height:1.45; color:var(--text-main);"></div>
+        </div>
+        <div id="combat-vn-hint" style="align-self:flex-end; font-size:11px; color:var(--accent);">터치하여 계속 ▶</div>
+      </div>
+    </div>
 
       <div id="log-box" class="log-scroll"></div>
 
@@ -1801,7 +1862,10 @@ const RogueManager = {
     eng.enemy.tierDamageBonus = tier * 3;
 
     eng.onCardPlayedCallback = null;
-    eng.onCombatEndCallback = (victory) => this.onCombatFinished(victory, type, enemyId);
+    // 승리/패배가 결정되어도 쌓여있는 로그를 유저가 끝까지 클릭해 읽은 뒤 화면이 전환됨
+    eng.onCombatEndCallback = (victory) => {
+      AppUI.runAfterLogs(() => this.onCombatFinished(victory, type, enemyId));
+    };
 
     AppUI.enterRogueCombatView();
     eng.emitLog(`⚔️ [${this.state.floor}층] ${eDef.name} (HP ${scaledHp}) 전투 개시!`, 'log-sys');
@@ -2188,11 +2252,28 @@ const AppUI = {
   mode: 'LOBBY',
   selectedCardIdx: null,
 
+  // --- [추가] 절차적 로그 재생용 큐 & 상태 ---
+  logViewMode: 'STEP', // 'STEP'(1줄 클릭) | 'FULL'(전체/실시간 로그)
+  presentationQueue: [],
+  pendingFxList: [],
+  postQueueActions: [], // 승리/패배 화면 전환 등 로그를 다 읽은 후 실행할 콜백
+
   init() {
     this.engine = new CombatEngine();
-    this.engine.onLogCallback = (msg, cls) => this.appendLog(msg, cls);
-    this.engine.onRenderCallback = () => this.renderStageActors();
-    this.engine.onFxCallback = (boxId, fxClass) => this.triggerFX(boxId, fxClass);
+    // 5색 이펙트가 발생하면 바로 터뜨리지 않고 현재 로그 프레임에 묶어둠
+    this.engine.onFxCallback = (boxId, fxClass) => {
+      this.pendingFxList.push({ boxId, fxClass });
+    };
+    // 로그가 1줄 발생할 때마다 현재 캐릭터 상태 스냅샷과 함께 큐에 적재
+    this.engine.onLogCallback = (msg, cls) => {
+      this.enqueueLogStep(msg, cls);
+    };
+    // 큐가 비어있을 때만 즉시 렌더링, 큐가 돌고 있으면 스냅샷이 렌더링을 담당
+    this.engine.onRenderCallback = () => {
+      if (this.presentationQueue.length === 0) {
+        this.renderStageActors();
+      }
+    };
 
     StorySequencer.init(this.engine);
     this.refreshSaveTextarea();
@@ -2437,9 +2518,179 @@ const AppUI = {
     setTimeout(() => el.classList.remove(fxClass), 380);
   },
 
-  clearLogs() { document.getElementById('log-box').innerHTML = ''; },
+  // 현재 플레이어/적의 체력·방어도·상태이상을 깊은 복사(Snapshot)
+  captureStateSnapshot() {
+    const cloneActor = (ent) => ({
+      name: ent.name,
+      hp: ent.hp,
+      maxHp: ent.maxHp,
+      armor: ent.armor,
+      energy: ent.energy,
+      maxEnergy: ent.maxEnergy,
+      enemyId: ent.enemyId,
+      tierDamageBonus: ent.tierDamageBonus || 0,
+      deckCount: ent.deck.length,
+      graveCount: ent.graveyard.length,
+      hitTakenCount: ent.runTrackers.hitTakenCount,
+      statuses: ent.statuses.map(s => ({ ...s })),
+      hand: ent.hand.map(c => ({
+        ...c,
+        effCost: this.engine.getEffectiveCost(ent, c),
+        effHits: this.engine.getEffectiveHits(ent, c)
+      }))
+    });
+    return {
+      turn: this.engine.turn,
+      combatEnded: this.engine.combatEnded,
+      player: cloneActor(this.engine.player),
+      enemy: cloneActor(this.engine.enemy)
+    };
+  },
 
-  appendLog(msg, cls = '') {
+  enqueueLogStep(msg, cls = '') {
+    const step = {
+      msg,
+      cls,
+      fxList: [...this.pendingFxList],
+      snapshot: this.captureStateSnapshot()
+    };
+    this.pendingFxList = [];
+
+    // 실시간(FULL) 모드이거나 스토리 자동 로그 중일 때는 대기열 없이 즉시 출력
+    if (this.logViewMode === 'FULL' || this.mode === 'STORY') {
+      this.applyPresentationStep(step);
+      this.checkPostQueueActions();
+      return;
+    }
+
+    this.presentationQueue.push(step);
+    // 첫 로그가 들어왔다면 즉시 1번째 줄을 화면에 띄움 (이후 줄은 클릭 대기)
+    if (this.presentationQueue.length === 1) {
+      this.applyPresentationStep(this.presentationQueue[0]);
+    }
+    this.updateLogStepUI();
+  },
+
+  // 유저가 1줄 로그 박스를 클릭했을 때 다음 스텝 재생
+  advanceLogStep() {
+    if (this.presentationQueue.length === 0) return;
+
+    // 현재 보고 있던 줄을 큐에서 제거
+    this.presentationQueue.shift();
+
+    if (this.presentationQueue.length > 0) {
+      // 다음 줄 스냅샷 적용 (체력/방어도/이펙트/로그가 이 순간 변화!)
+      this.applyPresentationStep(this.presentationQueue[0]);
+      this.updateLogStepUI();
+    } else {
+      // 모든 로그를 다 읽었으면 실제 최신 엔진 상태로 동기화하고 후속 액션(승패 이동 등) 실행
+      this.updateLogStepUI();
+      this.renderStageActors();
+      this.checkPostQueueActions();
+    }
+  },
+
+  // [스킵 ⏭️] 버튼 클릭 시 밀린 로그를 한 번에 모두 출력
+  flushAllLogs() {
+    while (this.presentationQueue.length > 0) {
+      const step = this.presentationQueue.shift();
+      this.appendDomLog(step.msg, step.cls);
+    }
+    this.updateLogStepUI();
+    this.renderStageActors();
+    this.checkPostQueueActions();
+  },
+
+  // [모드: 1줄 클릭 <-> 전체/실시간] 토글
+  toggleLogViewMode() {
+    this.logViewMode = (this.logViewMode === 'STEP') ? 'FULL' : 'STEP';
+    const btn = document.getElementById('btn-toggle-log-mode');
+    const stepBox = document.getElementById('log-step-box');
+    const fullBox = document.getElementById('log-box');
+
+    if (this.logViewMode === 'FULL') {
+      btn.textContent = '모드: 전체/실시간';
+      stepBox.classList.add('hidden');
+      fullBox.classList.remove('hidden');
+      this.flushAllLogs();
+    } else {
+      btn.textContent = '모드: 1줄 클릭';
+      stepBox.classList.remove('hidden');
+      fullBox.classList.add('hidden');
+      this.updateLogStepUI();
+    }
+  },
+
+  applyPresentationStep(step) {
+    // 1. 전체 로그창에도 기록 추가
+    this.appendDomLog(step.msg, step.cls);
+    // 2. 1줄 출력창 텍스트 갱신
+    const stepText = document.getElementById('log-step-text');
+    if (stepText) {
+      stepText.className = `log-step-text ${step.cls}`;
+      stepText.textContent = `▶ ${step.msg}`;
+    }
+    // 3. 묶여있던 5색 박스 이펙트 격발
+    step.fxList.forEach(fx => this.triggerFX(fx.boxId, fx.fxClass));
+    // 4. 해당 로그 시점의 스냅샷으로 캐릭터 HP/방어도/버프 UI 렌더링
+    this.renderStageActors(step.snapshot);
+  },
+
+  updateLogStepUI() {
+    const remaining = Math.max(0, this.presentationQueue.length - 1);
+    const hasPendingAction = this.postQueueActions.length > 0;
+    const isWaitingClick = this.presentationQueue.length > 0;
+
+    document.getElementById('log-queue-status').textContent =
+      remaining > 0 ? `남은 로그: ${remaining}줄` : (hasPendingAction ? '전투 종료 확인 대기' : '실시간 동기화됨');
+
+    const skipBtn = document.getElementById('btn-skip-logs');
+    if (remaining > 0) skipBtn.classList.remove('hidden');
+    else skipBtn.classList.add('hidden');
+
+    const stepBox = document.getElementById('log-step-box');
+    const hintEl = document.getElementById('log-step-hint');
+    const countEl = document.getElementById('log-step-counter');
+
+    if (isWaitingClick) {
+      stepBox.classList.add('waiting');
+      countEl.textContent = remaining > 0 ? `[+${remaining}줄 대기 중]` : `[마지막 로그]`;
+      hintEl.textContent = hasPendingAction && remaining === 0 ? '터치하여 결과 화면으로 ▶' : '터치하여 다음 줄 ▶';
+    } else {
+      stepBox.classList.remove('waiting');
+      countEl.textContent = '';
+      hintEl.textContent = '행동을 선택하세요';
+    }
+  },
+
+  // 전투 승리/패배 화면 전환을 로그 큐가 다 비워질 때까지 보류하는 헬퍼
+  runAfterLogs(callback) {
+    if (this.presentationQueue.length === 0) {
+      callback();
+    } else {
+      this.postQueueActions.push(callback);
+      this.updateLogStepUI();
+    }
+  },
+
+  checkPostQueueActions() {
+    while (this.presentationQueue.length === 0 && this.postQueueActions.length > 0) {
+      const fn = this.postQueueActions.shift();
+      fn();
+    }
+  },
+
+  clearLogs() {
+    this.presentationQueue = [];
+    this.pendingFxList = [];
+    this.postQueueActions = [];
+    document.getElementById('log-box').innerHTML = '';
+    const stepText = document.getElementById('log-step-text');
+    if (stepText) stepText.textContent = '전투 개시...';
+    this.updateLogStepUI();
+  },
+
+  appendDomLog(msg, cls = '') {
     const box = document.getElementById('log-box');
     if (!box) return;
     box.querySelectorAll('.recent').forEach(el => el.classList.remove('recent'));
@@ -2451,11 +2702,20 @@ const AppUI = {
   },
 
   selectCard(idx) {
+    // 아직 안 읽은 로그가 남아있으면 먼저 로그를 다 넘기도록 유도하거나 즉시 스킵 처리
+    if (this.presentationQueue.length > 0) {
+      this.advanceLogStep();
+      return;
+    }
     this.selectedCardIdx = (this.selectedCardIdx === idx) ? null : idx;
     this.renderStageActors();
   },
 
   executeSelectedCard() {
+    if (this.presentationQueue.length > 0) {
+      this.advanceLogStep();
+      return;
+    }
     if (this.selectedCardIdx === null) return;
     const idx = this.selectedCardIdx;
     this.selectedCardIdx = null;
@@ -2463,14 +2723,20 @@ const AppUI = {
   },
 
   onClickEndTurn() {
+    if (this.presentationQueue.length > 0) {
+      this.advanceLogStep();
+      return;
+    }
     if (this.mode !== 'ROGUE_COMBAT' || this.engine.combatEnded) return;
     this.selectedCardIdx = null;
     this.engine.endPlayerTurn();
   },
 
-  renderStageActors() {
-    const p = this.engine.player;
-    const e = this.engine.enemy;
+  renderStageActors(snapshot = null) {
+    const state = snapshot || this.captureStateSnapshot();
+    const p = state.player;
+    const e = state.enemy;
+    const isQueueLocked = this.presentationQueue.length > 0;
 
     const renderStatusTags = (ent) => ent.statuses.map(s => {
       const def = StatusDB[s.id];
@@ -2480,7 +2746,7 @@ const AppUI = {
       return `<span class="s-tag ${cls}" onclick="AppUI.openStatusInfo('${s.id}', ${s.stacks}, ${s.accumulated || 0})">${meta.icon}${def.name} ${s.stacks}${acc}</span>`;
     }).join('');
 
-    // 1. 적 상태 박스 업데이트
+    // 1. 적 상태 박스
     const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
     document.getElementById('sprite-enemy').innerHTML = `[적 도트]<br>${e.name}`;
     document.getElementById('enemy-name-label').textContent = `${e.name}${floorTag}`;
@@ -2490,10 +2756,10 @@ const AppUI = {
     document.getElementById('enemy-hp-text').textContent = `${e.hp} / ${e.maxHp}`;
     document.getElementById('enemy-status-list').innerHTML = renderStatusTags(e);
 
-    // 2. 적 예고(Intent) 및 덱/무덤 요약 업데이트
-    document.getElementById('deck-grave-Summary').textContent = `덱${p.deck.length}/묘${p.graveyard.length}`;
+    // 2. 적 예고(Intent)
+    document.getElementById('deck-grave-Summary').textContent = `덱${p.deckCount}/묘${p.graveCount}`;
     if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
-      const act = EnemyDB[e.enemyId].getAction(this.engine.turn, this.engine, e, p);
+      const act = EnemyDB[e.enemyId].getAction(state.turn, this.engine, this.engine.enemy, this.engine.player);
       let intentText = act.intent;
       if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
         intentText += ` (+스케일링 ${e.tierDamageBonus})`;
@@ -2502,8 +2768,8 @@ const AppUI = {
       document.getElementById('intent-main').textContent = intentText;
     }
 
-    // 3. 플레이어 상태 박스 & 초록 활력 보석 동적 생성 (빠른 발굽 5활력 등 자동 대응)
-    document.getElementById('player-name-label').textContent = `${p.name} (피격:${p.runTrackers.hitTakenCount})`;
+    // 3. 플레이어 상태 박스
+    document.getElementById('player-name-label').textContent = `${p.name} (피격:${p.hitTakenCount})`;
     document.getElementById('player-armor-label').textContent = `🛡️ 방어 ${p.armor}`;
     const pPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) : 0;
     document.getElementById('player-hp-fill').style.width = `${pPct}%`;
@@ -2515,22 +2781,16 @@ const AppUI = {
       `<div class="ap-gem ${i < p.energy ? 'on' : ''}"></div>`
     ).join('');
 
-    // 4. 손패 3열 그리드 & 2단계 실행 버튼 업데이트
-    const canInteract = (this.mode === 'ROGUE_COMBAT' && !this.engine.combatEnded) || (this.mode === 'STORY' && StorySequencer.state === 'WAIT_CARD');
-    if (this.selectedCardIdx !== null && !p.hand[this.selectedCardIdx]) {
-      this.selectedCardIdx = null;
-    }
-
+    // 4. 손패 그리드 및 버튼 (로그가 밀려있을 때는 버튼이 '다음 로그 확인' 역할도 안내)
+    const canInteract = !isQueueLocked && ((this.mode === 'ROGUE_COMBAT' && !state.combatEnded) || (this.mode === 'STORY' && StorySequencer.state === 'WAIT_CARD'));
     const gridEl = document.getElementById('hand-grid');
     gridEl.innerHTML = p.hand.map((card, idx) => {
-      const cost = this.engine.getEffectiveCost(p, card);
-      const hits = this.engine.getEffectiveHits(p, card);
-      const isSelected = this.selectedCardIdx === idx;
+      const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
       return `
-        <div class="hand-card ${isSelected ? 'selected' : ''}" onclick="${canInteract ? `AppUI.selectCard(${idx})` : ''}">
-          <div class="c-cost">${cost}</div>
+        <div class="hand-card ${isSelected ? 'selected' : ''}" style="${isQueueLocked ? 'opacity:0.6;' : ''}" onclick="AppUI.selectCard(${idx})">
+          <div class="c-cost">${card.effCost}</div>
           <div class="c-name">${card.name}</div>
-          <div class="c-type">${card.type}${hits > 0 ? `(${hits}타)` : ''}</div>
+          <div class="c-type">${card.type}${card.effHits > 0 ? `(${card.effHits}타)` : ''}</div>
           <div class="c-desc">${card.desc}</div>
         </div>
       `;
@@ -2538,12 +2798,20 @@ const AppUI = {
 
     const execBtn = document.getElementById('btn-exec-card');
     const endTurnBtn = document.getElementById('btn-end-turn');
-    endTurnBtn.disabled = (this.mode !== 'ROGUE_COMBAT' || this.engine.combatEnded);
 
-    if (canInteract && this.selectedCardIdx !== null && p.hand[this.selectedCardIdx]) {
-      const selCard = p.hand[this.selectedCardIdx];
-      const cost = this.engine.getEffectiveCost(p, selCard);
-      const blocked = p.getPassives().some(({ def, inst }) => def.canPlayCard && !def.canPlayCard(selCard, this.engine, p, inst));
+    if (isQueueLocked) {
+      execBtn.disabled = false;
+      execBtn.textContent = `▶ 로그 터치 / 다음 진행 (${this.presentationQueue.length}줄)`;
+      endTurnBtn.disabled = true;
+      return;
+    }
+
+    endTurnBtn.disabled = (this.mode !== 'ROGUE_COMBAT' || state.combatEnded);
+
+    if (canInteract && this.selectedCardIdx !== null && this.engine.player.hand[this.selectedCardIdx]) {
+      const selCard = this.engine.player.hand[this.selectedCardIdx];
+      const cost = this.engine.getEffectiveCost(this.engine.player, selCard);
+      const blocked = this.engine.player.getPassives().some(({ def, inst }) => def.canPlayCard && !def.canPlayCard(selCard, this.engine, this.engine.player, inst));
       if (blocked) {
         execBtn.disabled = true;
         execBtn.textContent = `사용 불가 (${selCard.name} - 난투)`;
@@ -2560,7 +2828,6 @@ const AppUI = {
     }
   }
 };
-
 AppUI.init();
 </script>
 </body>
