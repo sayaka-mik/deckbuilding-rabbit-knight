@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.82 spritemap</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.83 전화위복,뇌진탕 FIX</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -875,7 +875,7 @@ const StatusDB = {
   CONCUSSION: {
     id: 'CONCUSSION', code: '007', name: '뇌진탕', category: STATUS_CATEGORY.DEBUFF, priority: 50,
     decayTiming: DECAY_TIMING.OWNER_TURN_END,
-    modifyEnergyRecovery: () => 0,
+    canPlayCard: () => false, // 👈 모든 카드 및 행동 사용 불가 (기절)
     onOwnerTurnEnd: (engine, owner, instance) => engine.statuses.tryDecayDebuff(owner, instance, 1)
   },
   GOBLIN_NEEDLE: {
@@ -951,7 +951,10 @@ const StatusDB = {
     id: 'CTX_BLESSING_IN_DISGUISE', code: '002', name: '맥락:전화위복', category: STATUS_CATEGORY.CONTEXT, priority: 40,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
     onDamageTaken: (engine, owner, packet) => {
-      if (packet.type === DAMAGE_TYPE.STATUS && packet.amount > 0) engine.drawCards(owner, 1);
+      if (packet.type === DAMAGE_TYPE.STATUS && packet.amount > 0) {
+        engine.emitLog(`🃏 [전화위복] 상태이상 피해 반응 -> 카드 1장 드로우!`, 'log-sys'); // 👈 이 줄 추가
+        engine.drawCards(owner, 1);
+      }
     }
   },
   CTX_MIST_FORTRESS: {
@@ -970,7 +973,7 @@ const StatusMeta = {
   DELIRIUM: { icon: '🧪', desc: '보유자의 턴이 끝날 때 스택×5 상태이상 피해를 입고 스택이 1 증가합니다.' },
   BRAWL: { icon: '💢', desc: '시전자의 턴 시작 시 스택 1 감소. 보유 중에는 마법 카드를 사용할 수 없습니다.' },
   BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 피해에 면역이 됩니다. (체력 상실 제외)' },
-  CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 턴 시작 시 기본 활력 회복량이 0이 됩니다.' },
+  CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 모든 카드와 행동을 사용할 수 없습니다.' },
   GOBLIN_NEEDLE: { icon: '🌵', desc: '피격될 때마다 공격자에게 스택×5 물리 피해를 입힙니다.' },
   VIPER_BLADE: { icon: '🗡️', desc: '타격할 때마다 대상에게 추가 물리 피해 7을 입히고 스택이 1 감소합니다.' },
   PATIENCE: { icon: '🛡️', desc: '턴 종료 시 스택 1 감소. 입는 물리 피해를 0으로 만들고 누적(최대 400)하며, 해제될 때 누적 수치만큼 상태이상 피해를 입습니다.' },
@@ -1059,7 +1062,7 @@ const CardDB = {
   },
   '025': { id: '025', name: '토끼남작의 이빨', cost: 1, type: 'ATTACK', hits: 1, desc: '타수 1, 물리 데미지 12, 자신 HP 회복 8', play: (engine, u, t) => { engine.executeAttack(u, t, 12); engine.heal(u, 8, '토끼남작의 이빨'); } },
   '026': { id: '026', name: '실명', cost: 2, type: 'MAGIC', hits: 0, desc: '모두에게 실명 2 부여', play: (engine, u, t) => { engine.statuses.apply(u, u, 'BLIND', 2); engine.statuses.apply(u, t, 'BLIND', 2); } },
-  '027': { id: '027', name: '전화위복', cost: 1, type: 'MAGIC', hits: 0, desc: '다음 내 턴 종료까지 상태이상 피해 입을 때마다 1드로우', play: (engine, u) => engine.statuses.setOrMaxContext(u, 'CTX_BLESSING_IN_DISGUISE', 2) },
+  '027': { id: '027', name: '전화위복', cost: 1, type: 'MAGIC', hits: 0, desc: '다음 내 턴 종료까지 상태이상 피해 입을 때마다 그 다음 턴 1드로우 추가', play: (engine, u) => engine.statuses.setOrMaxContext(u, 'CTX_BLESSING_IN_DISGUISE', 2) },
   '028': {
     id: '028', name: '토끼시종의 부름', cost: 1, type: 'ATTACK', hits: 1, desc: '물리 7, 묘지의 토끼기사의 지혜를 모두 손으로 가져오고 이번 턴 코스트 1',
     play: (engine, u, t) => {
@@ -1731,10 +1734,13 @@ class CombatEngine {
     if (enemyDef) {
       const action = enemyDef.getAction(this.turn, this, this.enemy, this.player);
 
-      // ✅ [추가된 난투 검사 로직] 적이 낼 행동이 MAGIC인데 적 몸에 난투가 있으면 스킵
-      const hasBrawl = this.statuses.get(this.enemy, 'BRAWL');
-      if (action.type === 'MAGIC' && hasBrawl) {
-        this.emitLog(`🚫 [난투] 효과로 인해 ${this.enemy.name}의 [${action.name}] 발동이 취소되었습니다!`, 'log-hit');
+    // 👇 [수정 코드 ✅] 모든 상태이상/패시브에서 행동 불가(기절, 난투 등) 여부를 범용으로 검사합니다.
+      const blocker = this.enemy.getPassives().find(
+        ({ def, inst }) => def.canPlayCard && !def.canPlayCard(action, this, this.enemy, inst)
+      );
+
+      if (blocker) {
+        this.emitLog(`🚫 [${blocker.def.name}] 효과로 인해 ${this.enemy.name}의 [${action.name}] 발동이 취소되었습니다!`, 'log-hit');
       } else {
         this.emitLog(`👾 [${this.enemy.name}] '${action.name}' 발동!`, 'log-hit');
         action.execute();
@@ -1742,8 +1748,7 @@ class CombatEngine {
     }
     if (this.combatEnded) return;
 
-    this.processTurnEndStatuses(this.enemy);
-    if (this.combatEnded) return;
+    this.processTurnEndStatuses(this.enemy);;
 
     this.turn += 1;
     this.startPlayerTurn();
@@ -2301,11 +2306,11 @@ const StorySequencer = {
         });
       }
     };
-    document.getElementById('vn-chapter-title').textContent = chapter.title;
+    document.getElementById('vn-chapter-title').textContent = chapter.titlie;
     AppUI.mode = 'STORY';
     AppUI.go('screen-vn');
 
-    // 👇 [여기 추가됨] 스토리 스탠딩 이미지 적용
+    // 👇 AppUI.go 이후에 요소가 활성화되므로 이 위치에서 이미지를 주입해야 안전합니다.
     const vnUrl = SpriteMap['토끼기사 스탠딩'];
     const vnSlot = document.getElementById('vn-sprite-slot');
     if (vnSlot && vnUrl) {
@@ -3143,14 +3148,27 @@ const AppUI = {
 
       if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
         const act = EnemyDB[e.enemyId].getAction(state.turn, this.engine, this.engine.enemy, this.engine.player);
+        const blocker = this.engine.enemy.getPassives().find(
+          ({ def, inst }) => def.canPlayCard && !def.canPlayCard(act, this.engine, this.engine.enemy, inst)
+        );
+
         let intentText = act.intent;
         if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
           intentText += ` (+스케일링 ${e.tierDamageBonus})`;
         }
-        headerLabel.textContent = `👾 적 다음 행동 예고 [${act.name}]`;
-        mainDisplay.className = 'purple-main-text';
-        mainDisplay.style.color = 'var(--fx-yellow)';
-        mainDisplay.textContent = intentText;
+
+        if (blocker) {
+          headerLabel.textContent = `🚫 적 행동 봉인됨 [${blocker.def.name}]`;
+          mainDisplay.className = 'purple-main-text';
+          mainDisplay.style.color = 'var(--text-sub)';
+          mainDisplay.textContent = `(취소됨) ${act.name} — ${intentText}`;
+        } else {
+          headerLabel.textContent = `👾 적 다음 행동 예고 [${act.name}]`;
+          mainDisplay.className = 'purple-main-text';
+          mainDisplay.style.color = 'var(--fx-yellow)';
+          mainDisplay.textContent = intentText;
+        }
+
       } else if (this.mode === 'STORY') {
         headerLabel.textContent = `📖 스토리 전투 안내`;
         mainDisplay.className = 'purple-main-text';
