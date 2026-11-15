@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.78 UI Update+</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.82 spritemap</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -87,6 +87,7 @@
     .stage-top-row {
       height: 38%; min-height: 170px;
       display: flex; gap: 8px; width: 100%;
+      position: relative; /* 👈 이 1줄 추가 (플로팅 텍스트 좌표 기준점) */
     }
     .actor-box {
       flex: 1; height: 100%; position: relative; overflow: hidden;
@@ -99,8 +100,12 @@
       position: absolute; inset: 0; z-index: 1;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       font-size: 12px; color: var(--text-sub); text-align: center;
-      background: radial-gradient(circle at center, #1f2335 0%, #111218 100%);
-      image-rendering: pixelated; padding-bottom: 52px;
+      background-color: #111218; /* 기본 배경색 */
+      background-size: cover; /* 이미지가 박스에 꽉 차게 */
+      background-position: center 20%; /* 이미지가 위쪽(얼굴 중심)으로 오도록 */
+      background-repeat: no-repeat;
+      image-rendering: pixelated; /* 도트 선명하게 유지 */
+      padding-bottom: 52px;
     }
     .actor-name-floating {
       position: absolute; top: 6px; left: 8px; z-index: 2;
@@ -323,16 +328,64 @@
       display: flex; justify-content: space-between; align-items: center;
       font-size: 10.5px; color: var(--fx-yellow);
     }
+
+    /* 도감 탭 및 리스트 스타일 */
+    .codex-tabs {
+      display: flex; gap: 4px; flex-shrink: 0;
+    }
+    .codex-tab {
+      flex: 1; padding: 7px 2px; font-size: 11.5px;
+      background: #1a1b26; border: 1px solid var(--border); color: var(--text-sub);
+    }
+    .codex-tab.active {
+      background: #24283b; border-color: var(--accent); color: var(--accent);
+    }
+    .codex-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+
+    /* 4. 플로팅 텍스트 (Floating Combat Text) 연출 */
+    @keyframes fct-float {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+      15% { opacity: 1; transform: translate(-50%, -10px) scale(1.2); }
+      30% { transform: translate(-50%, -15px) scale(1); }
+      80% { opacity: 1; transform: translate(-50%, -30px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+    }
+    .fct-text {
+      position: absolute; z-index: 100;
+      font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 26px; /* 큼직한 폰트 */
+      pointer-events: none; white-space: nowrap;
+      text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 6px rgba(0,0,0,0.6);
+      animation: fct-float 0.8s ease-out forwards;
+    }
+    .fct-red { color: #f7768e; }
+    .fct-blue { color: #7dcfff; }
+    .fct-white { color: #ffffff; }
+    .fct-cyan { color: #73daca; }
+    .fct-purple { color: #bb9af7; }
+    .fct-green { color: #9ece6a; } /* 👈 이 1줄 추가 */
   </style>
 </head>
 <body>
 
 <div id="app">
+  <audio id="bgm-audio" src="rabbitknight.mp3" loop preload="auto"></audio>
 
   <!-- [1] 게임 시작 화면 -->
   <div id="screen-start" class="screen active">
+    <!-- 상단 우측 BGM 온/오프 바 -->
+    <div style="display: flex; justify-content: flex-end; width: 100%;">
+      <button id="btn-bgm-toggle" onclick="AppUI.toggleBgm()" style="padding: 6px 10px; font-size: 11.5px;">
+        🔇 BGM: OFF
+      </button>
+    </div>
     <div style="margin: auto 0 10px 0; text-align: center;">
-      <div style="width:96px; height:96px; margin:0 auto 12px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-sub);">[메인 도트]<br>토끼기사</div>
+      <div id="main-logo-slot" style="width:96px; height:96px; margin:0 auto 12px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-sub); background-size: cover; background-position: center; image-rendering: pixelated;">
+        [메인 도트]<br>토끼기사
+      </div>
       <h1 style="font-size: 20px; color: var(--accent);">Sir Mad Boomer</h1>
       <p id="start-subtitle" style="font-size: 11.5px; color: var(--text-sub); margin-top: 6px; line-height: 1.4;">Rabbit Knight</p>
     </div>
@@ -341,6 +394,7 @@
       <button onclick="AppUI.go('screen-story-list')">📖 스토리 모드</button>
       <button id="btn-rogue-continue" class="primary hidden" onclick="RogueManager.continueFromSave()">⚔️ 기사도 이어하기</button>
       <button class="primary" onclick="RogueManager.startNewRun()">⚔️ 새 기사도 시작 (1층)</button>
+      <button onclick="AppUI.openCodex('CARD')">📚 도감</button>
     </div>
   </div>
 
@@ -367,28 +421,31 @@
     <div id="story-chapter-list" class="scroll-list"></div>
   </div>
 
-  <!-- [4] 스토리 비주얼 노벨 화면 -->
-  <div id="screen-vn" class="screen">
+  <!-- [4] 스토리 비주얼 노벨 화면 (화면 전체 클릭 가능) -->
+  <div id="screen-vn" class="screen" onclick="StorySequencer.onUserClickDialogue()">
     <div class="screen-header">
       <span id="vn-chapter-title" style="font-size:12px; color:var(--text-sub);">스토리</span>
-      <button onclick="AppUI.returnToLobby()" style="padding:4px 8px; font-size:11px;">포기 / 로비</button>
+      <button onclick="event.stopPropagation(); AppUI.returnToLobby()" style="padding:4px 8px; font-size:11px;">포기 / 로비</button>
     </div>
     <div class="vn-illust-area">
-      <div id="vn-sprite-slot" class="avatar-slot" style="width:96px; height:96px;">[스탠딩 도트]<br>토끼기사</div>
+      <div id="vn-sprite-slot" class="avatar-slot" style="width:96px; height:96px; background-size: contain; background-position: center; background-repeat: no-repeat; border:none; background-color:transparent;">
+        [스탠딩 도트]<br>토끼기사
+      </div>
       <div style="font-size:11px; color:var(--text-sub);">(비주얼 노벨 연출 영역)</div>
     </div>
-    <div class="vn-textbox" onclick="StorySequencer.onUserClickDialogue()">
+    <!-- 기존에 있던 onclick="..." 제거 -->
+    <div class="vn-textbox">
       <div>
         <div id="vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:6px;"></div>
         <div id="vn-text" style="font-size:13px; line-height:1.5;"></div>
         <div id="vn-choices" class="vn-choices hidden" onclick="event.stopPropagation()"></div>
       </div>
-      <div id="vn-next-hint" style="align-self:flex-end; font-size:11px; color:var(--accent); margin-top:6px;">다음 ▶</div>
+      <div id="vn-next-hint" style="align-self:flex-end; font-size:11px; color:var(--accent); margin-top:6px;">화면 터치로 계속 ▶</div>
     </div>
   </div>
 
   <!-- [5] 전투 화면 (스케치 반영: 상단 좌/우 박스 + 보라색 통합 배너 + 3단 버튼 + 하단 가로 스크롤 카드) -->
-  <div id="screen-combat" class="screen">
+  <div id="screen-combat" class="screen" onclick="AppUI.handleCombatScreenClick(event)">
 
     <!-- [상단] 좌측 플레이어 박스 / 우측 적 박스 -->
     <div class="stage-top-row">
@@ -427,10 +484,10 @@
     </div>
 
     <!-- [중상단 보라색 영역] 적 행동 예고 & 1줄 클릭 로그 통합 박스 -->
-    <div id="purple-box" class="purple-unified-box" onclick="AppUI.advanceLogStep()">
+    <div id="purple-box" class="purple-unified-box">
       <div class="purple-top-bar">
         <span id="purple-header-label">적 다음 행동 예고</span>
-        <div style="display:flex; gap:4px;" onclick="event.stopPropagation()">
+        <div style="display:flex; gap:4px;">
           <button id="btn-skip-logs" class="log-mini-btn hidden" onclick="AppUI.flushAllLogs()">스킵 ⏭️</button>
           <button class="log-mini-btn" onclick="AppUI.openFullLogModal()">전체 로그</button>
         </div>
@@ -443,13 +500,13 @@
         <span id="log-step-hint"></span>
       </div>
 
-      <!-- 스토리 모드 전투 중 대사 오버레이 -->
-      <div id="combat-vn-overlay" class="combat-vn-overlay hidden" onclick="event.stopPropagation(); StorySequencer.onUserClickDialogue()">
+      <!-- 스토리 모드 전투 중 대사 오버레이: 기존 onclick 제거 -->
+      <div id="combat-vn-overlay" class="combat-vn-overlay hidden">
         <div>
           <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:12.5px; margin-bottom:3px;"></div>
           <div id="combat-vn-text" style="font-size:12px; line-height:1.4; color:var(--text-main);"></div>
         </div>
-        <div id="combat-vn-hint" style="align-self:flex-end; font-size:10.5px; color:var(--accent);">터치하여 계속 ▶</div>
+        <div id="combat-vn-hint" style="align-self:flex-end; font-size:10.5px; color:var(--accent);">화면 터치로 계속 ▶</div>
       </div>
     </div>
 
@@ -488,6 +545,26 @@
     </div>
     <div id="choice-subtitle" style="font-size:12px; color:var(--text-sub); line-height:1.4;"></div>
     <div id="choice-list" class="scroll-list"></div>
+  </div>
+
+  <!-- [7] 도감 화면 (카드 / 버프 / 디버프 / 특성 / 유물) -->
+  <div id="screen-codex" class="screen">
+    <div class="screen-header">
+      <strong style="color:var(--fx-yellow);">📚 도감</strong>
+      <button onclick="AppUI.go('screen-start')">뒤로</button>
+    </div>
+
+    <!-- 5개 카테고리 전환 탭 -->
+    <div class="codex-tabs">
+      <button id="tab-codex-CARD" class="codex-tab active" onclick="AppUI.renderCodex('CARD')">카드</button>
+      <button id="tab-codex-BUFF" class="codex-tab" onclick="AppUI.renderCodex('BUFF')">버프</button>
+      <button id="tab-codex-DEBUFF" class="codex-tab" onclick="AppUI.renderCodex('DEBUFF')">디버프</button>
+      <button id="tab-codex-TRAIT" class="codex-tab" onclick="AppUI.renderCodex('TRAIT')">특성</button>
+      <button id="tab-codex-RELIC" class="codex-tab" onclick="AppUI.renderCodex('RELIC')">유물</button>
+    </div>
+
+    <div id="codex-count-info" style="font-size:11px; color:var(--text-sub);"></div>
+    <div id="codex-list" class="scroll-list"></div>
   </div>
 
   <!-- [모달 1] 통합 전술 메뉴 (특성/유물 터치 설명 + 덱/무덤 카드 조회) -->
@@ -621,6 +698,19 @@ const DECAY_TIMING = {
   CASTER_TURN_START: 'CASTER_TURN_START',
   PLAYER_TURN_END_CONTEXT: 'PLAYER_TURN_END_CONTEXT',
   NONE: 'NONE'
+};
+
+// 🎨 이미지 에셋 매핑 사전 (추후 이미지 경로 확장자까지 기입)
+const SpriteMap = {
+  '메인 로고': 'logo.png',           // 예: 'logo.png'
+  '토끼기사 스탠딩': 'the_knight.png',     // 예: 'rabbit_standing.png' (스토리 모드용)
+  '토끼기사': 'knight.png',           // 전투 플레이어 (도트)
+  '석궁병 제나': 'jena.png',         // 스토리 1-1 적
+  '굴토끼': 'grabbit.png',             // 일반 적
+  '태엽토끼': 'taprabbit.png', 
+  '독니토끼': 'porabbit.png', 
+  '설산의 기사': 'winterknight.png',         // 엘리트
+  '토끼마녀 시향': 'witchrabbit.png'        // 보스
 };
 
 // 유물 6종 정의
@@ -1242,7 +1332,10 @@ class StatusManager {
     }
     // 버프면 파란색(fx-blue), 디버프면 보라색(fx-purple), 턴맥락이면 노란색(fx-yellow) 연출
 const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
+    const fct = def.category === STATUS_CATEGORY.DEBUFF ? 'fct-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fct-cyan' : 'fct-white');
+
     this.engine.emitFx(target, fx);
+    this.engine.emitFloatingText(target, `${def.name}!!`, fct); // 글씨 띄우기 호출
     this.engine.emitLog(`📌 [상태 부여] ${target.name} <- [${def.name} ${finalStacks}] (현재:${inst.stacks})`, 'log-status');
     this.engine.notifyRender();
   }
@@ -1375,6 +1468,14 @@ class CombatEngine {
     }
   }
 
+  // 👇 [추가됨] CombatEngine 클래스 내부에 플로팅 텍스트 발송기 추가
+  emitFloatingText(targetEntity, text, colorClass) {
+    if (this.onFloatingTextCallback && targetEntity) {
+      this.onFloatingTextCallback(targetEntity === this.player ? 'box-player' : 'box-enemy', text, colorClass);
+    }
+  }
+
+  // 👇 [교체됨] 방어도 감쇠 시 흰색 글씨, 데미지 적중 시 빨간 글씨
   dealDamage(packet) {
     if (this.combatEnded) return;
     const { source, target } = packet;
@@ -1400,14 +1501,20 @@ class CombatEngine {
       target.armor -= absorbed;
       unblocked -= absorbed;
       packet.logs.push(`방어도(-${absorbed})`);
+      
+      this.emitFloatingText(target, `방어 ${absorbed}`, 'fct-white'); // ⬜ 방어도 흡수 흰색 글씨
     }
 
     const prevHp = target.hp;
     target.hp = Math.max(0, target.hp - unblocked);
     const actualLost = prevHp - target.hp;
 
+    if (actualLost > 0) {
+      this.emitFloatingText(target, `-${actualLost}`, 'fct-red'); // 🟥 체력 감소 빨간 글씨
+    }
+
     if (actualLost > 0 || packet.amount > 0) {
-      this.emitFx(target, 'fx-red');
+      this.emitFx(target, 'fx-red'); // 기존 화면 흔들림 연출
     }
 
     const note = packet.logs.length ? ` [${packet.logs.join(', ')}]` : '';
@@ -1430,6 +1537,15 @@ class CombatEngine {
     this.checkCombatEnd();
   }
 
+  // 👇 [교체됨] 방어막 획득 시 파란색 텍스트
+  gainArmor(target, amount, reason) {
+    target.armor += amount;
+    this.emitFx(target, 'fx-blue');
+    this.emitFloatingText(target, `🛡️+${amount}`, 'fct-blue'); // 🟦 방어막 획득 파란 글씨
+    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
+    this.notifyRender();
+  }
+
   checkCombatEnd() {
     if (this.combatEnded || !this.onCombatEndCallback) return;
     if (this.enemy.maxHp > 0 && this.enemy.hp <= 0) {
@@ -1443,18 +1559,16 @@ class CombatEngine {
     }
   }
 
-  gainArmor(target, amount, reason) {
-    target.armor += amount;
-    this.emitFx(target, 'fx-blue');
-    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
-    this.notifyRender();
-  }
-
   heal(target, amount, reason) {
     const prev = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + amount);
+    const actualHealed = target.hp - prev;
+
     this.emitFx(target, 'fx-green');
-    this.emitLog(`💚 [${reason}] ${target.name} HP +${target.hp - prev} 회복`, 'log-sys');
+    if (actualHealed > 0) {
+      this.emitFloatingText(target, `💚+${actualHealed}`, 'fct-green'); // 👈 이 부분 추가
+    }
+    this.emitLog(`💚 [${reason}] ${target.name} HP +${actualHealed} 회복`, 'log-sys');
     this.notifyRender();
   }
 
@@ -2104,10 +2218,10 @@ function executeZenaCombo(engine) {
   actions.forEach((act, idx) => {
     if (act === 'STEP') {
       engine.recoverEnergy(engine.enemy, 1);
-      engine.emitLog(`👾 [제나 행동 ${idx+1}/12] [스텝 밟기] 발동!`, 'log-story');
+      engine.emitLog(`석궁병 제나의 [스텝 밟기]! 제나가 활력을 회복했습니다.`, 'log-story');
     } else if (act === 'CLOVER') {
       engine.statuses.apply(engine.enemy, engine.enemy, 'REGEN', 3);
-      engine.emitLog(`👾 [제나 행동 ${idx+1}/12] [토끼풀] 사용! (덱 압축 진행)`, 'log-story');
+      engine.emitLog(`석궁병 제나의 [토끼풀]! 제나가 카드를 1장 뽑고 재생을 획득했습니다.`, 'log-story');
     } else if (act === 'ARROW') {
       // 딜이 들어갈 때 알아서 붉은 이펙트, 피격 횟수 증가, HP 감소가 작동합니다.
       engine.dealDamage(new DamagePacket({
@@ -2116,7 +2230,7 @@ function executeZenaCombo(engine) {
       }));
     }
   });
-  engine.emitLog(`⚡ 제나의 사나운 공세가 끝났습니다!`, 'log-sys');
+  engine.emitLog(`⚡ 석궁병 제나의 턴이 종료되었습니다.`, 'log-sys');
 }
 
 const StoryDB = [
@@ -2125,7 +2239,7 @@ const StoryDB = [
     title: '1-1. 토끼굴의 여명',
     saveClearKey: 'stage_1_1.clear',
     script: [
-      { type: 'TEXT', speaker: '나레이션', text: '오랜 세월 빛을 보지 못한 토끼굴 속 어느날, 왕정의 폭압에 백성들이 울부짖고, 아이들은 노예처럼 부려지고 있었다.... 그 모습을 지켜봐온 당신은...' },
+      { type: 'TEXT', speaker: '나레이션', text: '오랜 세월 빛을 보지 못한 토끼굴 속 어느날, 그날도 언제나처럼 왕정의 폭압에 백성들이 울부짖고, 아이들은 노예처럼 부려지고 있었다.... 그 모습을 지켜봐온 당신은...' },
       {
         type: 'CHOICE', speaker: '내면의 결단', text: '어떠한 마음으로 자리를 박차고 일어설 것인가?', varKey: 'route',
         options: [
@@ -2133,15 +2247,17 @@ const StoryDB = [
           { label: '(2) 정의를 바로잡기로 결심한다', value: 2, saveFlag: { key: 'flag.chose_revenge', val: true } }
         ]
       },
-      { type: 'TEXT', speaker: '나레이션', text: '당신은 일어나 석탄광의 울타리를 걷어찼다. 아이들을 윽박지르던 날렵한 석궁병이 다가온다. [전투 개시]' },
+      { type: 'TEXT', speaker: '나레이션', text: '당신은 일어나 석탄광의 울타리를 걷어찼다. 아이들을 윽박지르던 날렵한 석궁병, 제나가 이쪽으로 다가온다. [전투 개시]' },
       { type: 'SETUP_STAGE', player: { name: '토끼기사', hp: 100, maxHp: 100 }, enemy: { name: '석궁병 제나', hp: 30, maxHp: 30 } },
       { type: 'SCRIPTED_ACTION', execute: executeZenaCombo },
-      { type: 'TEXT', speaker: '토끼기사', text: '실로 사악하기 그지없는 발재간이로다...!' },
+      { type: 'TEXT', speaker: '토끼기사', text: '실로 사악하기 그지없는 발재간이로다! 하지만!' },
       {
         type: 'BRANCH', condition: (vars) => vars.route === 1,
         steps: [
           { type: 'GIVE_CARD', cardId: '020', freeCost: true, prompt: '손패의 [무지몽매]를 선택 후 실행해 [난투]를 부여하십시오.' },
+          { type: 'SCRIPTED_LOGS', logs: ['당신의 턴이 종료되었습니다.'] },
           { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 스텝을 밟으려 했으나 [난투] 효과로 막혔다!'] },
+          { type: 'SCRIPTED_LOGS', logs: ['제나의 턴이 종료되었습니다.'] },
           { type: 'RIG_NEXT_RANDOM', value: 30 },
           { type: 'GIVE_CARD', cardId: '011', freeCost: true, prompt: '손패의 [용자의 행운]을 선택 후 실행해 일격을 날리십시오.' }
         ]
@@ -2152,7 +2268,7 @@ const StoryDB = [
           { type: 'GIVE_CARD', cardId: '013', freeCost: true, prompt: '손패의 [복수]를 선택 후 실행해 4연타 피격의 분노(8×4=32)를 되갚으십시오.' }
         ]
       },
-      { type: 'TEXT', speaker: '나레이션', text: '석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 완전히 허문다.' },
+      { type: 'TEXT', speaker: '나레이션', text: '당신의 일격에 석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 완전히 허문다.' },
       { type: 'SET_SAVE', key: 'stage_1_1.clear', value: true }
     ]
   }
@@ -2180,13 +2296,25 @@ const StorySequencer = {
     this.engine.onCardPlayedCallback = () => {
       if (this.state === 'WAIT_CARD') {
         this.state = 'IDLE';
-        this.next();
+        AppUI.runAfterLogs(() => {
+          this.next();
+        });
       }
     };
-
     document.getElementById('vn-chapter-title').textContent = chapter.title;
     AppUI.mode = 'STORY';
     AppUI.go('screen-vn');
+
+    // 👇 [여기 추가됨] 스토리 스탠딩 이미지 적용
+    const vnUrl = SpriteMap['토끼기사 스탠딩'];
+    const vnSlot = document.getElementById('vn-sprite-slot');
+    if (vnSlot && vnUrl) {
+      vnSlot.style.backgroundImage = `url('${vnUrl}')`;
+      vnSlot.innerHTML = '';
+    } else if (vnSlot) {
+      vnSlot.innerHTML = '[스탠딩 도트]<br>토끼기사';
+    }
+
     AppUI.clearLogs();
     this.next();
   },
@@ -2320,6 +2448,7 @@ const AppUI = {
   logViewMode: 'STEP', // 'STEP'(1줄 클릭) | 'FULL'(전체/실시간 로그)
   presentationQueue: [],
   pendingFxList: [],
+  pendingFloatingTexts: [], // 👇 추가됨
   postQueueActions: [], // 승리/패배 화면 전환 등 로그를 다 읽은 후 실행할 콜백
 
   init() {
@@ -2328,6 +2457,11 @@ const AppUI = {
     this.engine.onFxCallback = (boxId, fxClass) => {
       this.pendingFxList.push({ boxId, fxClass });
     };
+
+    this.engine.onFloatingTextCallback = (boxId, text, colorClass) => {
+      this.pendingFloatingTexts.push({ boxId, text, colorClass });
+    };
+
     // 로그가 1줄 발생할 때마다 현재 캐릭터 상태 스냅샷과 함께 큐에 적재
     this.engine.onLogCallback = (msg, cls) => {
       this.enqueueLogStep(msg, cls);
@@ -2341,6 +2475,52 @@ const AppUI = {
 
     StorySequencer.init(this.engine);
     this.refreshSaveTextarea();
+
+    // 메인 로고 이미지 적용
+    const logoUrl = SpriteMap['메인 로고'];
+    const logoSlot = document.getElementById('main-logo-slot');
+    if (logoSlot && logoUrl) {
+      logoSlot.style.backgroundImage = `url('${logoUrl}')`;
+      logoSlot.innerHTML = ''; // 텍스트 숨김
+    }
+  },
+
+  toggleBgm() {
+    const audio = document.getElementById('bgm-audio');
+    const btn = document.getElementById('btn-bgm-toggle');
+    if (!audio || !btn) return;
+
+    if (audio.paused) {
+      audio.play().then(() => {
+        btn.textContent = '🔊 BGM: ON';
+        btn.style.borderColor = 'var(--fx-green)';
+        btn.style.color = 'var(--fx-green)';
+      }).catch(() => {
+        this.openInfo('🔇 재생 실패', '<code>rabbitknight.mp3</code> 파일을 찾을 수 없거나 브라우저에서 차단되었습니다.');
+      });
+    } else {
+      audio.pause();
+      btn.textContent = '🔇 BGM: OFF';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text-main)';
+    }
+  },
+
+  handleCombatScreenClick(event) {
+    // 1. 메뉴, 턴 종료, 스킵 버튼이나 버프/디버프 배지(.s-tag)를 직접 누른 경우엔 진행 차단
+    if (event.target.closest('button, .s-tag')) return;
+
+    // 2. 스토리 모드 전투 중 대사 오버레이가 떠 있으면 대사 진행
+    const vnOverlay = document.getElementById('combat-vn-overlay');
+    if (vnOverlay && !vnOverlay.classList.contains('hidden')) {
+      StorySequencer.onUserClickDialogue();
+      return;
+    }
+
+    // 3. 대기 중인 1줄 로그가 남아있으면 다음 줄 진행
+    if (this.presentationQueue.length > 0) {
+      this.advanceLogStep();
+    }
   },
 
   go(screenId) {
@@ -2415,6 +2595,81 @@ const AppUI = {
     }
 
     this.toggleModal('modal-menu', true);
+  },
+
+  openCodex(defaultTab = 'CARD') {
+    this.go('screen-codex');
+    this.renderCodex(defaultTab);
+  },
+
+  renderCodex(tab) {
+    // 1. 탭 활성화 하이라이트 갱신
+    ['CARD', 'BUFF', 'DEBUFF', 'TRAIT', 'RELIC'].forEach(t => {
+      const btn = document.getElementById(`tab-codex-${t}`);
+      if (btn) btn.classList.toggle('active', t === tab);
+    });
+
+    const listEl = document.getElementById('codex-list');
+    const countEl = document.getElementById('codex-count-info');
+    let html = '';
+
+    if (tab === 'CARD') {
+      const cards = Object.values(CardDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `전체 카드 목록 (${cards.length}종)`;
+      html = cards.map(c => {
+        const hitText = c.hits > 0 ? ` | 타수 ${c.hits}` : '';
+        const typeColor = c.type === 'ATTACK' ? 'var(--fx-red)' : 'var(--fx-blue)';
+        return `
+          <div class="codex-item">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="color:var(--fx-yellow); font-size:13px;">[${c.id}] ${c.name}</strong>
+              <span style="font-size:11px; color:${typeColor}; font-weight:bold;">코스트 ${c.cost} · ${c.type}${hitText}</span>
+            </div>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${c.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'BUFF' || tab === 'DEBUFF') {
+      const isBuff = tab === 'BUFF';
+      const statuses = Object.values(StatusDB)
+        .filter(s => s.category === tab)
+        .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+      countEl.textContent = `${isBuff ? '버프' : '디버프'} 목록 (${statuses.length}종)`;
+      html = statuses.map(s => {
+        const meta = StatusMeta[s.id] || { icon: '📌', desc: '설명 없음' };
+        const color = isBuff ? 'var(--fx-blue)' : 'var(--fx-purple)';
+        return `
+          <div class="codex-item" style="border-left: 3px solid ${color};">
+            <strong style="color:${color}; font-size:13px;">${meta.icon} [${s.code}] ${s.name}</strong>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${meta.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'TRAIT') {
+      const traits = Object.values(TraitDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `특성 목록 (${traits.length}종)`;
+      html = traits.map(t => `
+        <div class="codex-item" style="border-left: 3px solid var(--fx-blue);">
+          <strong style="color:var(--fx-blue); font-size:13px;">🧬 [${t.id}] ${t.name}</strong>
+          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${t.desc}</div>
+        </div>
+      `).join('');
+
+    } else if (tab === 'RELIC') {
+      const relics = Object.values(RelicDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `유물 목록 (${relics.length}종)`;
+      html = relics.map(r => `
+        <div class="codex-item" style="border-left: 3px solid var(--fx-yellow);">
+          <strong style="color:var(--fx-yellow); font-size:13px;">🏺 [${r.id}] ${r.name}</strong>
+          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${r.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    listEl.innerHTML = html;
+    listEl.scrollTop = 0;
   },
 
   openPileViewer(pileType) {
@@ -2622,11 +2877,12 @@ const AppUI = {
       msg,
       cls,
       fxList: [...this.pendingFxList],
+      floatingTextList: [...this.pendingFloatingTexts], // 👇 큐에 플로팅 텍스트 묶음 장전!
       snapshot: this.captureStateSnapshot()
     };
     this.pendingFxList = [];
+    this.pendingFloatingTexts = []; // 👇 비우기
 
-    // ✅ [수정] 사라진 'combat-board' 대신 현재 전투 화면인 'screen-combat'이 활성화되어 있는지 확인합니다!
     const combatScreen = document.getElementById('screen-combat');
     const isCombatVisible = combatScreen && combatScreen.classList.contains('active');
     if (this.logViewMode === 'FULL' || !isCombatVisible) {
@@ -2695,6 +2951,12 @@ const AppUI = {
   applyPresentationStep(step) {
     this.appendDomLog(step.msg, step.cls);
     step.fxList.forEach(fx => this.triggerFX(fx.boxId, fx.fxClass));
+    
+    // 👇 로그 1줄이 화면에 풀릴 때 글씨도 같이 허공에 뿌려줌
+    if (step.floatingTextList) {
+      step.floatingTextList.forEach(ft => this.createFloatingText(ft.boxId, ft.text, ft.colorClass));
+    }
+    
     this.renderStageActors(step.snapshot, step);
   },
 
@@ -2721,9 +2983,31 @@ const AppUI = {
   clearLogs() {
     this.presentationQueue = [];
     this.pendingFxList = [];
+    this.pendingFloatingTexts = []; // 👇 추가됨
     this.postQueueActions = [];
     document.getElementById('log-box').innerHTML = '';
     this.updateLogStepUI();
+  },
+
+  // 👇 랜덤 위치에서 플로팅 텍스트를 만들고 0.8초 후 삭제하는 함수
+  createFloatingText(boxId, text, colorClass) {
+    const box = document.getElementById(boxId);
+    if (!box || !box.parentElement) return;
+    
+    const stageRow = box.parentElement; // .stage-top-row
+    const ft = document.createElement('div');
+    ft.className = `fct-text ${colorClass}`;
+    ft.textContent = text;
+    
+    // 대상 박스 내부(가로 30~70%, 세로 40~60%) 좌표를 부모 기준으로 환산
+    const rx = box.offsetLeft + box.offsetWidth * (Math.random() * 0.4 + 0.3);
+    const ry = box.offsetTop + box.offsetHeight * (Math.random() * 0.2 + 0.4);
+    
+    ft.style.left = `${rx}px`;
+    ft.style.top = `${ry}px`;
+    
+    stageRow.appendChild(ft);
+    setTimeout(() => { if (ft.parentElement) ft.remove(); }, 800);
   },
 
   appendDomLog(msg, cls = '') {
@@ -2785,7 +3069,15 @@ const AppUI = {
     };
 
     // 1. 좌측: 플레이어 박스 (피격 텍스트 및 방어도 텍스트 완전 제거, 방어도는 흰색 반투명 게이지로 표시)
-    document.getElementById('sprite-player').innerHTML = `[내 도트]<br>${p.name}`;
+    const pSpriteUrl = SpriteMap[p.name];
+    const pSpriteEl = document.getElementById('sprite-player');
+    if (pSpriteUrl) {
+      pSpriteEl.style.backgroundImage = `url('${pSpriteUrl}')`;
+      pSpriteEl.innerHTML = ''; // 이미지 있으면 텍스트 삭제
+    } else {
+      pSpriteEl.style.backgroundImage = 'none';
+      pSpriteEl.innerHTML = `[내 도트]<br>${p.name}`; // 이미지 없으면 텍스트
+    }
     document.getElementById('player-name-label').textContent = p.name;
     const pPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) : 0;
     const pArmorPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.armor / p.maxHp) * 100)) : 0;
@@ -2801,7 +3093,15 @@ const AppUI = {
 
     // 2. 우측: 적 박스 (방어도는 흰색 반투명 게이지로 표시)
     const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
-    document.getElementById('sprite-enemy').innerHTML = `[적 도트]<br>${e.name}`;
+    const eSpriteUrl = SpriteMap[e.name];
+    const eSpriteEl = document.getElementById('sprite-enemy');
+    if (eSpriteUrl) {
+      eSpriteEl.style.backgroundImage = `url('${eSpriteUrl}')`;
+      eSpriteEl.innerHTML = '';
+    } else {
+      eSpriteEl.style.backgroundImage = 'none';
+      eSpriteEl.innerHTML = `[적 도트]<br>${e.name}`;
+    }
     document.getElementById('enemy-name-label').textContent = `${e.name}${floorTag}`;
     const ePct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.hp / e.maxHp) * 100)) : 0;
     const eArmorPct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.armor / e.maxHp) * 100)) : 0;
@@ -2832,7 +3132,7 @@ const AppUI = {
       mainDisplay.textContent = `▶ ${currentStep.msg}`;
       countEl.textContent = remaining > 0 ? `남은 로그: +${remaining}줄` : `마지막 로그`;
       hintEl.style.color = 'var(--fx-yellow)';
-      hintEl.textContent = (hasPendingAction && remaining === 0) ? '터치하여 결과 이동 ▶' : '박스 터치하여 다음 줄 ▶';
+      hintEl.textContent = (hasPendingAction && remaining === 0) ? '터치하여 결과 이동 ▶' : '화면 터치하여 다음 줄 ▶';
     } else {
       purpleBox.classList.remove('waiting-log');
       skipBtn.classList.add('hidden');
