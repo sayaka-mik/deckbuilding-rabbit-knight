@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.85 난이도상향,버그픽스</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.86 복수 너프, 유물/특성 추가</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -644,7 +644,8 @@ const SaveLedger = {
     'roguelike.deck': '001,001,001,010,010,010,005,005,002,002,011,011',
     'roguelike.relics': '',
     'roguelike.traits': '',
-    'roguelike.clearedBosses': ''
+    'roguelike.clearedBosses': '',
+    'roguelike.relic015Wins': 0 // 👈 추가
   },
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
@@ -770,6 +771,106 @@ const RelicDB = {
     id: '006', name: '요람사진', priority: 20,
     desc: '길 선택 시 캠프 확정 등장 (매 10층 보스층 제외)',
     forceCampOnPath: true
+  },
+  '007': {
+    id: '007', name: '닳은 숫돌', priority: 20,
+    desc: '타수 1 공격 카드의 피해 +3',
+    modifyAttackHitDamage: (dmg, hitIndex, totalHits, card) => {
+      if (card && card.type === 'ATTACK' && totalHits === 1) return dmg + 3;
+      return dmg;
+    }
+  },
+  '008': {
+    id: '008', name: '망토', priority: 20,
+    desc: '매 전투 첫 턴 시작 시 방어도 +8 획득',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        engine.emitLog(`🏺 [유물: 망토] 첫 턴 방어도 +8`, 'log-passive');
+        engine.gainArmor(owner, 8, '망토');
+      }
+    }
+  },
+  '009': {
+    id: '009', name: '깨진 모래시계', priority: 20,
+    desc: '매 3턴 시작 시 적에게 저주 3 부여',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn % 3 === 0 && engine.enemy && engine.enemy.hp > 0) {
+        engine.emitLog(`🏺 [유물: 깨진 모래시계] ${turn}턴 발동 -> 적에게 저주 3`, 'log-passive');
+        engine.statuses.apply(owner, engine.enemy, 'CURSE', 3);
+      }
+    }
+  },
+  '010': {
+    id: '010', name: '토끼발 부적', priority: 20,
+    desc: 'HP가 50% 이하인 상태로 전투 시작 시 첫 턴 활력 +1',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1 && owner.hp <= owner.maxHp * 0.5) {
+        engine.emitLog(`🏺 [유물: 토끼발 부적] 활력 +1`, 'log-passive');
+        engine.recoverEnergy(owner, 1);
+      }
+    }
+  },
+  '011': {
+    id: '011', name: '녹슨 징', priority: 20,
+    desc: '공격 카드를 4회 사용할 때마다 방어도 +5 획득',
+    onInit: (inst) => { inst.state = { count: 0 }; },
+    onCardPlayed: (engine, owner, card, target, isReplay, inst) => {
+      if (card.type === 'ATTACK') {
+        inst.state.count = (inst.state.count || 0) + 1;
+        if (inst.state.count >= 4) {
+          inst.state.count = 0;
+          engine.emitLog(`🏺 [유물: 녹슨 징] 공격 4회 사용 -> 방어도 +5`, 'log-passive');
+          engine.gainArmor(owner, 5, '녹슨 징');
+        }
+      }
+    }
+  },
+  '012': {
+    id: '012', name: '검은 양초', priority: 20,
+    desc: '적에게 저주를 부여할 때 부여 스택 +1 추가',
+    modifyStatusAppliedStacks: (stacks, caster, target, statusId) => {
+      if (caster !== target && statusId === 'CURSE') return stacks + 1;
+      return stacks;
+    }
+  },
+  '013': {
+    id: '013', name: '말린 당근 조각', priority: 20,
+    desc: '코스트 3 이상 카드를 사용할 때마다 HP 4 회복',
+    onCardPlayed: (engine, owner, card) => {
+      if (engine.getEffectiveCost(owner, card) >= 3) {
+        engine.emitLog(`🏺 [유물: 말린 당근 조각] 3코스트+ 카드 사용 -> HP +4`, 'log-passive');
+        engine.heal(owner, 4, '말린 당근 조각');
+      }
+    }
+  },
+  '014': {
+    id: '014', name: '피 묻은 붕대', priority: 20,
+    desc: '전투당 1회, 적에게 피격될 때 HP 6 회복',
+    onInit: (inst) => { inst.state = { used: false }; },
+    onAfterBeStruck: (engine, owner, attacker, packet, inst) => {
+      if (attacker && attacker !== owner && !inst.state.used) {
+        inst.state.used = true;
+        engine.emitLog(`🏺 [유물: 피 묻은 붕대] 첫 피격 응급처치 -> HP +6`, 'log-passive');
+        engine.heal(owner, 6, '피 묻은 붕대');
+      }
+    }
+  },
+  '015': {
+    id: '015', name: '별빛 망토', priority: 20,
+    desc: '획득 후 5번째 전투 승리 시마다 40% 확률로 전체 카드 목록 중 택 1 보상',
+    onCombatVictory: (rogueManager, rewardQueue) => {
+      rogueManager.state.relic015Wins = (rogueManager.state.relic015Wins || 0) + 1;
+      if (rogueManager.state.relic015Wins >= 5) {
+        rogueManager.state.relic015Wins = 0;
+        if (RNG.randInt(1, 100) <= 40) {
+          rewardQueue.push({
+            type: 'CARD',
+            allCards: true,
+            note: '✨ 유물 [별빛 망토] 발동! 전체 카드 중 1장을 선택하십시오.'
+          });
+        }
+      }
+    }
   }
 };
 
@@ -826,6 +927,58 @@ const TraitDB = {
           engine.emitLog(`🧬 [특성: 천무지체] ${turn}턴 발동 -> 손패의 [${targetCard.name}] 이번 턴 코스트 0!`, 'log-passive');
         }
       }
+    }
+  },
+  '006': {
+    id: '006', name: '초반 스퍼트', priority: 10,
+    desc: '매 전투 첫 턴 카드를 1장 추가로 뽑음',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        engine.emitLog(`🧬 [특성: 초반 스퍼트] 첫 턴 추가 1드로우!`, 'log-passive');
+        engine.drawCards(owner, 1);
+      }
+    }
+  },
+  '007': {
+    id: '007', name: '두꺼운 가죽', priority: 10,
+    desc: '최대 HP +30',
+    onAcquire: (runState) => {
+      runState.maxHp += 30;
+      runState.hp += 30;
+    }
+  },
+  '008': {
+    id: '008', name: '잔머리', priority: 10,
+    desc: '매 전투 첫 턴 방어도 +6, 적에게 출혈 1 부여',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        engine.emitLog(`🧬 [특성: 잔머리] 기습 방어 및 출혈 1 부여!`, 'log-passive');
+        engine.gainArmor(owner, 6, '잔머리');
+        if (engine.enemy && engine.enemy.hp > 0) {
+          engine.statuses.apply(owner, engine.enemy, 'BLEED', 1);
+        }
+      }
+    }
+  },
+  '009': {
+    id: '009', name: '건강 호흡법', priority: 10,
+    desc: '매 2턴 시작 시 방어도 +5 획득',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn % 2 === 0) {
+        engine.emitLog(`🧬 [특성: 건강 호흡법] ${turn}턴 방어도 +5`, 'log-passive');
+        engine.gainArmor(owner, 5, '건강 호흡법');
+      }
+    }
+  },
+  '010': {
+    id: '010', name: '약초 채집가', priority: 10,
+    desc: '층을 오를 때마다 HP 4 회복, 최대 HP -15',
+    onAcquire: (runState) => {
+      runState.maxHp = Math.max(1, runState.maxHp - 15);
+      runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
+    onAdvanceFloor: (runState) => {
+      runState.hp = Math.min(runState.maxHp, runState.hp + 4);
     }
   }
 };
@@ -1026,7 +1179,17 @@ const CardDB = {
   '010': { id: '010', name: '얼음방패', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 방어도 18 부여', play: (engine, u) => engine.gainArmor(u, 18, '얼음방패') },
   '011': { id: '011', name: '용자의 행운', cost: 1, type: 'ATTACK', hits: 1, desc: '타수 1, 물리 데미지 10~30', play: (engine, u, t) => engine.executeAttack(u, t, () => RNG.randInt(10, 30)) },
   '012': { id: '012', name: '착란', cost: 2, type: 'MAGIC', hits: 0, desc: '적에게 착란 1 부여', play: (engine, u, t) => engine.statuses.apply(u, t, 'DELIRIUM', 1) },
-  '013': { id: '013', name: '복수', cost: 2, type: 'ATTACK', hits: 1, desc: '타수 1, 적에게 물리데미지 8 x (피격 횟수)', play: (engine, u, t) => engine.executeAttack(u, t, 8 * u.runTrackers.hitTakenCount) },
+  '013': {
+    id: '013', name: '복수', cost: 2, type: 'ATTACK', hits: 1,
+    desc: '타수 1, 적에게 물리데미지 1 x (누적 피격 횟수). 140 이상 시 비용 +1, 300 이상 시 +2',
+    modifySelfCost: (baseCost, engine, u) => {
+      const dmg = u.runTrackers.hitTakenCount;
+      if (dmg >= 300) return baseCost + 2;
+      if (dmg >= 140) return baseCost + 1;
+      return baseCost;
+    },
+    play: (engine, u, t) => engine.executeAttack(u, t, 1 * u.runTrackers.hitTakenCount)
+  },
   '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 독검 3 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 3) },
   '015': { id: '015', name: '공평한 카라보스', cost: 2, type: 'MAGIC', hits: 0, desc: '적의 랜덤 버프 1개 해제', play: (engine, u, t) => engine.statuses.dispelRandom(t, STATUS_CATEGORY.BUFF) },
   '016': { id: '016', name: '토끼굴의 기억', cost: 2, type: 'MAGIC', hits: 0, desc: '자신에게 인내 2 부여', play: (engine, u) => engine.statuses.apply(u, u, 'PATIENCE', 2) },
@@ -1982,7 +2145,8 @@ const RogueManager = {
 
   state: {
     active: false, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
-    deck: [], relics: [], traits: [], clearedBosses: []
+    deck: [], relics: [], traits: [], clearedBosses: [],
+    relic015Wins: 0
   },
   currentPaths: [],
   rewardQueue: [],
@@ -2017,6 +2181,7 @@ const RogueManager = {
     SaveLedger.set('roguelike.relics', this.state.relics.join(','));
     SaveLedger.set('roguelike.traits', this.state.traits.join(','));
     SaveLedger.set('roguelike.clearedBosses', this.state.clearedBosses.join(','));
+    SaveLedger.set('roguelike.relic015Wins', this.state.relic015Wins);
   },
 
   loadFromSaveLedger() {
@@ -2031,12 +2196,14 @@ const RogueManager = {
     this.state.relics = parseList(SaveLedger.get('roguelike.relics'));
     this.state.traits = parseList(SaveLedger.get('roguelike.traits'));
     this.state.clearedBosses = parseList(SaveLedger.get('roguelike.clearedBosses'));
+    this.state.relic015Wins = Number(SaveLedger.get('roguelike.relic015Wins')) || 0;
   },
 
   startNewRun() {
     this.state = {
       active: true, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
-      deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: []
+      deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: [],
+      relic015Wins: 0
     };
     this.syncToSaveLedger();
     AppUI.mode = 'ROGUE_HUB';
@@ -2250,6 +2417,11 @@ const RogueManager = {
 
     if (!victory) {
       this.state.active = false;
+      this.state.relics.forEach(rid => {
+      if (RelicDB[rid]?.onCombatVictory) {
+        RelicDB[rid].onCombatVictory(this, this.rewardQueue);
+      }
+    });
       this.syncToSaveLedger();
       AppUI.mode = 'ROGUE_HUB';
       AppUI.go('screen-choice');
@@ -2289,16 +2461,26 @@ const RogueManager = {
       return;
     }
     const next = this.rewardQueue.shift();
-    if (next.type === 'CARD') this.renderCardReward(next.note);
+    if (next.type === 'CARD') this.renderCardReward(next.note, !!next.allCards); // 👈 allCards 전달
     else if (next.type === 'RELIC') this.renderRelicReward(next.note);
     else if (next.type === 'TRAIT') this.renderTraitReward();
   },
 
-  renderCardReward(note = '') {
+  renderCardReward(note = '', allCards = false) {
     const choiceCount = this.getRewardCardChoiceCount();
-    const offeredIds = RNG.sampleUnique(Object.keys(CardDB), choiceCount);
+    const offeredIds = allCards
+      ? Object.keys(CardDB).sort((a, b) => a.localeCompare(b))
+      : RNG.sampleUnique(Object.keys(CardDB), choiceCount);
+
     const maxDeck = this.getMaxDeckSize();
     const isFull = this.state.deck.length >= maxDeck;
+
+    const skipItem = {
+      title: '⏭️ 카드 보상 건너뛰기',
+      desc: '카드를 추가하지 않고 다음 보상으로 넘어갑니다.',
+      borderColor: 'var(--border)',
+      onClick: () => this.processNextReward()
+    };
 
     const items = offeredIds.map(cid => {
       const c = CardDB[cid];
@@ -2318,14 +2500,11 @@ const RogueManager = {
       };
     });
 
-    items.push({
-      title: '⏭️ 카드 보상 건너뛰기',
-      desc: '카드를 추가하지 않고 다음 보상으로 넘어갑니다.',
-      borderColor: 'var(--border)',
-      onClick: () => this.processNextReward()
-    });
+    if (allCards) items.unshift(skipItem);
+    else items.push(skipItem);
 
-    AppUI.setChoiceScreen('🎁 전투 승리 — 카드 보상', note || `원하는 카드를 1장 선택하십시오. (현재 덱 ${this.state.deck.length}/${maxDeck}장)`, items);
+    const titleText = allCards ? '✨ 별빛 망토 — 전체 카드 선택' : '🎁 전투 승리 — 카드 보상';
+    AppUI.setChoiceScreen(titleText, note || `원하는 카드를 1장 선택하십시오. (현재 덱 ${this.state.deck.length}/${maxDeck}장)`, items);
   },
 
   renderRelicReward(note = '') {
@@ -3421,7 +3600,7 @@ const AppUI = {
     gridEl.innerHTML = p.hand.map((card, idx) => {
       const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
       const dynamicDesc = card.id === '013'
-        ? `${card.desc} <span style="color:var(--fx-yellow);">[현재: ${8 * p.hitTakenCount} 피해]</span>`
+        ? `${card.desc} <span style="color:var(--fx-yellow);">[현재: ${p.hitTakenCount} 피해]</span>`
         : card.desc;
       return `
         <div class="hand-card ${isSelected ? 'selected' : ''}" style="${isQueueLocked ? 'opacity:0.55;' : ''}" onclick="AppUI.selectCard(${idx})">
