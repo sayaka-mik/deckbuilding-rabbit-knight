@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.84 제나,주리</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.85 난이도상향,버그픽스</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -649,7 +649,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.84)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.85)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1145,11 +1145,11 @@ const EnemyDB = {
     getAction(turn, engine, self, player) {
       const cycle = (turn - 1) % 2;
       if (cycle === 0) {
-        return { name: '흙먼지 돌진', intent: '⚔️ 물리 12', execute: () => engine.executeAttack(self, player, 12) };
+        return { name: '흙먼지 돌진', intent: '⚔️ 물리 14', execute: () => engine.executeAttack(self, player, 14) };
       }
       return {
-        name: '굴 파기', type: 'MAGIC', intent: '🛡️ 방어 14 + ⚔️ 물리 6',
-        execute: () => { engine.gainArmor(self, 14, '굴 파기'); engine.executeAttack(self, player, 6); }
+        name: '굴 파기', type: 'MAGIC', intent: '🛡️ 방어 14 + ⚔️ 물리 8',
+        execute: () => { engine.gainArmor(self, 14, '굴 파기'); engine.executeAttack(self, player, 8); }
       };
     }
   },
@@ -1160,13 +1160,13 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '태엽 감기', type: 'MAGIC', intent: '🛡️ 방어 10 + 🌵 도깨비바늘 1',
-            execute: () => { engine.gainArmor(self, 10, '태엽 감기'); engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1); }
+            name: '태엽 감기', type: 'MAGIC', intent: '🛡️ 방어 16 + 🌵 도깨비바늘 1',
+            execute: () => { engine.gainArmor(self, 16, '태엽 감기'); engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1); }
           };
         case 1:
-          return { name: '태엽 해방', intent: '💥 강타: 물리 22', execute: () => engine.executeAttack(self, player, 22) };
+          return { name: '빨리감기', intent: '💥 강타: 물리 32', execute: () => engine.executeAttack(self, player, 32) };
         case 2:
-          return { name: '과부하 정지', intent: '💤 행동 없음', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
+          return { name: '일시정지', intent: '💤 행동 없음', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
       }
     }
   },
@@ -1176,13 +1176,13 @@ const EnemyDB = {
       const cycle = (turn - 1) % 2;
       if (cycle === 0) {
         return {
-          name: '연속 찌르기', intent: '⚔️ 다단히트: 물리 5 × 3타',
-          execute: () => { for (let i = 0; i < 3; i++) engine.executeAttack(self, player, 5); }
+          name: '연속 찌르기', intent: '⚔️ 물리 5 × 3타',
+	  execute: () => engine.executeAttack(self, player, 5, null, 3) // 👈 3타 전달
         };
       }
       return {
-        name: '독액 살포', intent: '⚔️ 물리 8 + 🩸 출혈 2',
-        execute: () => { engine.executeAttack(self, player, 8); engine.statuses.apply(self, player, 'BLEED', 2); }
+        name: '독액 살포', intent: '⚔️ 물리 10 + 🩸 출혈 2',
+        execute: () => { engine.executeAttack(self, player, 10); engine.statuses.apply(self, player, 'BLEED', 2); }
       };
     }
   },
@@ -1200,36 +1200,32 @@ const EnemyDB = {
           return {
             name: '약초 다지기',
             type: 'MAGIC',
-            intent: '💚 재생 3 + 🛡️ 방어 6',
+            intent: '💚 재생 3 + 🛡️ 방어 9',
             execute: () => {
               engine.statuses.apply(self, self, 'REGEN', 3);
-              engine.gainArmor(self, 6, '약초 다지기');
+              engine.gainArmor(self, 9, '약초 다지기');
             }
           };
         case 1: // 2턴, 5턴
           return {
             name: '비시즌 사격',
-            intent: '⚔️ 다단히트: 물리 5 × 2타',
-            execute: () => {
-              for (let i = 0; i < 2; i++) {
-                engine.executeAttack(self, player, 5);
-              }
-            }
+            intent: '⚔️ 다단히트: 물리 7 × 3타',
+            execute: () => engine.executeAttack(self, player, 7, null, 3) // 👈3타전달
           };
         case 2: // 3턴, 6턴
           return {
             name: '토끼풀 찜질',
-            intent: '💚 재생 2 + ⚔️ 물리 8',
+            intent: '💚 재생 2 + ⚔️ 물리 13',
             execute: () => {
               engine.statuses.apply(self, self, 'REGEN', 2);
-              engine.executeAttack(self, player, 8);
+              engine.executeAttack(self, player, 13);
             }
           };
       }
     }
   },
 
-  // [엘리트 2] 시즌 제나 (HP 210 / 5연타 압박 + 이전 턴에 걸린 디버프 감지 시 정화)
+  // [엘리트 2] 시즌 제나 (즉시 정화)
   ELITE_SEASON_ZENA: {
     id: 'ELITE_SEASON_ZENA',
     name: '시즌 제나',
@@ -1237,35 +1233,30 @@ const EnemyDB = {
     isBoss: false,
     isElite: true,
     getAction(turn, engine, self, player) {
-      // 현재 보유 중인 디버프에 최초 감지 턴 기록
-      const debuffs = self.statuses.filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF);
-      debuffs.forEach(d => {
-        if (d.appliedTurn === undefined) d.appliedTurn = turn;
-      });
+      const hasDebuff = self.statuses.some(
+        s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0
+      );
+      // 난투 등 마법 봉인 상태인지 확인
+      const isMagicBlocked = self.getPassives().some(
+        ({ def, inst }) => def.canPlayCard && !def.canPlayCard({ type: 'MAGIC' }, engine, self, inst)
+      );
 
-      // 이전 턴(appliedTurn < turn)에 걸려서 현재까지 남아있는 디버프가 있는지 확인
-      const hasPersistedDebuff = debuffs.some(d => d.appliedTurn < turn);
-
-      if (hasPersistedDebuff) {
+      if (hasDebuff && !isMagicBlocked) { // 👈 '&& !isMagicBlocked' 추가
         return {
           name: '유비무환',
           type: 'MAGIC',
-          intent: '✨ 정화 (보유 디버프 전부 제거)',
+          intent: '✨ 즉시 정화 (보유 디버프 전부 제거)',
           execute: () => {
             const { removedCount } = engine.statuses.removeAll(self, [STATUS_CATEGORY.DEBUFF]);
-            engine.emitLog(`✨ [유비무환] 시즌 제나가 자신의 디버프 ${removedCount}종을 깔끔하게 정화했습니다!`, 'log-sys');
+            engine.emitLog(`✨ [유비무환] 시즌 제나가 디버프 ${removedCount}종을 즉시 정화했습니다!`, 'log-sys');
           }
         };
       }
 
       return {
         name: '단궁난무',
-        intent: '⚔️ 물리 3 × 5타',
-        execute: () => {
-          for (let i = 0; i < 5; i++) {
-            engine.executeAttack(self, player, 3);
-          }
-        }
+        intent: '⚔️ 물리 6 × 6타',
+        execute: () => engine.executeAttack(self, player, 6, null, 6) // 👈 6타 전달
       };
     }
   },
@@ -1278,7 +1269,7 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '거울 장막 전개', type: 'MAGIC', intent: '🪞 바바야가 2스택 + 🛡️ 방어 10',
+            name: '겨울의 장막', type: 'MAGIC', intent: '🪞 바바야가 2스택 + 🛡️ 방어 10',
             execute: () => { engine.statuses.apply(self, self, 'BABA_YAGA', 2); engine.gainArmor(self, 10, '거울 장막 전개'); }
           };
         case 1:
@@ -1288,12 +1279,13 @@ const EnemyDB = {
           };
         case 2:
           return {
-            name: '거울 파열 & 호흡', type: 'MAGIC', intent: '💚 재생 2',
-            execute: () => { engine.statuses.apply(self, self, 'REGEN', 2); engine.log('🪞 거울 장막이 걷혔습니다. 지금이 공격할 기회입니다!', 'log-sys'); }
+            name: '겨울 호흡', type: 'MAGIC', intent: '💚 재생 3',
+            execute: () => { engine.statuses.apply(self, self, 'REGEN', 3); engine.log('🪞 겨울 장막이 걷혔습니다.', 'log-sys'); }
           };
       }
     }
   },
+  // [보스 2] 두더지파 보스 주리 (오타 수정 및 출혈/저주 50% 부당거래 적용)
   BOSS_JURI: {
     id: 'BOSS_JURI',
     name: '두더지파 보스 주리',
@@ -1305,77 +1297,82 @@ const EnemyDB = {
       const cycle = (turn - 1) % 4;
 
       switch (cycle) {
-        case 0: // 1턴, 5층, 9층...
+        case 0:
           return {
             name: '부하 소집',
             type: 'MAGIC',
-            intent: '🛡️ 방어 15 + 🩸 출혈 2',
+            intent: '🛡️ 방어 25 + 🩸 출혈 4',
             execute: () => {
-              engine.gainArmor(self, 15, '부하 소집');
-              engine.statuses.apply(self, player, 'BLEED', 2);
+              engine.gainArmor(self, 25, '부하 소집');
+              engine.statuses.apply(self, player, 'BLEED', 4);
             }
           };
 
-        case 1: // 2턴, 6턴...
+        case 1:
           return {
             name: '지하 참호 파기',
             type: 'MAGIC',
-            intent: '🛡️ 방어 25 + 💚 재생 2',
+            intent: '🛡️ 방어 35 + 💚 재생 3',
             execute: () => {
-              engine.gainArmor(self, 25, '지하 참호 파기');
-              engine.statuses.apply(self, self, 'REGEN', 2);
+              engine.gainArmor(self, 35, '지하 참호 파기');
+              engine.statuses.apply(self, self, 'REGEN', 3);
             }
           };
 
-        case 2: // 3턴, 7턴...
+        case 2:
           return {
             name: '무자비한 난도질',
-            intent: '⚔️ 물리 14 + 🩸 출혈 3',
+            intent: '⚔️ 물리 19 + 🩸 출혈 4',
             execute: () => {
-              engine.executeAttack(self, player, 14);
-              engine.statuses.apply(self, player, 'BLEED', 3);
+              engine.executeAttack(self, player, 19);
+              engine.statuses.apply(self, player, 'BLEED', 4);
             }
           };
 
-        case 3: // 4턴, 8턴... (피니시: 강제정산 + 부당거래 특성)
+        case 3:
           return {
-            name: '두더지파식 정산',
+            name: '두더지식 강제정산',
             type: 'MAGIC',
-            intent: '💥 강제정산 폭발 + 🩸 부당거래(출혈 50% 리필)',
+            intent: '💥 강제정산 + 🩸 부당거래(출혈/저주 50% 리필)',
             execute: () => {
               let totalDamage = 0;
-              let removedBleedStacks = 0;
+              const refunds = [];
 
-              // 1. 플레이어의 출혈 스택을 감지하고 자연 감소 총 피해량 계산
-              const bleedInst = engine.statuses.get(player, 'BLEED');
-              if (bleedInst && bleedInst.stacks > 0) {
-                removedBleedStacks = bleedInst.stacks;
-                totalDamage += StatusDB['BLEED'].calcNaturalTotalDamage(removedBleedStacks);
-                engine.statuses.removeSpecific(player, 'BLEED');
-              }
+              ['BLEED', 'CURSE'].forEach(debuffId => {
+                const inst = engine.statuses.get(player, debuffId);
+                if (inst && inst.stacks > 0) {
+                  const stacks = inst.stacks;
+                  totalDamage += StatusDB[debuffId].calcNaturalTotalDamage(stacks);
+                  engine.statuses.removeSpecific(player, debuffId);
 
-              // 2. 강제정산 폭발 피해 전달 (방어도로 흡수 가능)
+                  const half = Math.floor(stacks * 0.5);
+                  if (half > 0) {
+                    refunds.push({ id: debuffId, stacks: half });
+                  }
+                }
+              });
+
               if (totalDamage > 0) {
-                engine.log(`💥 [강제정산] 주리가 출혈을 정산하여 ${totalDamage}의 막대한 피해를 가합니다!`, 'log-hit');
+                engine.log(`💥 [강제정산] 주리가 상태이상을 정산하여 ${totalDamage}의 피해를 가합니다!`, 'log-hit');
                 engine.dealDamage(new DamagePacket({
                   source: self,
                   target: player,
                   amount: totalDamage,
                   type: DAMAGE_TYPE.PHYSICAL,
                   isStrike: false,
-                  reason: '지하갱도 강제정산'
+                  reason: '두더지식 강제정산'
                 }));
               } else {
-                engine.log(`💤 [강제정산] 정산할 출혈이 없어 주리의 회심의 일격이 빗나갔습니다!`, 'log-sys');
-                engine.recoverEnergy(self, 1); // 빗나가면 보너스
+                engine.log(`💤 [강제정산] 정산할 출혈/저주가 없어 주리가 태세를 정비합니다.`, 'log-sys');
+                engine.gainArmor(self, 20, '강제정산 불발');
               }
 
-              // 3. 특성: 부당거래 (제거한 스택의 50%를 다시 부여)
-              if (removedBleedStacks >= 2) {
-                const refundStacks = Math.floor(removedBleedStacks * 0.5);
-                engine.log(`🩸 [부당거래 특성] 두더지파식 거래 정산에 의해 출혈 ${refundStack}스택이 다시 부가됩니다!`, 'log-status');
-                engine.statuses.apply(self, player, 'BLEED', refundStacks);
-              }
+              // 특성: 부당거래 (제거한 출혈/저주 스택의 50% 재부여)
+              refunds.forEach(r => {
+                const name = StatusDB[r.id].name;
+                engine.log(`🩸 [부당거래] 두더지파식 정산에 의해 [${name} ${r.stacks}] 스택이 다시 부여됩니다!`, 'log-status');
+                engine.statuses.apply(self, player, r.id, r.stacks);
+              });
             }
           };
       }
@@ -1390,9 +1387,9 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '환영모자 트릭', type: 'MAGIC', intent: '🛡️ 방어 12 + 🧪 착란 1, 저주 2',
+            name: '환영모자 트릭', type: 'MAGIC', intent: '🛡️ 방어 22 + 🧪 착란 1, 저주 2',
             execute: () => {
-              engine.gainArmor(self, 12, '환영모자 트릭');
+              engine.gainArmor(self, 22, '환영모자 트릭');
               engine.statuses.apply(self, player, 'DELIRIUM', 1);
               engine.statuses.apply(self, player, 'CURSE', 2);
             }
@@ -1401,9 +1398,9 @@ const EnemyDB = {
           const bonusStatus = dStacks > 0 ? 10 : 0;
           return {
             name: '살랑거리는 귓속말',
-            intent: bonusStatus > 0 ? `⚔️ 물리 10 + 🔮 상태이상 ${bonusStatus}` : `⚔️ 물리 10`,
+            intent: bonusStatus > 0 ? `⚔️ 물리 16 + 🔮 상태이상 ${bonusStatus}` : `⚔️ 물리 16`,
             execute: () => {
-              engine.executeAttack(self, player, 10);
+              engine.executeAttack(self, player, 16);
               if (bonusStatus > 0) {
                 engine.dealDamage(new DamagePacket({
                   source: self, target: player, amount: bonusStatus,
@@ -1415,13 +1412,13 @@ const EnemyDB = {
         }
         case 2:
           return {
-            name: '마녀의 티타임', type: 'MAGIC', intent: '🛡️ 방어 22 + 💚 재생 2',
-            execute: () => { engine.gainArmor(self, 22, '마녀의 티타임'); engine.statuses.apply(self, self, 'REGEN', 2); }
+            name: '마녀의 티타임', type: 'MAGIC', intent: '🛡️ 방어 33 + 💚 재생 2',
+            execute: () => { engine.gainArmor(self, 33, '마녀의 티타임'); engine.statuses.apply(self, self, 'REGEN', 2); }
           };
         case 3: {
-          const totalDmg = 12 + (dStacks * 4);
+          const totalDmg = 22 + (dStacks * 4);
           return {
-            name: '광란의 버니합', intent: `💥 강타: 물리 ${totalDmg} (기본 12 + 착란 보너스 ${dStacks * 4})`,
+            name: '광란의 버니합', intent: `💥 강타: 물리 ${totalDmg} (기본 22 + 착란 보너스 ${dStacks * 4})`,
             execute: () => engine.executeAttack(self, player, totalDmg)
           };
         }
@@ -1616,15 +1613,53 @@ class CombatEngine {
   }
 
   // CombatEngine 클래스 내부에 메서드 추가
+  resolveEnemyAction(turn, enemy, player) {
+    const enemyDef = EnemyDB[enemy.enemyId];
+    if (!enemyDef) return null;
+
+    const passives = enemy.getPassives();
+    const findBlocker = (act) => passives.find(
+      ({ def, inst }) => def.canPlayCard && !def.canPlayCard(act, this, enemy, inst)
+    );
+
+    // 1. 원래 예정된 행동 확인
+    const primaryAction = enemyDef.getAction(turn, this, enemy, player);
+    const primaryBlocker = findBlocker(primaryAction);
+
+    if (!primaryBlocker) {
+      return { action: primaryAction, blocker: null, isFallback: false };
+    }
+
+    // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 패턴 주기 내 다음 비마법 행동 탐색
+    for (let offset = 1; offset <= 12; offset++) {
+      const altAction = enemyDef.getAction(turn + offset, this, enemy, player);
+      if (!findBlocker(altAction)) {
+        return {
+          action: altAction,
+          blocker: primaryBlocker,
+          isFallback: true,
+          originalName: primaryAction.name
+        };
+      }
+    }
+
+    // 3. 뇌진탕(전체 기절)이거나 모든 패턴이 마법인 경우 행동 불가 반환
+    return { action: primaryAction, blocker: primaryBlocker, isFallback: false };
+  }
+
+  // CombatEngine 클래스 내부에 메서드 추가
   emitFx(targetEntity, fxClass) {
     if (this.onFxCallback && targetEntity) {
       this.onFxCallback(targetEntity === this.player ? 'box-player' : 'box-enemy', fxClass);
     }
   }
 
-  executeAttack(user, target, damageOrFn, currentCard = this.activeCard) {
+  executeAttack(user, target, damageOrFn, currentCard = this.activeCard, explicitHits = null) {
     const isCardAttack = user === this.player && currentCard;
-    const hits = isCardAttack ? this.getEffectiveHits(user, currentCard) : 1;
+    const hits = explicitHits !== null
+      ? explicitHits
+      : (isCardAttack ? this.getEffectiveHits(user, currentCard) : 1);
+
     for (let i = 0; i < hits; i++) {
       let dmg = typeof damageOrFn === 'function' ? damageOrFn() : damageOrFn;
       // --- 적중 시 티어 보정 공격력 가산 ---
@@ -1903,25 +1938,23 @@ class CombatEngine {
     if (this.combatEnded) return;
 
     // 적 패턴 실행 (EnemyDB)
-    const enemyDef = EnemyDB[this.enemy.enemyId];
-    if (enemyDef) {
-      const action = enemyDef.getAction(this.turn, this, this.enemy, this.player);
-
-    // 👇 [수정 코드 ✅] 모든 상태이상/패시브에서 행동 불가(기절, 난투 등) 여부를 범용으로 검사합니다.
-      const blocker = this.enemy.getPassives().find(
-        ({ def, inst }) => def.canPlayCard && !def.canPlayCard(action, this, this.enemy, inst)
-      );
-
-      if (blocker) {
-        this.emitLog(`🚫 [${blocker.def.name}] 효과로 인해 ${this.enemy.name}의 [${action.name}] 발동이 취소되었습니다!`, 'log-hit');
+    const resolved = this.resolveEnemyAction(this.turn, this.enemy, this.player);
+    if (resolved) {
+      if (resolved.blocker && !resolved.isFallback) {
+        this.emitLog(`🚫 [${resolved.blocker.def.name}] 효과로 인해 ${this.enemy.name}의 [${resolved.action.name}] 행동이 봉인되었습니다!`, 'log-hit');
+      } else if (resolved.isFallback) {
+        this.emitLog(`💢 [${resolved.blocker.def.name}] 마법 봉인! ${this.enemy.name}이(가) [${resolved.originalName}] 대신 '${resolved.action.name}' 발동!`, 'log-hit');
+        resolved.action.execute();
       } else {
-        this.emitLog(`👾 [${this.enemy.name}] '${action.name}' 발동!`, 'log-hit');
-        action.execute();
+        this.emitLog(`👾 [${this.enemy.name}] '${resolved.action.name}' 발동!`, 'log-hit');
+        resolved.action.execute();
       }
     }
+    // 👇 아래 7줄이 통째로 빠져 있었습니다!
     if (this.combatEnded) return;
 
-    this.processTurnEndStatuses(this.enemy);;
+    this.processTurnEndStatuses(this.enemy);
+    if (this.combatEnded) return;
 
     this.turn += 1;
     this.startPlayerTurn();
@@ -2479,7 +2512,7 @@ const StorySequencer = {
         });
       }
     };
-    document.getElementById('vn-chapter-title').textContent = chapter.titlie;
+    document.getElementById('vn-chapter-title').textContent = chapter.title;
     AppUI.mode = 'STORY';
     AppUI.go('screen-vn');
 
@@ -2926,7 +2959,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.84: 제나,주리 추가 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.85: 난이도상향,난투부당거래픽스 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -3320,28 +3353,31 @@ const AppUI = {
       hintEl.textContent = '아래 카드를 선택하세요';
 
       if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
-        const act = EnemyDB[e.enemyId].getAction(state.turn, this.engine, this.engine.enemy, this.engine.player);
-        const blocker = this.engine.enemy.getPassives().find(
-          ({ def, inst }) => def.canPlayCard && !def.canPlayCard(act, this.engine, this.engine.enemy, inst)
-        );
+        const resolved = this.engine.resolveEnemyAction(state.turn, this.engine.enemy, this.engine.player);
+        if (resolved) {
+          const act = resolved.action;
+          let intentText = act.intent;
+          if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
+            intentText += ` (+스케일링 ${e.tierDamageBonus})`;
+          }
 
-        let intentText = act.intent;
-        if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
-          intentText += ` (+스케일링 ${e.tierDamageBonus})`;
-        }
-
-        if (blocker) {
-          headerLabel.textContent = `🚫 적 행동 봉인됨 [${blocker.def.name}]`;
-          mainDisplay.className = 'purple-main-text';
-          mainDisplay.style.color = 'var(--text-sub)';
-          mainDisplay.textContent = `(취소됨) ${act.name} — ${intentText}`;
-        } else {
-          headerLabel.textContent = `👾 적 다음 행동 예고 [${act.name}]`;
-          mainDisplay.className = 'purple-main-text';
-          mainDisplay.style.color = 'var(--fx-yellow)';
-          mainDisplay.textContent = intentText;
-        }
-
+          if (resolved.blocker && !resolved.isFallback) {
+            headerLabel.textContent = `🚫 적 행동 봉인됨 [${resolved.blocker.def.name}]`;
+            mainDisplay.className = 'purple-main-text';
+            mainDisplay.style.color = 'var(--text-sub)';
+            mainDisplay.textContent = `(취소됨) ${act.name} — ${intentText}`;
+          } else if (resolved.isFallback) {
+            headerLabel.textContent = `💢 [${resolved.blocker.def.name}] 대체 행동 [${act.name}]`;
+            mainDisplay.className = 'purple-main-text';
+            mainDisplay.style.color = 'var(--fx-yellow)';
+            mainDisplay.textContent = intentText;
+          } else {
+            headerLabel.textContent = `👾 적 다음 행동 예고 [${act.name}]`;
+            mainDisplay.className = 'purple-main-text';
+            mainDisplay.style.color = 'var(--fx-yellow)';
+            mainDisplay.textContent = intentText;
+          }
+	}
       } else if (this.mode === 'STORY') {
         headerLabel.textContent = `📖 스토리 전투 안내`;
         mainDisplay.className = 'purple-main-text';
