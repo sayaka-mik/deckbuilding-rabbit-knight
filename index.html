@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.75 rogue UX update</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.78 UI Update+</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -80,116 +80,176 @@
     .vn-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
     .vn-choice-btn { text-align: left; background: #1f2335; border: 1px solid var(--accent); padding: 9px 12px; font-size: 12.5px; }
 
-    /* 2. 전투 화면 (15% : 35% : 35% : 15%) */
-    #screen-combat { padding: 8px; gap: 6px; position: relative; }
+    /* 2. 전투 화면 (상단 좌우 초상화 + 중앙 보라색 통합 배너 + 3단 버튼 바 + 하단 가로 스크롤 손패) */
+    #screen-combat { padding: 10px; gap: 8px; position: relative; }
 
+    /* [상단 38%] 좌(플레이어) / 우(적) 나란히 배치 */
+    .stage-top-row {
+      height: 38%; min-height: 170px;
+      display: flex; gap: 8px; width: 100%;
+    }
     .actor-box {
-      height: 15%; min-height: 82px;
-      background: var(--bg-panel); border: 2px solid var(--border); border-radius: 6px;
-      padding: 8px 10px; display: flex; gap: 10px; align-items: center;
+      flex: 1; height: 100%; position: relative; overflow: hidden;
+      background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px;
+      display: flex; flex-direction: column; justify-content: flex-end;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .avatar-slot {
-      width: 56px; height: 56px; background: #111218; border: 1px solid var(--border);
-      border-radius: 4px; display: flex; align-items: center; justify-content: center;
-      font-size: 10.5px; color: var(--text-sub); flex-shrink: 0; text-align: center;
-      image-rendering: pixelated;
+    /* 박스 전체를 채우는 초상화 배경 영역 */
+    .avatar-bg {
+      position: absolute; inset: 0; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 12px; color: var(--text-sub); text-align: center;
+      background: radial-gradient(circle at center, #1f2335 0%, #111218 100%);
+      image-rendering: pixelated; padding-bottom: 52px;
     }
-    .actor-detail { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-    .actor-top-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; }
+    .actor-name-floating {
+      position: absolute; top: 6px; left: 8px; z-index: 2;
+      font-size: 12px; font-weight: bold; padding: 2px 6px;
+      background: rgba(11, 12, 16, 0.75); border: 1px solid var(--border); border-radius: 4px;
+    }
 
+    /* 초상화 하단에 겹쳐지는 HUD 오버레이 (체력바 + 활력 보석 + 상태이상 칸) */
+    .actor-hud-overlay {
+      position: relative; z-index: 2;
+      background: rgba(13, 14, 20, 0.86); border-top: 1px solid var(--border);
+      padding: 6px; display: flex; flex-direction: column; gap: 5px;
+    }
+    /* 빨간선(체력/방어 바) + 초록선(활력 보석) 줄 */
+    .hud-vital-row {
+      display: flex; align-items: center; gap: 6px;
+    }
     .hp-bar-outer {
-      width: 100%; height: 14px; background: #0d0e14; border: 1px solid #2f3549;
+      flex: 1; height: 16px; background: #090a0f; border: 1px solid #414868;
       border-radius: 3px; position: relative; overflow: hidden;
     }
     .hp-bar-fill {
       height: 100%; width: 100%; background: linear-gradient(90deg, #db4b4b, #f7768e);
       transition: width 0.25s ease-out;
     }
+    /* 방어도: 숫자 대신 체력바 위에 덧씌우는 흰색 반투명 막 */
+    .armor-bar-overlay {
+      position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+      background: rgba(255, 255, 255, 0.55);
+      border-right: 2px solid #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+      transition: width 0.25s ease-out; pointer-events: none;
+    }
     .hp-bar-text {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000;
+      font-size: 10.5px; font-weight: bold; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000;
     }
 
-    .meta-row { display: flex; justify-content: space-between; align-items: center; min-height: 18px; gap: 6px; }
-    .ap-gems { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+    .ap-gems {
+      display: flex; gap: 3px; align-items: center; flex-shrink: 0;
+      padding: 2px 4px; border: 1px solid #2f3549; border-radius: 4px; background: #0d0e14;
+    }
     .ap-gem {
-      width: 11px; height: 11px; border-radius: 50%;
+      width: 9px; height: 9px; border-radius: 50%;
       background: #232634; border: 1px solid #414868; transition: 0.15s;
     }
     .ap-gem.on {
-      background: #41f075; border-color: #d5ffdf;
-      box-shadow: 0 0 6px #41f075;
+      background: #41f075; border-color: #d5ffdf; box-shadow: 0 0 5px #41f075;
     }
-    .status-mini { display: flex; gap: 4px; font-size: 10.5px; overflow-x: auto; }
+
+    /* 파란선: 테두리 쳐진 버프/디버프 슬롯 칸 */
+    .status-framed-box {
+      min-height: 24px; border: 1px solid #2f3549; border-radius: 4px;
+      background: #0b0c10; padding: 2px 4px;
+      display: flex; align-items: center; gap: 4px; overflow-x: auto;
+    }
     .s-tag {
-      padding: 2px 6px; border-radius: 3px; background: #292e42;
-      border: 1px solid #414868; cursor: pointer; white-space: nowrap; font-size: 10.5px;
+      padding: 1px 5px; border-radius: 3px; background: #292e42;
+      border: 1px solid #414868; cursor: pointer; white-space: nowrap; font-size: 10px;
     }
     .s-tag.buff { border-color: var(--fx-blue); color: var(--fx-blue); }
     .s-tag.debuff { border-color: var(--fx-purple); color: var(--fx-purple); }
     .s-tag.context { border-color: var(--fx-yellow); color: var(--fx-yellow); }
 
-    /* 상단 35%: 적 예고 + 로그 + 메뉴 버튼 */
-    .log-section {
-      height: 35%; background: #0f1016; border: 1px solid var(--border);
-      border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; position: relative;
+    /* [중상단 18%] 보라색 통합 박스 (로그 + 적 행동 예고 겸용) */
+    .purple-unified-box {
+      height: 18%; min-height: 78px;
+      background: #181524; border: 2px solid var(--fx-purple); border-radius: 8px;
+      padding: 8px 12px; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
     }
-    .intent-header { display: flex; gap: 6px; align-items: stretch; }
-    .intent-banner {
-      flex: 1; background: #261f33; border: 1px solid var(--fx-purple);
-      border-radius: 4px; padding: 5px 8px; display: flex; flex-direction: column; justify-content: center;
+    .purple-unified-box.waiting-log {
+      border-color: var(--fx-yellow); background: #211d30;
+      box-shadow: inset 0 0 14px rgba(224, 175, 104, 0.22);
     }
-    .intent-label { font-size: 10px; color: var(--fx-purple); font-weight: bold; }
-    .intent-main { font-size: 12.5px; font-weight: 900; color: var(--fx-yellow); margin-top: 2px; line-height: 1.25; }
-    .menu-trigger-btn {
-      padding: 0 10px; font-size: 11.5px; background: #1f2335; border-color: #565f89; white-space: nowrap;
+    .purple-top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10.5px; color: var(--fx-purple); font-weight: bold;
     }
-    .log-scroll {
-      flex: 1; overflow-y: auto; font-family: monospace;
-      font-size: 11px; color: var(--text-sub); line-height: 1.45;
-      display: flex; flex-direction: column; gap: 2px; padding: 2px 4px;
+    .purple-main-text {
+      font-family: monospace; font-size: 13px; font-weight: bold;
+      color: var(--text-main); line-height: 1.4; word-break: keep-all;
+      margin: auto 0;
     }
-    .log-scroll div.recent { color: var(--text-main); font-weight: bold; }
+    .purple-bottom-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10px; color: var(--text-sub);
+    }
 
-    /* 전투 중 비주얼노벨 대사 오버레이 (스토리 모드 전용) */
+    /* 스토리 모드 전투 중 대사 오버레이 */
     .combat-vn-overlay {
-      position: absolute; inset: 6px; background: rgba(14, 16, 23, 0.95);
-      border: 2px solid var(--accent); border-radius: 6px; padding: 12px;
+      position: absolute; inset: 0; background: rgba(14, 16, 23, 0.96);
+      border: 2px solid var(--accent); border-radius: 6px; padding: 10px 12px;
       display: flex; flex-direction: column; justify-content: space-between;
       cursor: pointer; z-index: 20;
     }
 
-    /* 하단 35%: 손패 그리드 + 실행 바 */
-    .hand-section {
-      height: 35%; background: var(--bg-panel); border: 1px solid var(--border);
-      border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    /* [중간 컨트롤 줄] 좌: 메뉴 / 중앙: 선택 시에만 나타나는 실행 버튼 / 우: 턴 종료 */
+    .mid-control-row {
+      height: 40px; display: flex; justify-content: space-between; align-items: center;
+      gap: 8px; flex-shrink: 0;
     }
-    .hand-grid {
-      flex: 1; display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 6px; overflow-y: auto; align-content: start;
+    .mid-side-btn {
+      width: 86px; height: 100%; padding: 0; font-size: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #1f2335; border: 1px solid #565f89; flex-shrink: 0;
+    }
+    .mid-center-slot {
+      flex: 1; height: 100%; display: flex; align-items: center; justify-content: center;
+    }
+    #btn-exec-card {
+      width: 100%; height: 100%; padding: 0 10px; font-size: 12.5px;
+      box-shadow: 0 0 12px rgba(122, 162, 247, 0.4);
+    }
+
+    /* [하단 34%] 고정 크기 카드 가로 스크롤 손패 영역 */
+    .hand-section {
+      flex: 1; min-height: 145px;
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px; display: flex; align-items: center;
+      overflow: hidden;
+    }
+    .hand-carousel {
+      display: flex; flex-direction: row; gap: 10px;
+      width: 100%; height: 100%;
+      overflow-x: auto; overflow-y: hidden;
+      align-items: stretch; scroll-snap-type: x proximity;
+      padding-bottom: 4px;
     }
     .hand-card {
-      background: var(--bg-card); border: 1.5px solid #414868; border-radius: 5px;
-      padding: 6px; display: flex; flex-direction: column; gap: 3px;
-      cursor: pointer; min-height: 78px; position: relative;
+      flex: 0 0 128px; width: 128px; height: 100%;
+      scroll-snap-align: start;
+      background: var(--bg-card); border: 2px solid #414868; border-radius: 6px;
+      padding: 8px; display: flex; flex-direction: column; gap: 4px;
+      cursor: pointer; position: relative; transition: transform 0.12s, border-color 0.12s;
     }
     .hand-card.selected {
       border-color: var(--fx-yellow); background: #2f334d;
-      box-shadow: 0 0 8px rgba(224, 175, 104, 0.35);
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(224, 175, 104, 0.35);
     }
     .c-cost {
-      position: absolute; top: 4px; right: 4px; width: 17px; height: 17px;
+      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
       border-radius: 50%; background: var(--accent); color: #111;
-      font-size: 10.5px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center;
     }
-    .c-name { font-size: 11px; font-weight: bold; color: var(--fx-yellow); padding-right: 18px; word-break: keep-all; }
-    .c-type { font-size: 9.5px; color: var(--fx-blue); }
-    .c-desc { font-size: 9.5px; color: #a9b1d6; line-height: 1.25; margin-top: 2px; }
-
-    .action-bar { display: flex; gap: 6px; height: 36px; flex-shrink: 0; }
-    .action-bar button { flex: 1; padding: 0; font-size: 12px; }
-    #btn-exec-card { flex: 1.7; }
+    .c-name { font-size: 12px; font-weight: bold; color: var(--fx-yellow); padding-right: 22px; word-break: keep-all; }
+    .c-type { font-size: 10px; color: var(--fx-blue); }
+    .c-desc { font-size: 10.5px; color: #a9b1d6; line-height: 1.35; margin-top: 4px; overflow-y: auto; }
 
     /* 3. 5색 시각 연출 */
     @keyframes box-shake {
@@ -327,96 +387,92 @@
     </div>
   </div>
 
-  <!-- [5] 전투 화면 (15% : 35% : 35% : 15%) -->
+  <!-- [5] 전투 화면 (스케치 반영: 상단 좌/우 박스 + 보라색 통합 배너 + 3단 버튼 + 하단 가로 스크롤 카드) -->
   <div id="screen-combat" class="screen">
 
-    <!-- (최상단 15%) 적 박스 -->
-    <div id="box-enemy" class="actor-box">
-      <div id="sprite-enemy" class="avatar-slot">[적 도트]<br>64×64</div>
-      <div class="actor-detail">
-        <div class="actor-top-row">
-          <span id="enemy-name-label" style="color:var(--fx-red);">적</span>
-          <span id="enemy-armor-label" style="color:var(--fx-blue); font-size:12px;">🛡️ 방어 0</span>
+    <!-- [상단] 좌측 플레이어 박스 / 우측 적 박스 -->
+    <div class="stage-top-row">
+      <!-- 좌측: 플레이어 박스 (전체 초상화 + 하단 테두리 HUD) -->
+      <div id="box-player" class="actor-box">
+        <div id="player-name-label" class="actor-name-floating" style="color:var(--fx-yellow);">토끼기사</div>
+        <div id="sprite-player" class="avatar-bg">[내 도트 초상화]<br>토끼기사</div>
+        <div class="actor-hud-overlay">
+          <div class="hud-vital-row">
+            <div class="hp-bar-outer">
+              <div id="player-hp-fill" class="hp-bar-fill" style="width: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
+              <div id="player-armor-fill" class="armor-bar-overlay" style="width: 0%;"></div>
+              <div id="player-hp-text" class="hp-bar-text">150 / 150</div>
+            </div>
+            <div id="player-ap-gems" class="ap-gems"></div>
+          </div>
+          <div id="player-status-list" class="status-framed-box"></div>
         </div>
-        <div class="hp-bar-outer">
-          <div id="enemy-hp-fill" class="hp-bar-fill" style="width: 100%;"></div>
-          <div id="enemy-hp-text" class="hp-bar-text">0 / 0</div>
-        </div>
-        <div class="meta-row">
-          <div id="enemy-status-list" class="status-mini"></div>
+      </div>
+
+      <!-- 우측: 적 박스 (전체 초상화 + 하단 테두리 HUD) -->
+      <div id="box-enemy" class="actor-box">
+        <div id="enemy-name-label" class="actor-name-floating" style="color:var(--fx-red);">적</div>
+        <div id="sprite-enemy" class="avatar-bg">[적 도트 초상화]<br>적</div>
+        <div class="actor-hud-overlay">
+          <div class="hud-vital-row">
+            <div class="hp-bar-outer">
+              <div id="enemy-hp-fill" class="hp-bar-fill" style="width: 100%;"></div>
+              <div id="enemy-armor-fill" class="armor-bar-overlay" style="width: 0%;"></div>
+              <div id="enemy-hp-text" class="hp-bar-text">0 / 0</div>
+            </div>
+          </div>
+          <div id="enemy-status-list" class="status-framed-box"></div>
         </div>
       </div>
     </div>
 
-        <!-- (상단 35%) 적 예고 + 1줄 스텝 로그 / 전체 로그 전환 + 통합 메뉴 버튼 -->
-    <div class="log-section">
-      <div class="intent-header">
-        <div class="intent-banner">
-          <span id="intent-title" class="intent-label">적 다음 행동 예고</span>
-          <span id="intent-main" class="intent-main">-</span>
-        </div>
-        <button class="menu-trigger-btn" onclick="AppUI.openTacticalMenu()">
-          📋 메뉴<br><span id="deck-grave-Summary" style="font-size:10px; color:var(--text-sub);">덱0/묘0</span>
-        </button>
-      </div>
-
-      <!-- 로그 모드 전환 & 대기열 스킵 바 -->
-      <div class="log-ctrl-bar">
-        <span id="log-queue-status">대기 로그: 0</span>
-        <div class="log-ctrl-btns">
+    <!-- [중상단 보라색 영역] 적 행동 예고 & 1줄 클릭 로그 통합 박스 -->
+    <div id="purple-box" class="purple-unified-box" onclick="AppUI.advanceLogStep()">
+      <div class="purple-top-bar">
+        <span id="purple-header-label">적 다음 행동 예고</span>
+        <div style="display:flex; gap:4px;" onclick="event.stopPropagation()">
           <button id="btn-skip-logs" class="log-mini-btn hidden" onclick="AppUI.flushAllLogs()">스킵 ⏭️</button>
-          <button id="btn-toggle-log-mode" class="log-mini-btn active" onclick="AppUI.toggleLogViewMode()">모드: 1줄 클릭</button>
+          <button class="log-mini-btn" onclick="AppUI.openFullLogModal()">전체 로그</button>
         </div>
       </div>
 
-      <!-- [A] 1줄 클릭 출력 창 (기본 표시) -->
-      <div id="log-step-box" class="log-step-view" onclick="AppUI.advanceLogStep()">
-        <div id="log-step-text" class="log-step-text">전투 준비 완료</div>
-        <div class="log-step-footer">
-          <span id="log-step-counter"></span>
-          <span id="log-step-hint"></span>
-        </div>
-      </div>
+      <div id="purple-main-display" class="purple-main-text">-</div>
 
-      <!-- [B] 전체/실시간 스크롤 로그 창 (모드 전환 시 표시) -->
-      <div id="log-box" class="log-scroll hidden" onclick="AppUI.advanceLogStep()"></div>
+      <div class="purple-bottom-bar">
+        <span id="log-step-counter"></span>
+        <span id="log-step-hint"></span>
+      </div>
 
       <!-- 스토리 모드 전투 중 대사 오버레이 -->
-      <div id="combat-vn-overlay" class="combat-vn-overlay hidden" onclick="StorySequencer.onUserClickDialogue()">
+      <div id="combat-vn-overlay" class="combat-vn-overlay hidden" onclick="event.stopPropagation(); StorySequencer.onUserClickDialogue()">
         <div>
-          <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:4px;"></div>
-          <div id="combat-vn-text" style="font-size:12.5px; line-height:1.45; color:var(--text-main);"></div>
+          <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:12.5px; margin-bottom:3px;"></div>
+          <div id="combat-vn-text" style="font-size:12px; line-height:1.4; color:var(--text-main);"></div>
         </div>
-        <div id="combat-vn-hint" style="align-self:flex-end; font-size:11px; color:var(--accent);">터치하여 계속 ▶</div>
+        <div id="combat-vn-hint" style="align-self:flex-end; font-size:10.5px; color:var(--accent);">터치하여 계속 ▶</div>
       </div>
     </div>
 
-    <!-- (하단 35%) 플레이어 손패 + 선택 후 실행 바 -->
+    <!-- 전체 로그 기록 보관용 숨김 컨테이너 (전체 로그 모달에서 참조) -->
+    <div id="log-box" class="hidden"></div>
+
+    <!-- [중간 버튼 줄] 좌: 메뉴 / 중앙: 카드 선택 시에만 뜨는 실행 버튼 / 우: 턴 종료 -->
+    <div class="mid-control-row">
+      <button class="mid-side-btn" onclick="AppUI.openTacticalMenu()">
+        <span>📋 메뉴</span>
+        <span id="deck-grave-Summary" style="font-size:9.5px; color:var(--text-sub); margin-top:2px;">덱0/묘0</span>
+      </button>
+
+      <div class="mid-center-slot">
+        <button id="btn-exec-card" class="primary hidden" onclick="AppUI.executeSelectedCard()">카드 실행</button>
+      </div>
+
+      <button id="btn-end-turn" class="mid-side-btn" onclick="AppUI.onClickEndTurn()">턴 종료</button>
+    </div>
+
+    <!-- [하단] 고정 크기 카드 가로 스크롤 손패 -->
     <div class="hand-section">
-      <div id="hand-grid" class="hand-grid"></div>
-      <div class="action-bar">
-        <button id="btn-exec-card" class="primary" disabled onclick="AppUI.executeSelectedCard()">카드를 선택하세요</button>
-        <button id="btn-end-turn" onclick="AppUI.onClickEndTurn()">턴 종료</button>
-      </div>
-    </div>
-
-    <!-- (최하단 15%) 플레이어 박스 -->
-    <div id="box-player" class="actor-box">
-      <div id="sprite-player" class="avatar-slot">[내 도트]<br>토끼기사</div>
-      <div class="actor-detail">
-        <div class="actor-top-row">
-          <span id="player-name-label" style="color:var(--fx-yellow);">토끼기사</span>
-          <span id="player-armor-label" style="color:var(--fx-blue); font-size:12px;">🛡️ 방어 0</span>
-        </div>
-        <div class="hp-bar-outer">
-          <div id="player-hp-fill" class="hp-bar-fill" style="width: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
-          <div id="player-hp-text" class="hp-bar-text">150 / 150</div>
-        </div>
-        <div class="meta-row">
-          <div id="player-ap-gems" class="ap-gems"></div>
-          <div id="player-status-list" class="status-mini"></div>
-        </div>
-      </div>
+      <div id="hand-grid" class="hand-carousel"></div>
     </div>
 
   </div>
@@ -1184,10 +1240,10 @@ class StatusManager {
       if (def.onInit) def.onInit(inst);
       target.statuses.push(inst);
     }
-    this.engine.emitLog(`📌 [상태 부여] ${target.name} <- [${def.name} ${finalStacks}] (현재:${inst.stacks})`, 'log-status');
     // 버프면 파란색(fx-blue), 디버프면 보라색(fx-purple), 턴맥락이면 노란색(fx-yellow) 연출
-    const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
+const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
     this.engine.emitFx(target, fx);
+    this.engine.emitLog(`📌 [상태 부여] ${target.name} <- [${def.name} ${finalStacks}] (현재:${inst.stacks})`, 'log-status');
     this.engine.notifyRender();
   }
 
@@ -1350,6 +1406,10 @@ class CombatEngine {
     target.hp = Math.max(0, target.hp - unblocked);
     const actualLost = prevHp - target.hp;
 
+    if (actualLost > 0 || packet.amount > 0) {
+      this.emitFx(target, 'fx-red');
+    }
+
     const note = packet.logs.length ? ` [${packet.logs.join(', ')}]` : '';
     this.emitLog(`💥 [${packet.reason}] ${target.name}에게 ${packet.baseAmount} -> 실제 HP -${actualLost} (남은 HP: ${target.hp})${note}`, 'log-hit');
 
@@ -1358,9 +1418,7 @@ class CombatEngine {
         if (def.onHpDecreased) def.onHpDecreased(this, target, actualLost, inst);
       });
     }
-    if (actualLost > 0 || packet.amount > 0) {
-      this.emitFx(target, 'fx-red');
-    }
+
     if (packet.isStrike && source !== target) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
@@ -1387,23 +1445,23 @@ class CombatEngine {
 
   gainArmor(target, amount, reason) {
     target.armor += amount;
-    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
     this.emitFx(target, 'fx-blue');
+    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
     this.notifyRender();
   }
 
   heal(target, amount, reason) {
     const prev = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + amount);
-    this.emitLog(`💚 [${reason}] ${target.name} HP +${target.hp - prev} 회복`, 'log-sys');
     this.emitFx(target, 'fx-green');
+    this.emitLog(`💚 [${reason}] ${target.name} HP +${target.hp - prev} 회복`, 'log-sys');
     this.notifyRender();
   }
 
   recoverEnergy(user, amount) {
     user.energy = Math.min(user.maxEnergy, user.energy + amount);
-    this.emitLog(`⚡ ${user.name} 활력 +${amount} (현재:${user.energy}/${user.maxEnergy})`, 'log-sys');
     this.emitFx(user, 'fx-yellow');
+    this.emitLog(`⚡ ${user.name} 활력 +${amount} (현재:${user.energy}/${user.maxEnergy})`, 'log-sys');
     this.notifyRender();
   }
 
@@ -2034,15 +2092,31 @@ const RogueManager = {
  * 7. StoryDB & StorySequencer (#screen-vn 및 #screen-combat 오버레이 연동)
  * ============================================================================
  */
-function buildZenaComboLogs() {
-  const logs = [];
-  for (let i = 1; i <= 10; i++) {
-    logs.push(`[적 ${i}합] 제나가 [스텝 밟기] 사용! -> 활력 +1`);
-    logs.push(`[적 ${i}합] 제나가 [토끼풀] 사용! -> 재생 3 & 1드로우 (덱 압축!)`);
-  }
-  logs.push(`⚡ [피니시] 덱을 압축한 제나가 [화살 4연사] 발동!`);
-  logs.push(`💥 6×4타 적중 -> 총 24 데미지! (피격 횟수 +4)`);
-  return logs;
+function executeZenaCombo(engine) {
+  // 1. 스텝 4번, 토끼풀 4번, 화살 4번(각 6뎀)을 배열에 담아 랜덤으로 섞습니다.
+  const actions = [
+    ...Array(4).fill('STEP'),
+    ...Array(4).fill('CLOVER'),
+    ...Array(4).fill('ARROW')
+  ].sort(() => Math.random() - 0.5);
+
+  // 2. 섞인 순서대로 진짜 엔진 메서드를 호출합니다!
+  actions.forEach((act, idx) => {
+    if (act === 'STEP') {
+      engine.recoverEnergy(engine.enemy, 1);
+      engine.emitLog(`👾 [제나 행동 ${idx+1}/12] [스텝 밟기] 발동!`, 'log-story');
+    } else if (act === 'CLOVER') {
+      engine.statuses.apply(engine.enemy, engine.enemy, 'REGEN', 3);
+      engine.emitLog(`👾 [제나 행동 ${idx+1}/12] [토끼풀] 사용! (덱 압축 진행)`, 'log-story');
+    } else if (act === 'ARROW') {
+      // 딜이 들어갈 때 알아서 붉은 이펙트, 피격 횟수 증가, HP 감소가 작동합니다.
+      engine.dealDamage(new DamagePacket({
+        source: engine.enemy, target: engine.player, amount: 6,
+        type: DAMAGE_TYPE.PHYSICAL, isStrike: true, reason: `화살 속사`
+      }));
+    }
+  });
+  engine.emitLog(`⚡ 제나의 사나운 공세가 끝났습니다!`, 'log-sys');
 }
 
 const StoryDB = [
@@ -2051,7 +2125,7 @@ const StoryDB = [
     title: '1-1. 토끼굴의 여명',
     saveClearKey: 'stage_1_1.clear',
     script: [
-      { type: 'TEXT', speaker: '나레이션', text: '왕정의 폭압에 백성들이 울부짖고, 아이들은 노예처럼 부려지고 있었다. 그 모습을 지켜봐온 당신은...' },
+      { type: 'TEXT', speaker: '나레이션', text: '오랜 세월 빛을 보지 못한 토끼굴 속 어느날, 왕정의 폭압에 백성들이 울부짖고, 아이들은 노예처럼 부려지고 있었다.... 그 모습을 지켜봐온 당신은...' },
       {
         type: 'CHOICE', speaker: '내면의 결단', text: '어떠한 마음으로 자리를 박차고 일어설 것인가?', varKey: 'route',
         options: [
@@ -2059,15 +2133,15 @@ const StoryDB = [
           { label: '(2) 정의를 바로잡기로 결심한다', value: 2, saveFlag: { key: 'flag.chose_revenge', val: true } }
         ]
       },
-      { type: 'TEXT', speaker: '나레이션', text: '당신은 일어나 석탄광의 울타리를 걷어찼다. 아이들을 윽박지르던 날렵한 석궁병이 다가온다.' },
+      { type: 'TEXT', speaker: '나레이션', text: '당신은 일어나 석탄광의 울타리를 걷어찼다. 아이들을 윽박지르던 날렵한 석궁병이 다가온다. [전투 개시]' },
       { type: 'SETUP_STAGE', player: { name: '토끼기사', hp: 100, maxHp: 100 }, enemy: { name: '석궁병 제나', hp: 30, maxHp: 30 } },
-      { type: 'SCRIPTED_LOGS', logs: buildZenaComboLogs(), playerHpDelta: -24, setHitTakenCount: 4 },
+      { type: 'SCRIPTED_ACTION', execute: executeZenaCombo },
       { type: 'TEXT', speaker: '토끼기사', text: '실로 사악하기 그지없는 발재간이로다...!' },
       {
         type: 'BRANCH', condition: (vars) => vars.route === 1,
         steps: [
-          { type: 'GIVE_CARD', cardId: '020', freeCost: true, prompt: '손패의 [무지몽매]를 선택 후 실행해 제나의 마법을 봉쇄하십시오.' },
-          { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 마법을 쓰려 했으나 [난투] 효과로 막혔다!'] },
+          { type: 'GIVE_CARD', cardId: '020', freeCost: true, prompt: '손패의 [무지몽매]를 선택 후 실행해 [난투]를 부여하십시오.' },
+          { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 스텝을 밟으려 했으나 [난투] 효과로 막혔다!'] },
           { type: 'RIG_NEXT_RANDOM', value: 30 },
           { type: 'GIVE_CARD', cardId: '011', freeCost: true, prompt: '손패의 [용자의 행운]을 선택 후 실행해 일격을 날리십시오.' }
         ]
@@ -2078,7 +2152,7 @@ const StoryDB = [
           { type: 'GIVE_CARD', cardId: '013', freeCost: true, prompt: '손패의 [복수]를 선택 후 실행해 4연타 피격의 분노(8×4=32)를 되갚으십시오.' }
         ]
       },
-      { type: 'TEXT', speaker: '나레이션', text: '석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 허문다.' },
+      { type: 'TEXT', speaker: '나레이션', text: '석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 완전히 허문다.' },
       { type: 'SET_SAVE', key: 'stage_1_1.clear', value: true }
     ]
   }
@@ -2154,46 +2228,48 @@ const StorySequencer = {
         AppUI.renderStageActors();
         this.next();
         break;
+
+      case 'SCRIPTED_ACTION':
+        this.state = 'WAIT_LOGS';
+        AppUI.hideCombatVnOverlay();
+        if (cmd.execute) cmd.execute(this.engine);
+        AppUI.runAfterLogs(() => {
+          this.state = 'IDLE';
+          this.next();
+        });
+        break;
+
+      // ✅ [추가] Route 1의 단일 로그('제나가 다시 스텝을 밟으려 했으나...')도 클릭 큐로 출력되도록 연결
       case 'SCRIPTED_LOGS':
         this.state = 'WAIT_LOGS';
         AppUI.hideCombatVnOverlay();
-        document.getElementById('intent-title').textContent = '스토리 연출 진행 중';
-        document.getElementById('intent-main').textContent = '적 연속 행동 중... (상단 대사창/영역 터치 시 스킵)';
-        this.pendingLogs = [...(cmd.logs || [])];
-        this.pendingLogAfterHook = () => {
-          if (typeof cmd.playerHpDelta === 'number') {
-            this.engine.player.hp = Math.max(0, Math.min(this.engine.player.maxHp, this.engine.player.hp + cmd.playerHpDelta));
-            this.engine.emitFx(this.engine.player, 'fx-red');
-          }
-          if (typeof cmd.setHitTakenCount === 'number') {
-            this.engine.player.runTrackers.hitTakenCount = cmd.setHitTakenCount;
-          }
-          AppUI.renderStageActors();
-        };
-        this.logTimer = setInterval(() => {
-          if (this.pendingLogs.length > 0) this.engine.emitLog(this.pendingLogs.shift(), 'log-story');
-          else this.finishPendingLogs();
-        }, 70);
+        (cmd.logs || []).forEach(line => this.engine.emitLog(line, 'log-story'));
+        AppUI.runAfterLogs(() => {
+          this.state = 'IDLE';
+          this.next();
+        });
         break;
+
       case 'BRANCH':
         if (typeof cmd.condition === 'function' && cmd.condition(this.stageVars, SaveLedger) && Array.isArray(cmd.steps)) {
           this.queue.unshift(...cmd.steps);
         }
         this.next();
         break;
+
       case 'RIG_NEXT_RANDOM':
         RNG.rigNext(cmd.value);
         this.next();
         break;
+
       case 'GIVE_CARD': {
         this.state = 'WAIT_CARD';
         AppUI.hideCombatVnOverlay();
         this.engine.player.hand = [];
         const cardInst = this.engine.createCardInstance(cmd.cardId, !!cmd.freeCost);
         this.engine.player.hand.push(cardInst);
-        document.getElementById('intent-title').textContent = '스토리 행동 지시';
-        document.getElementById('intent-main').textContent = cmd.prompt || `[${cardInst.name}] 카드를 선택 후 실행하세요.`;
-        AppUI.selectedCardIdx = 0; // 지급된 카드를 즉시 선택 상태로 하이라이트
+        // ❌ 에러를 유발하던 document.getElementById('intent-title') 2줄을 완전히 제거했습니다!
+        AppUI.selectedCardIdx = 0;
         AppUI.renderStageActors();
         break;
       }
@@ -2291,6 +2367,12 @@ const AppUI = {
     const meta = StatusMeta[statusId] || { icon: '📌', desc: '상태 효과' };
     const accText = accumulated > 0 ? `<br><br><span style="color:var(--fx-yellow);">현재 누적 수치: ${accumulated}</span>` : '';
     this.openInfo(`${meta.icon} ${def.name} (스택: ${stacks})`, `${meta.desc}${accText}`);
+  },
+
+  // 보라색 박스의 [전체 로그] 버튼을 눌렀을 때 지나간 로그 전체를 팝업으로 표시
+  openFullLogModal() {
+    const logHtml = document.getElementById('log-box').innerHTML;
+    this.openInfo('📜 전투 로그 기록', logHtml || '<div style="color:var(--text-sub);">기록된 로그가 없습니다.</div>');
   },
 
   // 전술 메뉴 모달 열기 (특성/유물 터치 시 설명 팝업 + 덱/무덤 카드 목록 확인)
@@ -2544,15 +2626,16 @@ const AppUI = {
     };
     this.pendingFxList = [];
 
-    // 실시간(FULL) 모드이거나 스토리 자동 로그 중일 때는 대기열 없이 즉시 출력
-    if (this.logViewMode === 'FULL' || this.mode === 'STORY') {
+    // ✅ [수정] 사라진 'combat-board' 대신 현재 전투 화면인 'screen-combat'이 활성화되어 있는지 확인합니다!
+    const combatScreen = document.getElementById('screen-combat');
+    const isCombatVisible = combatScreen && combatScreen.classList.contains('active');
+    if (this.logViewMode === 'FULL' || !isCombatVisible) {
       this.applyPresentationStep(step);
       this.checkPostQueueActions();
       return;
     }
 
     this.presentationQueue.push(step);
-    // 첫 로그가 들어왔다면 즉시 1번째 줄을 화면에 띄움 (이후 줄은 클릭 대기)
     if (this.presentationQueue.length === 1) {
       this.applyPresentationStep(this.presentationQueue[0]);
     }
@@ -2610,48 +2693,15 @@ const AppUI = {
   },
 
   applyPresentationStep(step) {
-    // 1. 전체 로그창에도 기록 추가
     this.appendDomLog(step.msg, step.cls);
-    // 2. 1줄 출력창 텍스트 갱신
-    const stepText = document.getElementById('log-step-text');
-    if (stepText) {
-      stepText.className = `log-step-text ${step.cls}`;
-      stepText.textContent = `▶ ${step.msg}`;
-    }
-    // 3. 묶여있던 5색 박스 이펙트 격발
     step.fxList.forEach(fx => this.triggerFX(fx.boxId, fx.fxClass));
-    // 4. 해당 로그 시점의 스냅샷으로 캐릭터 HP/방어도/버프 UI 렌더링
-    this.renderStageActors(step.snapshot);
+    this.renderStageActors(step.snapshot, step);
   },
 
   updateLogStepUI() {
-    const remaining = Math.max(0, this.presentationQueue.length - 1);
-    const hasPendingAction = this.postQueueActions.length > 0;
-    const isWaitingClick = this.presentationQueue.length > 0;
-
-    document.getElementById('log-queue-status').textContent =
-      remaining > 0 ? `남은 로그: ${remaining}줄` : (hasPendingAction ? '전투 종료 확인 대기' : '실시간 동기화됨');
-
-    const skipBtn = document.getElementById('btn-skip-logs');
-    if (remaining > 0) skipBtn.classList.remove('hidden');
-    else skipBtn.classList.add('hidden');
-
-    const stepBox = document.getElementById('log-step-box');
-    const hintEl = document.getElementById('log-step-hint');
-    const countEl = document.getElementById('log-step-counter');
-
-    if (isWaitingClick) {
-      stepBox.classList.add('waiting');
-      countEl.textContent = remaining > 0 ? `[+${remaining}줄 대기 중]` : `[마지막 로그]`;
-      hintEl.textContent = hasPendingAction && remaining === 0 ? '터치하여 결과 화면으로 ▶' : '터치하여 다음 줄 ▶';
-    } else {
-      stepBox.classList.remove('waiting');
-      countEl.textContent = '';
-      hintEl.textContent = '행동을 선택하세요';
-    }
+    this.renderStageActors(this.presentationQueue[0]?.snapshot || null, this.presentationQueue[0] || null);
   },
 
-  // 전투 승리/패배 화면 전환을 로그 큐가 다 비워질 때까지 보류하는 헬퍼
   runAfterLogs(callback) {
     if (this.presentationQueue.length === 0) {
       callback();
@@ -2673,24 +2723,20 @@ const AppUI = {
     this.pendingFxList = [];
     this.postQueueActions = [];
     document.getElementById('log-box').innerHTML = '';
-    const stepText = document.getElementById('log-step-text');
-    if (stepText) stepText.textContent = '전투 개시...';
     this.updateLogStepUI();
   },
 
   appendDomLog(msg, cls = '') {
     const box = document.getElementById('log-box');
     if (!box) return;
-    box.querySelectorAll('.recent').forEach(el => el.classList.remove('recent'));
     const div = document.createElement('div');
-    div.className = `recent ${cls}`;
+    div.className = cls;
+    div.style.marginBottom = '4px';
     div.textContent = `▶ ${msg}`;
     box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
   },
 
   selectCard(idx) {
-    // 아직 안 읽은 로그가 남아있으면 먼저 로그를 다 넘기도록 유도하거나 즉시 스킵 처리
     if (this.presentationQueue.length > 0) {
       this.advanceLogStep();
       return;
@@ -2720,47 +2766,31 @@ const AppUI = {
     this.engine.endPlayerTurn();
   },
 
-  renderStageActors(snapshot = null) {
+  renderStageActors(snapshot = null, activeStep = null) {
     const state = snapshot || this.captureStateSnapshot();
     const p = state.player;
     const e = state.enemy;
     const isQueueLocked = this.presentationQueue.length > 0;
+    const currentStep = activeStep || this.presentationQueue[0] || null;
 
-    const renderStatusTags = (ent) => ent.statuses.map(s => {
-      const def = StatusDB[s.id];
-      const meta = StatusMeta[s.id] || { icon: '📌' };
-      const cls = def.category === 'BUFF' ? 'buff' : (def.category === 'DEBUFF' ? 'debuff' : 'context');
-      const acc = s.accumulated ? `(${s.accumulated})` : '';
-      return `<span class="s-tag ${cls}" onclick="AppUI.openStatusInfo('${s.id}', ${s.stacks}, ${s.accumulated || 0})">${meta.icon}${def.name} ${s.stacks}${acc}</span>`;
-    }).join('');
+    const renderStatusTags = (ent) => {
+      if (!ent.statuses.length) return `<span style="font-size:9.5px; color:#414868;">상태 없음</span>`;
+      return ent.statuses.map(s => {
+        const def = StatusDB[s.id];
+        const meta = StatusMeta[s.id] || { icon: '📌' };
+        const cls = def.category === 'BUFF' ? 'buff' : (def.category === 'DEBUFF' ? 'debuff' : 'context');
+        const acc = s.accumulated ? `(${s.accumulated})` : '';
+        return `<span class="s-tag ${cls}" onclick="AppUI.openStatusInfo('${s.id}', ${s.stacks}, ${s.accumulated || 0})">${meta.icon}${def.name} ${s.stacks}${acc}</span>`;
+      }).join('');
+    };
 
-    // 1. 적 상태 박스
-    const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
-    document.getElementById('sprite-enemy').innerHTML = `[적 도트]<br>${e.name}`;
-    document.getElementById('enemy-name-label').textContent = `${e.name}${floorTag}`;
-    document.getElementById('enemy-armor-label').textContent = `🛡️ 방어 ${e.armor}`;
-    const ePct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.hp / e.maxHp) * 100)) : 0;
-    document.getElementById('enemy-hp-fill').style.width = `${ePct}%`;
-    document.getElementById('enemy-hp-text').textContent = `${e.hp} / ${e.maxHp}`;
-    document.getElementById('enemy-status-list').innerHTML = renderStatusTags(e);
-
-    // 2. 적 예고(Intent)
-    document.getElementById('deck-grave-Summary').textContent = `덱${p.deckCount}/묘${p.graveCount}`;
-    if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
-      const act = EnemyDB[e.enemyId].getAction(state.turn, this.engine, this.engine.enemy, this.engine.player);
-      let intentText = act.intent;
-      if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
-        intentText += ` (+스케일링 ${e.tierDamageBonus})`;
-      }
-      document.getElementById('intent-title').textContent = `적 다음 행동 예고 [${act.name}]`;
-      document.getElementById('intent-main').textContent = intentText;
-    }
-
-    // 3. 플레이어 상태 박스
-    document.getElementById('player-name-label').textContent = `${p.name} (피격:${p.hitTakenCount})`;
-    document.getElementById('player-armor-label').textContent = `🛡️ 방어 ${p.armor}`;
+    // 1. 좌측: 플레이어 박스 (피격 텍스트 및 방어도 텍스트 완전 제거, 방어도는 흰색 반투명 게이지로 표시)
+    document.getElementById('sprite-player').innerHTML = `[내 도트]<br>${p.name}`;
+    document.getElementById('player-name-label').textContent = p.name;
     const pPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) : 0;
+    const pArmorPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.armor / p.maxHp) * 100)) : 0;
     document.getElementById('player-hp-fill').style.width = `${pPct}%`;
+    document.getElementById('player-armor-fill').style.width = `${pArmorPct}%`;
     document.getElementById('player-hp-text').textContent = `${p.hp} / ${p.maxHp}`;
     document.getElementById('player-status-list').innerHTML = renderStatusTags(p);
 
@@ -2769,51 +2799,112 @@ const AppUI = {
       `<div class="ap-gem ${i < p.energy ? 'on' : ''}"></div>`
     ).join('');
 
-    // 4. 손패 그리드 및 버튼 (로그가 밀려있을 때는 버튼이 '다음 로그 확인' 역할도 안내)
-    const canInteract = !isQueueLocked && ((this.mode === 'ROGUE_COMBAT' && !state.combatEnded) || (this.mode === 'STORY' && StorySequencer.state === 'WAIT_CARD'));
-    const gridEl = document.getElementById('hand-grid');
-    gridEl.innerHTML = p.hand.map((card, idx) => {
-      const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
-      return `
-        <div class="hand-card ${isSelected ? 'selected' : ''}" style="${isQueueLocked ? 'opacity:0.6;' : ''}" onclick="AppUI.selectCard(${idx})">
-          <div class="c-cost">${card.effCost}</div>
-          <div class="c-name">${card.name}</div>
-          <div class="c-type">${card.type}${card.effHits > 0 ? `(${card.effHits}타)` : ''}</div>
-          <div class="c-desc">${card.desc}</div>
-        </div>
-      `;
-    }).join('');
+    // 2. 우측: 적 박스 (방어도는 흰색 반투명 게이지로 표시)
+    const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
+    document.getElementById('sprite-enemy').innerHTML = `[적 도트]<br>${e.name}`;
+    document.getElementById('enemy-name-label').textContent = `${e.name}${floorTag}`;
+    const ePct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.hp / e.maxHp) * 100)) : 0;
+    const eArmorPct = e.maxHp > 0 ? Math.max(0, Math.min(100, (e.armor / e.maxHp) * 100)) : 0;
+    document.getElementById('enemy-hp-fill').style.width = `${ePct}%`;
+    document.getElementById('enemy-armor-fill').style.width = `${eArmorPct}%`;
+    document.getElementById('enemy-hp-text').textContent = `${e.hp} / ${e.maxHp}`;
+    document.getElementById('enemy-status-list').innerHTML = renderStatusTags(e);
 
-    const execBtn = document.getElementById('btn-exec-card');
-    const endTurnBtn = document.getElementById('btn-end-turn');
+    // 3. 중상단 보라색 통합 박스: [로그 대기 중이면 1줄 로그] vs [평소에는 적 다음 행동 예고]
+    document.getElementById('deck-grave-Summary').textContent = `덱${p.deckCount}/묘${p.graveCount}`;
+    const purpleBox = document.getElementById('purple-box');
+    const headerLabel = document.getElementById('purple-header-label');
+    const mainDisplay = document.getElementById('purple-main-display');
+    const countEl = document.getElementById('log-step-counter');
+    const hintEl = document.getElementById('log-step-hint');
+    const skipBtn = document.getElementById('btn-skip-logs');
 
-    if (isQueueLocked) {
-      execBtn.disabled = false;
-      execBtn.textContent = `▶ 로그 터치 / 다음 진행 (${this.presentationQueue.length}줄)`;
-      endTurnBtn.disabled = true;
-      return;
+    if (isQueueLocked && currentStep) {
+      const remaining = Math.max(0, this.presentationQueue.length - 1);
+      const hasPendingAction = this.postQueueActions.length > 0;
+      purpleBox.classList.add('waiting-log');
+      if (remaining > 0) skipBtn.classList.remove('hidden');
+      else skipBtn.classList.add('hidden');
+
+      headerLabel.style.color = 'var(--fx-yellow)';
+      headerLabel.textContent = `⚡ 전투 로그 진행 중`;
+      mainDisplay.className = `purple-main-text ${currentStep.cls}`;
+      mainDisplay.textContent = `▶ ${currentStep.msg}`;
+      countEl.textContent = remaining > 0 ? `남은 로그: +${remaining}줄` : `마지막 로그`;
+      hintEl.style.color = 'var(--fx-yellow)';
+      hintEl.textContent = (hasPendingAction && remaining === 0) ? '터치하여 결과 이동 ▶' : '박스 터치하여 다음 줄 ▶';
+    } else {
+      purpleBox.classList.remove('waiting-log');
+      skipBtn.classList.add('hidden');
+      headerLabel.style.color = 'var(--fx-purple)';
+      countEl.textContent = `${state.turn}턴 진행 중`;
+      hintEl.style.color = 'var(--text-sub)';
+      hintEl.textContent = '아래 카드를 선택하세요';
+
+      if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
+        const act = EnemyDB[e.enemyId].getAction(state.turn, this.engine, this.engine.enemy, this.engine.player);
+        let intentText = act.intent;
+        if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
+          intentText += ` (+스케일링 ${e.tierDamageBonus})`;
+        }
+        headerLabel.textContent = `👾 적 다음 행동 예고 [${act.name}]`;
+        mainDisplay.className = 'purple-main-text';
+        mainDisplay.style.color = 'var(--fx-yellow)';
+        mainDisplay.textContent = intentText;
+      } else if (this.mode === 'STORY') {
+        headerLabel.textContent = `📖 스토리 전투 안내`;
+        mainDisplay.className = 'purple-main-text';
+        mainDisplay.style.color = 'var(--text-main)';
+        mainDisplay.textContent = p.hand.length > 0 ? `손패의 [${p.hand[0].name}] 카드를 선택해 실행하세요.` : `대사를 진행하세요.`;
+      }
     }
 
-    endTurnBtn.disabled = (this.mode !== 'ROGUE_COMBAT' || state.combatEnded);
+    // 4. 중간 컨트롤 바 (선택된 카드가 있을 때만 중앙에 실행 버튼 등장!)
+    const execBtn = document.getElementById('btn-exec-card');
+    const endTurnBtn = document.getElementById('btn-end-turn');
+    endTurnBtn.disabled = isQueueLocked || (this.mode !== 'ROGUE_COMBAT' || state.combatEnded);
+
+    const canInteract = !isQueueLocked && ((this.mode === 'ROGUE_COMBAT' && !state.combatEnded) || (this.mode === 'STORY' && StorySequencer.state === 'WAIT_CARD'));
+    if (this.selectedCardIdx !== null && !p.hand[this.selectedCardIdx]) {
+      this.selectedCardIdx = null;
+    }
 
     if (canInteract && this.selectedCardIdx !== null && this.engine.player.hand[this.selectedCardIdx]) {
       const selCard = this.engine.player.hand[this.selectedCardIdx];
       const cost = this.engine.getEffectiveCost(this.engine.player, selCard);
       const blocked = this.engine.player.getPassives().some(({ def, inst }) => def.canPlayCard && !def.canPlayCard(selCard, this.engine, this.engine.player, inst));
+
+      execBtn.classList.remove('hidden'); // 카드 선택 시 중앙에 등장!
       if (blocked) {
         execBtn.disabled = true;
-        execBtn.textContent = `사용 불가 (${selCard.name} - 난투)`;
+        execBtn.textContent = `🚫 사용 불가 (난투)`;
       } else if (p.energy < cost) {
         execBtn.disabled = true;
-        execBtn.textContent = `활력 부족 (${selCard.name} - 필요 ${cost})`;
+        execBtn.textContent = `⚡ 활력 부족 (필요 ${cost})`;
       } else {
         execBtn.disabled = false;
-        execBtn.textContent = `[${selCard.name}] 실행 (활력 ${cost})`;
+        execBtn.textContent = `▶ [${selCard.name}] 실행`;
       }
     } else {
-      execBtn.disabled = true;
-      execBtn.textContent = '카드를 선택하세요';
+      execBtn.classList.add('hidden'); // 선택 안 했을 때는 깔끔하게 숨김
     }
+
+    // 5. 하단: 고정 폭 가로 스크롤 카드 렌더링 (013 복수는 설명란에 누적 피격 계산치 자동 표시)
+    const gridEl = document.getElementById('hand-grid');
+    gridEl.innerHTML = p.hand.map((card, idx) => {
+      const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
+      const dynamicDesc = card.id === '013'
+        ? `${card.desc} <span style="color:var(--fx-yellow);">[현재: ${8 * p.hitTakenCount} 피해]</span>`
+        : card.desc;
+      return `
+        <div class="hand-card ${isSelected ? 'selected' : ''}" style="${isQueueLocked ? 'opacity:0.55;' : ''}" onclick="AppUI.selectCard(${idx})">
+          <div class="c-cost">${card.effCost}</div>
+          <div class="c-name">${card.name}</div>
+          <div class="c-type">${card.type}${card.effHits > 0 ? `(${card.effHits}타)` : ''}</div>
+          <div class="c-desc">${dynamicDesc}</div>
+        </div>
+      `;
+    }).join('');
   }
 };
 AppUI.init();
