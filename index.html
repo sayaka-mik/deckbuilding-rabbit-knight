@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.83 전화위복,뇌진탕 FIX</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.84 제나,주리</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -649,7 +649,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.71)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.84)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -710,7 +710,10 @@ const SpriteMap = {
   '태엽토끼': 'taprabbit.png', 
   '독니토끼': 'porabbit.png', 
   '설산의 기사': 'winterknight.png',         // 엘리트
-  '토끼마녀 시향': 'witchrabbit.png'        // 보스
+  '토끼마녀 시향': 'witchrabbit.png',        // 보스
+  '비시즌 석궁병 제나': 'jena.png',
+  '시즌 제나': 'jena.png',
+  '두더지파 보스 주리': 'juri.png'
 };
 
 // 유물 6종 정의
@@ -1135,7 +1138,7 @@ const CardDB = {
   }
 };
 
-// 적 5종 DB (일반 3, 엘리트 1, 보스 1)
+// 적 8종 DB (일반 4, 엘리트 2, 보스 2)
 const EnemyDB = {
   COAL_MOLE: {
     id: 'COAL_MOLE', name: '굴토끼', maxHp: 85, isBoss: false, isElite: false,
@@ -1163,7 +1166,7 @@ const EnemyDB = {
         case 1:
           return { name: '태엽 해방', intent: '💥 강타: 물리 22', execute: () => engine.executeAttack(self, player, 22) };
         case 2:
-          return { name: '과부하 정지', intent: '💤 행동 없음 (빈틈 노출)', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
+          return { name: '과부하 정지', intent: '💤 행동 없음', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
       }
     }
   },
@@ -1183,6 +1186,89 @@ const EnemyDB = {
       };
     }
   },
+  // [일반 4] 비시즌 석궁병 제나 (HP 70 / 재생 유지력 / 6~7턴 기준)
+  OFFSEASON_ZENA: {
+    id: 'OFFSEASON_ZENA',
+    name: '비시즌 석궁병 제나',
+    maxHp: 70,
+    isBoss: false,
+    isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 3;
+      switch (cycle) {
+        case 0: // 1턴, 4턴, 7턴
+          return {
+            name: '약초 다지기',
+            type: 'MAGIC',
+            intent: '💚 재생 3 + 🛡️ 방어 6',
+            execute: () => {
+              engine.statuses.apply(self, self, 'REGEN', 3);
+              engine.gainArmor(self, 6, '약초 다지기');
+            }
+          };
+        case 1: // 2턴, 5턴
+          return {
+            name: '비시즌 사격',
+            intent: '⚔️ 다단히트: 물리 5 × 2타',
+            execute: () => {
+              for (let i = 0; i < 2; i++) {
+                engine.executeAttack(self, player, 5);
+              }
+            }
+          };
+        case 2: // 3턴, 6턴
+          return {
+            name: '토끼풀 찜질',
+            intent: '💚 재생 2 + ⚔️ 물리 8',
+            execute: () => {
+              engine.statuses.apply(self, self, 'REGEN', 2);
+              engine.executeAttack(self, player, 8);
+            }
+          };
+      }
+    }
+  },
+
+  // [엘리트 2] 시즌 제나 (HP 210 / 5연타 압박 + 이전 턴에 걸린 디버프 감지 시 정화)
+  ELITE_SEASON_ZENA: {
+    id: 'ELITE_SEASON_ZENA',
+    name: '시즌 제나',
+    maxHp: 222,
+    isBoss: false,
+    isElite: true,
+    getAction(turn, engine, self, player) {
+      // 현재 보유 중인 디버프에 최초 감지 턴 기록
+      const debuffs = self.statuses.filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF);
+      debuffs.forEach(d => {
+        if (d.appliedTurn === undefined) d.appliedTurn = turn;
+      });
+
+      // 이전 턴(appliedTurn < turn)에 걸려서 현재까지 남아있는 디버프가 있는지 확인
+      const hasPersistedDebuff = debuffs.some(d => d.appliedTurn < turn);
+
+      if (hasPersistedDebuff) {
+        return {
+          name: '유비무환',
+          type: 'MAGIC',
+          intent: '✨ 정화 (보유 디버프 전부 제거)',
+          execute: () => {
+            const { removedCount } = engine.statuses.removeAll(self, [STATUS_CATEGORY.DEBUFF]);
+            engine.emitLog(`✨ [유비무환] 시즌 제나가 자신의 디버프 ${removedCount}종을 깔끔하게 정화했습니다!`, 'log-sys');
+          }
+        };
+      }
+
+      return {
+        name: '단궁난무',
+        intent: '⚔️ 물리 3 × 5타',
+        execute: () => {
+          for (let i = 0; i < 5; i++) {
+            engine.executeAttack(self, player, 3);
+          }
+        }
+      };
+    }
+  },
   ELITE_MIRROR_KNIGHT: {
     id: 'ELITE_MIRROR_KNIGHT', name: '설산의 기사', maxHp: 220, isBoss: false, isElite: true,
     getAction(turn, engine, self, player) {
@@ -1197,13 +1283,100 @@ const EnemyDB = {
           };
         case 1:
           return {
-            name: '서리 창 찌르기', intent: `⚔️ 물리 14 (다음 적 턴 시작 시 반사 폭발: 현재 누적 ${storedDmg})`,
+            name: '서리 창 찌르기', intent: `⚔️ 물리 14 (다음 적 턴 시작 시 바바야가 반격: 현재 누적 ${storedDmg})`,
             execute: () => engine.executeAttack(self, player, 14)
           };
         case 2:
           return {
-            name: '거울 파열 & 호흡', type: 'MAGIC', intent: '💚 재생 2 (직접 공격 없음 — 장막 해제)',
+            name: '거울 파열 & 호흡', type: 'MAGIC', intent: '💚 재생 2',
             execute: () => { engine.statuses.apply(self, self, 'REGEN', 2); engine.log('🪞 거울 장막이 걷혔습니다. 지금이 공격할 기회입니다!', 'log-sys'); }
+          };
+      }
+    }
+  },
+  BOSS_JURI: {
+    id: 'BOSS_JURI',
+    name: '두더지파 보스 주리',
+    maxHp: 450,
+    isBoss: true,
+    isElite: false,
+
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 4;
+
+      switch (cycle) {
+        case 0: // 1턴, 5층, 9층...
+          return {
+            name: '부하 소집',
+            type: 'MAGIC',
+            intent: '🛡️ 방어 15 + 🩸 출혈 2',
+            execute: () => {
+              engine.gainArmor(self, 15, '부하 소집');
+              engine.statuses.apply(self, player, 'BLEED', 2);
+            }
+          };
+
+        case 1: // 2턴, 6턴...
+          return {
+            name: '지하 참호 파기',
+            type: 'MAGIC',
+            intent: '🛡️ 방어 25 + 💚 재생 2',
+            execute: () => {
+              engine.gainArmor(self, 25, '지하 참호 파기');
+              engine.statuses.apply(self, self, 'REGEN', 2);
+            }
+          };
+
+        case 2: // 3턴, 7턴...
+          return {
+            name: '무자비한 난도질',
+            intent: '⚔️ 물리 14 + 🩸 출혈 3',
+            execute: () => {
+              engine.executeAttack(self, player, 14);
+              engine.statuses.apply(self, player, 'BLEED', 3);
+            }
+          };
+
+        case 3: // 4턴, 8턴... (피니시: 강제정산 + 부당거래 특성)
+          return {
+            name: '두더지파식 정산',
+            type: 'MAGIC',
+            intent: '💥 강제정산 폭발 + 🩸 부당거래(출혈 50% 리필)',
+            execute: () => {
+              let totalDamage = 0;
+              let removedBleedStacks = 0;
+
+              // 1. 플레이어의 출혈 스택을 감지하고 자연 감소 총 피해량 계산
+              const bleedInst = engine.statuses.get(player, 'BLEED');
+              if (bleedInst && bleedInst.stacks > 0) {
+                removedBleedStacks = bleedInst.stacks;
+                totalDamage += StatusDB['BLEED'].calcNaturalTotalDamage(removedBleedStacks);
+                engine.statuses.removeSpecific(player, 'BLEED');
+              }
+
+              // 2. 강제정산 폭발 피해 전달 (방어도로 흡수 가능)
+              if (totalDamage > 0) {
+                engine.log(`💥 [강제정산] 주리가 출혈을 정산하여 ${totalDamage}의 막대한 피해를 가합니다!`, 'log-hit');
+                engine.dealDamage(new DamagePacket({
+                  source: self,
+                  target: player,
+                  amount: totalDamage,
+                  type: DAMAGE_TYPE.PHYSICAL,
+                  isStrike: false,
+                  reason: '지하갱도 강제정산'
+                }));
+              } else {
+                engine.log(`💤 [강제정산] 정산할 출혈이 없어 주리의 회심의 일격이 빗나갔습니다!`, 'log-sys');
+                engine.recoverEnergy(self, 1); // 빗나가면 보너스
+              }
+
+              // 3. 특성: 부당거래 (제거한 스택의 50%를 다시 부여)
+              if (removedBleedStacks >= 2) {
+                const refundStacks = Math.floor(removedBleedStacks * 0.5);
+                engine.log(`🩸 [부당거래 특성] 두더지파식 거래 정산에 의해 출혈 ${refundStack}스택이 다시 부가됩니다!`, 'log-status');
+                engine.statuses.apply(self, player, 'BLEED', refundStacks);
+              }
+            }
           };
       }
     }
@@ -1661,7 +1834,7 @@ class CombatEngine {
 
   startPlayerTurn() {
     if (this.combatEnded) return;
-    this.emitLog(`========== [${this.turn}턴: 플레이어 차례] ==========`, 'log-sys');
+    this.emitLog(` [${this.turn}턴: 플레이어 차례] `, 'log-sys');
 
     const carryOver = Math.min(this.player.maxCarryOver, this.player.energy);
     let recovery = 3;
@@ -1715,7 +1888,7 @@ class CombatEngine {
     });
 
     // 적 턴 시작
-    this.emitLog(`========== [${this.turn}턴: ${this.enemy.name} 차례] ==========`, 'log-sys');
+    this.emitLog(` [${this.turn}턴: ${this.enemy.name} 차례] `, 'log-sys');
     [this.player, this.enemy].forEach(ent => {
       [...ent.statuses].forEach(s => {
         const def = StatusDB[s.id];
@@ -1922,10 +2095,10 @@ const RogueManager = {
 
   renderPathSelection() {
     const meta = {
-      NORMAL: { title: '⚔️ 일반 전투', desc: '일반 적과 교전합니다. (승리 시 카드 보상)', color: 'var(--accent)' },
-      ELITE: { title: '🔥 엘리트 전투', desc: '강력한 적과 교전합니다. (승리 시 카드 + 유물 보상)', color: 'var(--fx-purple)' },
-      CAMP: { title: '⛺ 캠프 (정비소)', desc: '체력 35% 회복 또는 덱에서 카드 1장을 제거합니다.', color: 'var(--fx-green)' },
-      BOSS: { title: '👑 보스 결전', desc: '층의 지배자와 결전을 치릅니다. (HP 50% 회복 + 카드 + 유물 + 특성)', color: 'var(--fx-red)' }
+      NORMAL: { title: '⚔️ 일반', desc: '일반 적과 교전합니다. (카드 보상)', color: 'var(--accent)' },
+      ELITE: { title: '🔥 엘리트', desc: '강력한 적과 교전합니다. (카드 + 유물 보상)', color: 'var(--fx-purple)' },
+      CAMP: { title: '⛺ 캠프', desc: '체력 35% 회복 또는 덱에서 카드 1장을 제거합니다.', color: 'var(--fx-green)' },
+      BOSS: { title: '👑 보스', desc: '층의 지배자와 결전을 치릅니다. (HP 50% 회복 + 카드 + 유물 + 특성 보상)', color: 'var(--fx-red)' }
     };
     AppUI.setChoiceScreen(
       `🧭 ${this.state.floor}층 갈림길 선택`,
@@ -2223,7 +2396,7 @@ function executeZenaCombo(engine) {
   actions.forEach((act, idx) => {
     if (act === 'STEP') {
       engine.recoverEnergy(engine.enemy, 1);
-      engine.emitLog(`석궁병 제나의 [스텝 밟기]! 제나가 활력을 회복했습니다.`, 'log-story');
+      engine.emitLog(`석궁병 제나의 [스텝 밟기]! 제나가 활력을 회복했습니다. 추가로 카드를 사용합니다.`, 'log-story');
     } else if (act === 'CLOVER') {
       engine.statuses.apply(engine.enemy, engine.enemy, 'REGEN', 3);
       engine.emitLog(`석궁병 제나의 [토끼풀]! 제나가 카드를 1장 뽑고 재생을 획득했습니다.`, 'log-story');
@@ -2753,7 +2926,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `현재 구현 보스 기준 최고층: ${maxFloor}층 (세이브 계승 지원)`;
+      subEl.innerHTML = `v0.84: 제나,주리 추가 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
