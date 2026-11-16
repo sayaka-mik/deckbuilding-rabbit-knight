@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.90 재생,1-1픽스,보험,언데드 추가,나엘 조정</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.91 세션 복기용 로그추적 추가</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -645,12 +645,14 @@ const SaveLedger = {
     'roguelike.relics': '',
     'roguelike.traits': '',
     'roguelike.clearedBosses': '',
-    'roguelike.relic015Wins': 0 // 👈 추가
+    'roguelike.relic015Wins': 0, // 👈 추가
+    'roguelike.runLog': '',     // 👈 층별 여정 요약
+    'roguelike.deathCause': ''  // 👈 사망 원인 (결정타)
   },
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.90)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.91)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -2215,27 +2217,36 @@ class CombatEngine {
       this.emitFloatingText(target, `방어 ${absorbed}`, 'fct-white'); // ⬜ 방어도 흡수 흰색 글씨
     }
 
+    // (이전 로직: 방어도 차감)
+    
     const prevHp = target.hp;
     target.hp = Math.max(0, target.hp - unblocked);
     const actualLost = prevHp - target.hp;
 
+    // 1. 시각 효과 1: 빨간 플로팅 텍스트
     if (actualLost > 0) {
-      this.emitFloatingText(target, `-${actualLost}`, 'fct-red'); // 🟥 체력 감소 빨간 글씨
+      this.emitFloatingText(target, `-${actualLost}`, 'fct-red'); // 🟥 정상 존재함
     }
 
+    // 2. 시각 효과 2: 박스 흔들림 및 빨간 테두리
     if (actualLost > 0 || packet.amount > 0) {
-      this.emitFx(target, 'fx-red'); // 기존 화면 흔들림 연출
+      this.emitFx(target, 'fx-red'); // 🟥 정상 존재함
     }
 
+    // 3. 로그 출력
     const note = packet.logs.length ? ` [${packet.logs.join(', ')}]` : '';
     this.emitLog(`💥 [${packet.reason}] ${target.name}에게 ${packet.baseAmount} -> 실제 HP -${actualLost} (남은 HP: ${target.hp})${note}`, 'log-hit');
 
+    // 4. 피격 사유 갱신(추가하신 부분) 및 피격 반응 상태이상(재생 등) 발동
     if (actualLost > 0) {
+      if (target === this.player) {
+        target.lastHitReason = packet.reason || '불명'; // 👈 사망 로그용으로 정확히 추가됨
+      }
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onHpDecreased) def.onHpDecreased(this, target, actualLost, inst);
       });
     }
-	  
+
     // 👇 [수정] !packet.missed 조건 추가로 빗나간 공격은 피격 횟수/반격 미발동
     if (packet.isStrike && !packet.missed && source !== target) {
       target.runTrackers.hitTakenCount += 1;
@@ -2486,7 +2497,9 @@ const RogueManager = {
   state: {
     active: false, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
     deck: [], relics: [], traits: [], clearedBosses: [],
-    relic015Wins: 0
+    relic015Wins: 0,
+    runLog: [],      // 👈 추가
+    deathCause: ''   // 👈 추가
   },
   currentPaths: [],
   rewardQueue: [],
@@ -2522,6 +2535,8 @@ const RogueManager = {
     SaveLedger.set('roguelike.traits', this.state.traits.join(','));
     SaveLedger.set('roguelike.clearedBosses', this.state.clearedBosses.join(','));
     SaveLedger.set('roguelike.relic015Wins', this.state.relic015Wins);
+    SaveLedger.set('roguelike.runLog', this.state.runLog.join(' > '));
+    SaveLedger.set('roguelike.deathCause', this.state.deathCause);
   },
 
   loadFromSaveLedger() {
@@ -2537,13 +2552,18 @@ const RogueManager = {
     this.state.traits = parseList(SaveLedger.get('roguelike.traits'));
     this.state.clearedBosses = parseList(SaveLedger.get('roguelike.clearedBosses'));
     this.state.relic015Wins = Number(SaveLedger.get('roguelike.relic015Wins')) || 0;
+    const rawLog = String(SaveLedger.get('roguelike.runLog') || '').trim();
+    this.state.runLog = rawLog ? rawLog.split(' > ').map(s => s.trim()).filter(Boolean) : [];
+    this.state.deathCause = String(SaveLedger.get('roguelike.deathCause') || '');
   },
 
   startNewRun() {
     this.state = {
       active: true, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
       deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: [],
-      relic015Wins: 0
+      relic015Wins: 0,
+      runLog: [],      // 👈 추가
+      deathCause: ''   // 👈 추가
     };
     this.syncToSaveLedger();
     AppUI.mode = 'ROGUE_HUB';
@@ -2662,6 +2682,7 @@ const RogueManager = {
         borderColor: 'var(--fx-green)',
         onClick: () => {
           this.state.hp = Math.min(this.state.maxHp, this.state.hp + healAmt);
+	  this.state.runLog.push(`${this.state.floor}F:캠프(휴식/HP:${this.state.hp})`); // 👈 추가
           this.advanceFloor();
         }
       }
@@ -2676,6 +2697,7 @@ const RogueManager = {
           borderColor: 'var(--fx-red)',
           onClick: () => {
             this.state.deck.splice(idx, 1);
+	    this.state.runLog.push(`${this.state.floor}F:캠프(제거:${c.name})`); // 👈 추가
             this.advanceFloor();
           }
         });
@@ -2752,20 +2774,26 @@ const RogueManager = {
 
   onCombatFinished(victory, nodeType, enemyId) {
     const eng = AppUI.engine;
+    const eName = EnemyDB[enemyId]?.name || enemyId;
     this.state.hp = eng.player.hp;
     this.state.hitTakenCount = eng.player.runTrackers.hitTakenCount;
 
     if (!victory) {
+      const cause = eng.player.lastHitReason || '알 수 없음';
+      this.state.deathCause = `${this.state.floor}F ${eName} (${eng.turn}턴) - [${cause}]`;
+      this.state.runLog.push(`${this.state.floor}F:${eName}(패/${eng.turn}T)`);
       this.state.active = false;
       this.syncToSaveLedger();
       AppUI.mode = 'ROGUE_HUB';
       AppUI.go('screen-choice');
-      AppUI.setChoiceScreen('💀 기사도 등반 실패', `${this.state.floor}층에서 쓰러졌습니다.`, [
+      AppUI.setChoiceScreen('💀 기사도 등반 실패', `${this.state.deathCause}에 의해 쓰러졌습니다.`, [
         { title: '🏠 타이틀로 돌아가기', desc: '세이브를 정리하고 메인 화면으로 이동합니다.', borderColor: 'var(--fx-red)', onClick: () => AppUI.returnToLobby() }
       ]);
       return;
     }
 
+    const resultTag = eng.enemy.peaceAchieved ? '평화' : '승';
+    this.state.runLog.push(`${this.state.floor}F:${eName}(${resultTag}/${eng.turn}T/HP:${eng.player.hp})`);
     this.rewardQueue = [];
     if (nodeType === 'NORMAL') {
       if (enemyId === 'NUN_NAEL' && eng.enemy.peaceAchieved) {
@@ -3488,7 +3516,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.90 재생 픽스, 보험,언데드 추가, 1-1연출픽스, 나엘 히든보상 조정 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.91 세션복기용 로그추적 추가 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
