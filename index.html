@@ -3812,7 +3812,7 @@ const AppUI = {
       execBtn.classList.remove('hidden'); // 카드 선택 시 중앙에 등장!
       if (blocked) {
         execBtn.disabled = true;
-        execBtn.textContent = `🚫 사용 불가 (난투)`;
+        execBtn.textContent = `🚫 사용 불가 (난투 등)`;
       } else if (p.energy < cost) {
         execBtn.disabled = true;
         execBtn.textContent = `⚡ 활력 부족 (필요 ${cost})`;
