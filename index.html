@@ -1107,12 +1107,12 @@ const StatusDB = {
     }
   },
   CTX_FIGHTING_SPIRIT: {
-    id: 'CTX_FIGHTING_SPIRIT', code: '001', name: '맥락:토끼의 투지', category: STATUS_CATEGORY.CONTEXT, priority: 40,
+    id: 'CTX_FIGHTING_SPIRIT', code: '001', name: '의념:토끼의 투지', category: STATUS_CATEGORY.CONTEXT, priority: 40,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
     modifyHitCount: (hits, card, effectiveCost) => (card.type === 'ATTACK' && effectiveCost === 1 && hits > 0) ? hits + 1 : hits
   },
   CTX_BLESSING_IN_DISGUISE: {
-    id: 'CTX_BLESSING_IN_DISGUISE', code: '002', name: '맥락:전화위복', category: STATUS_CATEGORY.CONTEXT, priority: 40,
+    id: 'CTX_BLESSING_IN_DISGUISE', code: '002', name: '의념:전화위복', category: STATUS_CATEGORY.CONTEXT, priority: 40,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
     onDamageTaken: (engine, owner, packet) => {
       if (packet.type === DAMAGE_TYPE.STATUS && packet.amount > 0) {
@@ -1122,7 +1122,7 @@ const StatusDB = {
     }
   },
   CTX_MIST_FORTRESS: {
-    id: 'CTX_MIST_FORTRESS', code: '003', name: '맥락:안개얼음성채', category: STATUS_CATEGORY.CONTEXT, priority: 50,
+    id: 'CTX_MIST_FORTRESS', code: '003', name: '의념:안개얼음성채', category: STATUS_CATEGORY.CONTEXT, priority: 50,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
     modifyIncomingDamage: (packet) => {
       if (packet.amount > 0) { packet.amount = Math.max(0, packet.amount - 22); packet.logs.push('안개얼음성채(-22)'); }
@@ -3367,7 +3367,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.87: 적 추가 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.88: 주리 밸런스 조정, 실명 픽스, 맥락->의념 용어 통일 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
