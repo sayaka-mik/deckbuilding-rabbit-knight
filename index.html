@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.87 적 추가</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.88 주리 밸패, 실명 픽스</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -1025,11 +1025,15 @@ const StatusDB = {
     decayTiming: DECAY_TIMING.CASTER_TURN_START,
     canPlayCard: (card) => card.type !== 'MAGIC'
   },
-  BLIND: {
+    BLIND: {
     id: 'BLIND', code: '006', name: '실명', category: STATUS_CATEGORY.DEBUFF, priority: 100,
     decayTiming: DECAY_TIMING.CASTER_TURN_START,
-    modifyIncomingDamage: (packet) => {
-      if (packet.amount > 0) { packet.amount = 0; packet.logs.push('실명(면역)'); }
+    modifyOutgoingDamage: (packet) => {
+      if (packet.type === DAMAGE_TYPE.PHYSICAL && packet.amount > 0) {
+        packet.amount = 0;
+        packet.missed = true;
+        packet.logs.push('실명(빗나감)');
+      }
     }
   },
   CONCUSSION: {
@@ -1132,7 +1136,7 @@ const StatusMeta = {
   CONTRACT: { icon: '📜', desc: '보유자의 턴 종료 시 스택 1 감소. 유지되는 동안 다른 디버프 스택이 감소하지 않습니다.' },
   DELIRIUM: { icon: '🧪', desc: '보유자의 턴이 끝날 때 스택×5 상태이상 피해를 입고 스택이 1 증가합니다.' },
   BRAWL: { icon: '💢', desc: '시전자의 턴 시작 시 스택 1 감소. 보유 중에는 마법 카드를 사용할 수 없습니다.' },
-  BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 피해에 면역이 됩니다. (체력 상실 제외)' },
+  BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 물리 피해가 빗나가 피해가 0이 됩니다.' },
   CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 모든 카드와 행동을 사용할 수 없습니다.' },
   GOBLIN_NEEDLE: { icon: '🌵', desc: '피격될 때마다 공격자에게 스택×5 물리 피해를 입힙니다.' },
   VIPER_BLADE: { icon: '🗡️', desc: '타격할 때마다 대상에게 추가 물리 피해 7을 입히고 스택이 1 감소합니다.' },
@@ -1630,10 +1634,10 @@ WATER_BABA: {
         case 2:
           return {
             name: '무자비한 난도질',
-            intent: '⚔️ 물리 19 + 🩸 출혈 4',
+            intent: '⚔️ 물리 19 + 🩸 출혈 2',
             execute: () => {
               engine.executeAttack(self, player, 19);
-              engine.statuses.apply(self, player, 'BLEED', 4);
+              engine.statuses.apply(self, player, 'BLEED', 2);
             }
           };
 
@@ -2076,11 +2080,17 @@ class CombatEngine {
         if (def.onBeforeStrike) def.onBeforeStrike(this, source, target, packet, inst);
       });
     }
+    // 👇 [추가] 공격자(source)의 실명 등 주는 피해 변조 처리
+    if (packet.type !== DAMAGE_TYPE.HP_LOSS && source) {
+      source.getPassives().forEach(({ def, inst }) => {
+        if (def.modifyOutgoingDamage) def.modifyOutgoingDamage(packet, this, source, inst);
+      });
+    }
     if (packet.type !== DAMAGE_TYPE.HP_LOSS) {
       target.getPassives().forEach(({ def, inst }) => {
         if (def.modifyIncomingDamage) def.modifyIncomingDamage(packet, this, target, inst);
       });
-    }
+	}
     if (packet.type !== DAMAGE_TYPE.HP_LOSS && packet.amount > 0) {
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onDamageTaken) def.onDamageTaken(this, target, packet, inst);
@@ -2117,13 +2127,14 @@ class CombatEngine {
         if (def.onHpDecreased) def.onHpDecreased(this, target, actualLost, inst);
       });
     }
-
-    if (packet.isStrike && source !== target) {
+	  
+    // 👇 [수정] !packet.missed 조건 추가로 빗나간 공격은 피격 횟수/반격 미발동
+    if (packet.isStrike && !packet.missed && source !== target) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onAfterBeStruck) def.onAfterBeStruck(this, target, source, packet, inst);
       });
-    }
+	}
 
     this.notifyRender();
     this.checkCombatEnd();
