@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.91 세션 복기용 로그추적 추가</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.92 고층 피해량 표기 조정</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -652,7 +652,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.91)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.92)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -3516,7 +3516,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.91 세션복기용 로그추적 추가 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.92 고층 피해량 증가 표기 조정 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -3908,14 +3908,14 @@ const AppUI = {
       countEl.textContent = `${state.turn}턴 진행 중`;
       hintEl.style.color = 'var(--text-sub)';
       hintEl.textContent = '아래 카드를 선택하세요';
-
+		
       if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
         const resolved = this.engine.resolveEnemyAction(state.turn, this.engine.enemy, this.engine.player);
         if (resolved) {
           const act = resolved.action;
           let intentText = act.intent;
           if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
-            intentText += ` (+스케일링 ${e.tierDamageBonus})`;
+            intentText = intentText.replace(/물리\s*(\d+)/g, (_, num) => `물리 ${Number(num) + e.tierDamageBonus}`);
           }
 
           if (resolved.blocker && !resolved.isFallback) {
