@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.89 토끼기사/시종 상향</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.90 재생,1-1픽스,보험,언데드 추가,나엘 조정</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -650,7 +650,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.89)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.90)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1096,6 +1096,7 @@ const StatusDB = {
     id: 'REGEN', code: '004', name: '재생', category: STATUS_CATEGORY.BUFF, priority: 50,
     decayTiming: DECAY_TIMING.NONE,
     onHpDecreased: (engine, owner, actualHpLost, instance) => {
+      if (owner.hp <= 0) return; // 👈 이미 치명타를 입어 HP가 0 이하면 재생 발동 안 함
       engine.heal(owner, 7, '재생');
       engine.statuses.changeStacks(owner, instance, -1, 'DISPEL');
     }
@@ -1143,6 +1144,37 @@ const StatusDB = {
     modifyIncomingDamage: (packet) => {
       if (packet.amount > 0) { packet.amount = Math.max(0, packet.amount - 22); packet.logs.push('안개얼음성채(-22)'); }
     }
+  },
+  INSURANCE: {
+    id: 'INSURANCE', code: '007', name: '보험', category: STATUS_CATEGORY.BUFF, priority: 95,
+    decayTiming: DECAY_TIMING.NONE,
+    onHpDecreased: (engine, owner, actualHpLost, instance) => {
+      if (owner.hp <= 0) {
+        const reviveHp = Math.max(10, Math.floor(owner.maxHp * 0.35));
+        owner.hp = reviveHp;
+        engine.emitFx(owner, 'fx-green');
+        engine.emitFloatingText(owner, `💫보험 발동! (${reviveHp})`, 'fct-green');
+        engine.emitLog(`📜 [보험 발동] 치명적인 피해를 견디고 HP ${reviveHp}(으)로 기사회생했습니다!`, 'log-sys');
+        engine.statuses.changeStacks(owner, instance, -1, 'DISPEL');
+      }
+    }
+  },
+  UNDEAD: {
+    id: 'UNDEAD', code: '008', name: '언데드', category: STATUS_CATEGORY.BUFF, priority: 94,
+    decayTiming: DECAY_TIMING.NONE,
+    onHpDecreased: (engine, owner, actualHpLost, instance) => {
+      if (owner.hp <= 0) {
+        owner.hp = 10;
+        engine.emitFx(owner, 'fx-purple');
+        engine.emitFloatingText(owner, '🧟언데드! (10)', 'fct-purple');
+        engine.emitLog(`🧟 [언데드] ${owner.name}이(가) 죽음을 거부하고 HP 10으로 버텼습니다!`, 'log-status');
+        engine.statuses.changeStacks(owner, instance, -1, 'CONSUME'); // 자체 소모는 onRemoved 미발동
+      }
+    },
+    onRemoved: (engine, owner) => {
+      engine.emitLog(`✨ [언데드 강제 해제] 성불의 여파로 ${owner.name}의 HP가 40 회복됩니다!`, 'log-sys');
+      engine.heal(owner, 40, '언데드 해제');
+    }
   }
 };
 
@@ -1162,7 +1194,9 @@ const StatusMeta = {
   SULLIVAN: { icon: '⚡', desc: '체력이 하락할 때 스택 1 감소. 해제될 때 적에게 뇌진탕 1을 부여합니다.' },
   CTX_FIGHTING_SPIRIT: { icon: '🔥', desc: '이번 턴 동안 자신이 사용하는 1코스트 공격 카드의 타수가 +1 증가합니다.' },
   CTX_BLESSING_IN_DISGUISE: { icon: '🃏', desc: '자신의 다음 턴이 끝날 때까지 상태이상 피해를 입을 때마다 카드를 1장 뽑습니다.' },
-  CTX_MIST_FORTRESS: { icon: '❄️', desc: '자신의 다음 턴이 끝날 때까지 입는 모든 피해가 22 감소합니다.' }
+  CTX_MIST_FORTRESS: { icon: '❄️', desc: '자신의 다음 턴이 끝날 때까지 입는 모든 피해가 22 감소합니다.' },
+  INSURANCE: { icon: '🏷️', desc: '체력이 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 최대 HP의 35%(최소 10)를 회복합니다.' },
+  UNDEAD: { icon: '🧟', desc: 'HP가 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 HP를 10까지 회복합니다. 자연 감소 외의 방식으로 해제/제거되면 HP를 40 회복합니다.' }
 };
 
 const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
@@ -1217,7 +1251,10 @@ const CardDB = {
       if (dmg >= 140) return baseCost + 1;
       return baseCost;
     },
-    play: (engine, u, t) => engine.executeAttack(u, t, 1 * u.runTrackers.hitTakenCount)
+    play: (engine, u, t) => {
+      const mult = (AppUI.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_1') ? 8 : 1;
+      engine.executeAttack(u, t, mult * u.runTrackers.hitTakenCount);
+    }
   },
   '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 독검 3 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 3) },
   '015': { id: '015', name: '공평한 카라보스', cost: 2, type: 'MAGIC', hits: 0, desc: '적의 랜덤 버프 1개 해제', play: (engine, u, t) => engine.statuses.dispelRandom(t, STATUS_CATEGORY.BUFF) },
@@ -1352,6 +1389,23 @@ const CardDB = {
         engine.emitLog(`😤 [토끼기사의 고집불통] 덱에 남은 [토끼기사의 지혜]가 없습니다.`, 'log-sys');
       }
     }
+  },
+  '042': {
+    id: '042', name: '생명보험', cost: 3, type: 'MAGIC', hits: 0,
+    desc: '자신에게 보험 1 부여. 이미 보유 중이면 방어도 18 획득',
+    play: (engine, u) => {
+      const existing = engine.statuses.get(u, 'INSURANCE');
+      if (!existing || existing.stacks <= 0) {
+        engine.statuses.apply(u, u, 'INSURANCE', 1);
+      } else {
+        engine.gainArmor(u, 18, '생명보험(중복 보상)');
+      }
+    }
+  },
+  '043': {
+    id: '043', name: 'Z O M', cost: 2, type: 'MAGIC', hits: 0,
+    desc: '자신에게 언데드 2 부여',
+    play: (engine, u) => engine.statuses.apply(u, u, 'UNDEAD', 2)
   }
 };
 
@@ -1444,14 +1498,14 @@ const EnemyDB = {
   NUN_NAEL: {
     id: 'NUN_NAEL', name: '토끼수녀 나엘', maxHp: 119, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
-      // 7턴째 HP가 최대치(온전한 상태)라면 특수 승리 판정
-      if (turn === 7 && self.hp === self.maxHp) {
+      // 6턴째 HP가 최대치(온전한 상태)라면 특수 승리 판정
+      if (turn === 6 && self.hp === self.maxHp) {
         return {
-          name: '슬퍼하지 마세요', type: 'SKILL', intent: '✨ 평화 (HP 10% 회복 및 전투 승리)',
+          name: '슬퍼하지 마세요', type: 'SKILL', intent: '✨ 평화 (HP 20% 회복 및 특별 보상)',
           execute: () => {
-            engine.heal(player, Math.floor(player.maxHp * 0.1), '슬퍼하지 마세요');
-            engine.log(`🏆 나엘이 당신의 자비와 인내에 감사하며 길을 비켜줍니다!`, 'log-sys');
-            // 시스템상 자연스러운 전투 종료 처리를 위해 자해 판정으로 HP를 0으로 만듦
+            self.peaceAchieved = true;
+            engine.heal(player, Math.floor(player.maxHp * 0.2), '슬퍼하지 마세요');
+            engine.log(`🏆 나엘이 당신의 자비와 인내에 감사하며 귀한 보답을 건네고 길을 비켜줍니다!`, 'log-sys');
             engine.dealDamage(new DamagePacket({
               source: self, target: self, amount: self.maxHp, type: DAMAGE_TYPE.HP_LOSS, isStrike: false, reason: '평화로운 이별'
             }));
@@ -1488,7 +1542,6 @@ const EnemyDB = {
       };
     }
   },
-
 WATER_BABA: {
     id: 'WATER_BABA', name: '물토끼 바바', maxHp: 99, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
@@ -1965,6 +2018,7 @@ const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category
       const def = StatusDB[instance.id];
       this.engine.emitLog(`💨 [${mode === 'DISPEL' ? '해제' : '제거'}] ${owner.name}의 [${def.name}] 소멸`, 'log-status');
       if (mode === 'DISPEL' && def.onDispel) def.onDispel(this.engine, owner, instance);
+      if (mode !== 'CONSUME' && def.onRemoved) def.onRemoved(this.engine, owner, instance); // 👈 외부 해제/제거 시 발동
     }
     this.engine.notifyRender();
   }
@@ -2714,7 +2768,15 @@ const RogueManager = {
 
     this.rewardQueue = [];
     if (nodeType === 'NORMAL') {
-      this.rewardQueue.push({ type: 'CARD' });
+      if (enemyId === 'NUN_NAEL' && eng.enemy.peaceAchieved) {
+        this.rewardQueue.push({
+          type: 'CARD',
+          allCards: true,
+          note: '✨ [나엘의 축복] 평화를 지킨 보답으로 전체 카드 중 1장을 선택하십시오!'
+        });
+      } else {
+        this.rewardQueue.push({ type: 'CARD' });
+      }
       if (this.hasRelic('005') && RNG.randInt(1, 100) <= 10) {
         this.rewardQueue.push({ type: 'RELIC', note: '🏺 유물 [마도서] 10% 확률 발동!' });
       }
@@ -3426,7 +3488,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.89: 토끼기사/시종 상향 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.90 재생 픽스, 보험,언데드 추가, 1-1연출픽스, 나엘 히든보상 조정 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -3885,11 +3947,14 @@ const AppUI = {
 
     // 5. 하단: 고정 폭 가로 스크롤 카드 렌더링 (013 복수는 설명란에 누적 피격 계산치 자동 표시)
     const gridEl = document.getElementById('hand-grid');
+    const isStory1_1 = (this.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_1');
     gridEl.innerHTML = p.hand.map((card, idx) => {
       const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
+      const revMult = isStory1_1 ? 8 : 1;
+      const baseDesc = (card.id === '013' && isStory1_1) ? card.desc.replace('1 x', '8 x') : card.desc;
       const dynamicDesc = card.id === '013'
-        ? `${card.desc} <span style="color:var(--fx-yellow);">[현재: ${p.hitTakenCount} 피해]</span>`
-        : card.desc;
+        ? `${baseDesc} <span style="color:var(--fx-yellow);">[현재: ${p.hitTakenCount * revMult} 피해]</span>`
+        : baseDesc;
       return `
         <div class="hand-card ${isSelected ? 'selected' : ''}" style="${isQueueLocked ? 'opacity:0.55;' : ''}" onclick="AppUI.selectCard(${idx})">
           <div class="c-cost">${card.effCost}</div>
