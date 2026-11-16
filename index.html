@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.92 고층 피해량 표기 조정</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.93 설리반 뇌진탕 픽스(1->3), 나엘 인내 픽스(1->2)</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -652,7 +652,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.92)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.93)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1122,7 +1122,7 @@ const StatusDB = {
     onHpDecreased: (engine, owner, actualHpLost, instance) => engine.statuses.changeStacks(owner, instance, -1, 'DISPEL'),
     onDispel: (engine, owner) => {
       const target = engine.getOpponent(owner);
-      if (target) engine.statuses.apply(owner, target, 'CONCUSSION', 1);
+      if (target) engine.statuses.apply(owner, target, 'CONCUSSION', 3);
     }
   },
   CTX_FIGHTING_SPIRIT: {
@@ -1193,7 +1193,7 @@ const StatusMeta = {
   PATIENCE: { icon: '🛡️', desc: '턴 종료 시 스택 1 감소. 입는 물리 피해를 0으로 만들고 누적(최대 400)하며, 해제될 때 누적 수치만큼 상태이상 피해를 입습니다.' },
   REGEN: { icon: '💚', desc: '보유자의 체력이 하락할 때 HP를 7 회복하고 스택이 1 감소합니다.' },
   BABA_YAGA: { icon: '🪞', desc: '턴 시작마다 스택 1 감소. 입는 모든 피해를 누적하며, 해제될 때 누적 수치만큼 적에게 물리 피해를 입힙니다.' },
-  SULLIVAN: { icon: '⚡', desc: '체력이 하락할 때 스택 1 감소. 해제될 때 적에게 뇌진탕 1을 부여합니다.' },
+  SULLIVAN: { icon: '⚡', desc: '체력이 하락할 때 스택 1 감소. 해제될 때 적에게 뇌진탕 3을 부여합니다.' },
   CTX_FIGHTING_SPIRIT: { icon: '🔥', desc: '이번 턴 동안 자신이 사용하는 1코스트 공격 카드의 타수가 +1 증가합니다.' },
   CTX_BLESSING_IN_DISGUISE: { icon: '🃏', desc: '자신의 다음 턴이 끝날 때까지 상태이상 피해를 입을 때마다 카드를 1장 뽑습니다.' },
   CTX_MIST_FORTRESS: { icon: '❄️', desc: '자신의 다음 턴이 끝날 때까지 입는 모든 피해가 22 감소합니다.' },
@@ -1531,7 +1531,7 @@ const EnemyDB = {
         };
       }
       return {
-        name: '싸우지 마세요', type: 'MAGIC', intent: '🛡️ 방어막 초기화 + 🧪 착란 1 + 🛡️ 인내 1 획득',
+        name: '싸우지 마세요', type: 'MAGIC', intent: '🛡️ 방어막 초기화 + 🧪 착란 1 + 🛡️ 인내 2 획득',
         execute: () => {
           if (player.armor > 0) {
             player.armor = 0;
@@ -1539,7 +1539,7 @@ const EnemyDB = {
             engine.log(`💥 [방어막 파괴] 나엘의 기도로 ${player.name}의 방어도가 0이 되었습니다!`, 'log-hit');
           }
           engine.statuses.apply(self, player, 'DELIRIUM', 1);
-          engine.statuses.apply(self, self, 'PATIENCE', 1);
+          engine.statuses.apply(self, self, 'PATIENCE', 2);
         }
       };
     }
@@ -3516,7 +3516,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.92 고층 피해량 증가 표기 조정 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.93 설리반-뇌진탕, 나엘-인내 수치 조정 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
