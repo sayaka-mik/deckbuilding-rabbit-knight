@@ -1439,43 +1439,45 @@ const EnemyDB = {
     }
   },
 
-  WATER_BABA: {
+WATER_BABA: {
     id: 'WATER_BABA', name: '물토끼 바바', maxHp: 99, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
       const cycle = (turn - 1) % 3;
       switch (cycle) {
         case 0:
           return {
-            name: '퀸즈겜빗', type: 'MAGIC', intent: '🎲 50% 확률로 랜덤 버프 / 50% 확률로 랜덤 디버프 부여 (모두에게 2스택)',
+            name: '퀸즈겜빗',
+            type: 'MAGIC',
+            intent: '🎲 50% 확률로 모두에게 랜덤 버프/디버프 2종 2스택 부여 (총 4회)',
             execute: () => {
-              const buffs = Object.keys(StatusDB).filter(k => StatusDB[k].category === STATUS_CATEGORY.BUFF);
-              const debuffs = Object.keys(StatusDB).filter(k => StatusDB[k].category === STATUS_CATEGORY.DEBUFF);
-              let applied = false;
-              
-              if (RNG.randInt(1, 2) === 1) { // 50% 확률로 버프 당첨
-                const b = RNG.pickRandom(buffs);
-                engine.statuses.apply(self, player, b, 2);
-                engine.statuses.apply(self, self, b, 2);
-                applied = true;
+              let hitCount = 0;
+
+              // 대상별로 독립적인 50% 확률 굴리기를 2회씩 수행 (총 4회)
+              [self, player].forEach(target => {
+                for (let i = 0; i < 2; i++) {
+                  if (RNG.randInt(1, 2) === 1) {
+                    const pick = RNG.pickRandom(RANDOM_BUFF_DEBUFF_POOL);
+                    engine.statuses.apply(self, target, pick, 2);
+                    hitCount++;
+                  }
+                }
+              });
+
+              if (hitCount === 0) {
+                engine.log('🎲 [퀸즈겜빗] 4번의 판정이 모두 빗나가 아무 일도 일어나지 않았습니다.', 'log-sys');
               }
-              if (RNG.randInt(1, 2) === 1) { // 독립적인 50% 확률로 디버프 당첨
-                const d = RNG.pickRandom(debuffs);
-                engine.statuses.apply(self, player, d, 2);
-                engine.statuses.apply(self, self, d, 2);
-                applied = true;
-              }
-              if (!applied) engine.log('🎲 주사위가 빗나가 아무 일도 일어나지 않았습니다.', 'log-sys');
             }
           };
         case 1:
           return {
-            name: '허풍쟁이', intent: '⚔️ 물리 5 + ✨ 모두의 버프/디버프 제거 (3종류 이상 제거 시 보너스 폭딜)',
+            name: '허풍쟁이',
+            intent: '⚔️ 물리 5 + ✨ 모두의 버프/디버프 제거 (3종류 이상 제거 시 추가 피해)',
             execute: () => {
               engine.executeAttack(self, player, 5);
               const r1 = engine.statuses.removeAll(self, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
               const r2 = engine.statuses.removeAll(player, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
-              const totalRemovedCount = r1.removedCount + r2.removedCount; // 스택 수가 아닌 '종류(Count)' 합산
-              
+              const totalRemovedCount = r1.removedCount + r2.removedCount; // 스택 합산이 아닌 '종류(Count)' 합산
+
               if (totalRemovedCount >= 3) {
                 engine.log(`✨ [허풍쟁이] 총 ${totalRemovedCount}종류의 효과가 한 번에 제거되어 바바가 기고만장해집니다!`, 'log-status');
                 engine.executeAttack(self, player, 30);
@@ -1487,7 +1489,9 @@ const EnemyDB = {
           };
         case 2:
           return {
-            name: '무아지경', type: 'MAGIC', intent: '⚡ 모두에게 설리반 1~2 랜덤 부여',
+            name: '무아지경',
+            type: 'MAGIC',
+            intent: '⚡ 모두에게 설리반 1~2 랜덤 부여',
             execute: () => {
               engine.statuses.apply(self, player, 'SULLIVAN', RNG.randInt(1, 2));
               engine.statuses.apply(self, self, 'SULLIVAN', RNG.randInt(1, 2));
@@ -1496,7 +1500,6 @@ const EnemyDB = {
       }
     }
   },
-
   SNOW_UME: {
     id: 'SNOW_UME', name: '눈토끼 우메', maxHp: 77, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
