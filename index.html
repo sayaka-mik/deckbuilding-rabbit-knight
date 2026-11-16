@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.93 설리반 뇌진탕 픽스(1->3), 나엘 인내 픽스(1->2)</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.94 일반10엘리트2보스4</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -652,7 +652,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.93)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.94)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -720,7 +720,11 @@ const SpriteMap = {
   '탈영병 산토': 'santo.png',
   '토끼수녀 나엘': 'nael.png',
   '물토끼 바바': 'baba.png',
-  '눈토끼 우메': 'ume.png'
+  '눈토끼 우메': 'ume.png',
+  '토끼닌자 엘': 'ninja_l.png',
+  '토끼거북 샤미': 'shami.png',
+  '토끼무희': 'dancer.png',
+  '무당왕 쟌느': 'jeanne.png'
 };
 
 // 유물 6종 정의
@@ -1411,7 +1415,7 @@ const CardDB = {
   }
 };
 
-// 적 8종 DB (일반 4, 엘리트 2, 보스 2)
+// 적 16종 DB (일반 10, 엘리트 2, 보스 4)
 const EnemyDB = {
   COAL_MOLE: {
     id: 'COAL_MOLE', name: '굴토끼', maxHp: 85, isBoss: false, isElite: false,
@@ -1860,6 +1864,138 @@ WATER_BABA: {
               engine.statuses.apply(self, player, 'CURSE', 3);
               engine.gainArmor(self, 20, '토끼굴 매도');
             }
+          };
+      }
+    }
+  },
+  // ==========================================
+  // [신규 추가] 정직한 일반 몬스터 3종 (4턴 주기)
+  // ==========================================
+  NINJA_L: {
+    id: 'NINJA_L', name: '토끼닌자 엘', maxHp: 60, isBoss: false, isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 4;
+      switch (cycle) {
+        case 0:
+          return { name: '수리검 던지기', intent: '⚔️ 물리 4 × 2타', execute: () => engine.executeAttack(self, player, 4, null, 2) };
+        case 1:
+          return {
+            name: '연막탄', type: 'MAGIC', intent: '🛡️ 방어 8 + 🌑 실명 1',
+            execute: () => { engine.gainArmor(self, 8, '연막탄'); engine.statuses.apply(self, player, 'BLIND', 1); }
+          };
+        case 2:
+          return {
+            name: '급소 찌르기', intent: '⚔️ 물리 12 + 🩸 출혈 1',
+            execute: () => { engine.executeAttack(self, player, 12); engine.statuses.apply(self, player, 'BLEED', 1); }
+          };
+        case 3:
+          return {
+            name: '숨 고르기', type: 'MAGIC', intent: '🛡️ 방어 5 + 💚 재생 1',
+            execute: () => { engine.gainArmor(self, 5, '숨 고르기'); engine.statuses.apply(self, self, 'REGEN', 1); }
+          };
+      }
+    }
+  },
+  TURTLE_SHAMI: {
+    id: 'TURTLE_SHAMI', name: '토끼거북 샤미', maxHp: 120, isBoss: false, isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 4;
+      switch (cycle) {
+        case 0:
+          return { name: '단단한 등껍질', type: 'MAGIC', intent: '🛡️ 방어 20', execute: () => engine.gainArmor(self, 20, '단단한 등껍질') };
+        case 1:
+          return {
+            name: '웅크리기', type: 'MAGIC', intent: '🛡️ 방어 15 + 🛡️ 인내 1',
+            execute: () => { engine.gainArmor(self, 15, '웅크리기'); engine.statuses.apply(self, self, 'PATIENCE', 1); }
+          };
+        case 2:
+          return { name: '짓누르기', intent: '💥 강타: 물리 24', execute: () => engine.executeAttack(self, player, 24) };
+        case 3:
+          return {
+            name: '느릿한 반격', intent: '⚔️ 물리 8 + 🌵 도깨비바늘 1',
+            execute: () => { engine.executeAttack(self, player, 8); engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1); }
+          };
+      }
+    }
+  },
+  RABBIT_DANCER: {
+    id: 'RABBIT_DANCER', name: '토끼무희', maxHp: 80, isBoss: false, isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 4;
+      switch (cycle) {
+        case 0:
+          return {
+            name: '우아한 스텝', type: 'MAGIC', intent: '🛡️ 방어 10 + 💚 재생 2',
+            execute: () => { engine.gainArmor(self, 10, '우아한 스텝'); engine.statuses.apply(self, self, 'REGEN', 2); }
+          };
+        case 1:
+          return { name: '부채춤', intent: '⚔️ 물리 7 × 2타', execute: () => engine.executeAttack(self, player, 7, null, 2) };
+        case 2:
+          return {
+            name: '칼춤', intent: '⚔️ 물리 16 + 🩸 출혈 1',
+            execute: () => { engine.executeAttack(self, player, 16); engine.statuses.apply(self, player, 'BLEED', 1); }
+          };
+        case 3:
+          return {
+            name: '매혹의 춤', type: 'MAGIC', intent: '💀 저주 2 + 🧪 착란 1',
+            execute: () => { engine.statuses.apply(self, player, 'CURSE', 2); engine.statuses.apply(self, player, 'DELIRIUM', 1); }
+          };
+      }
+    }
+  },
+
+  // ==========================================
+  // [신규 추가] 정직한 보스 1종 (10턴 주기)
+  // ==========================================
+  BOSS_JEANNE: {
+    id: 'BOSS_JEANNE', name: '무당왕 쟌느', maxHp: 350, isBoss: true, isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 10;
+      switch (cycle) {
+        case 0:
+          return {
+            name: '접신', type: 'MAGIC', intent: '🛡️ 방어 20 + 💚 재생 2',
+            execute: () => { engine.gainArmor(self, 20, '접신'); engine.statuses.apply(self, self, 'REGEN', 2); }
+          };
+        case 1:
+          return {
+            name: '원혼 부르기', type: 'MAGIC', intent: '💀 저주 3 + 🧪 착란 2',
+            execute: () => { engine.statuses.apply(self, player, 'CURSE', 3); engine.statuses.apply(self, player, 'DELIRIUM', 2); }
+          };
+        case 2:
+          return {
+            name: '혼령 타격', intent: '⚔️ 물리 15 + 🩸 출혈 1',
+            execute: () => { engine.executeAttack(self, player, 15); engine.statuses.apply(self, player, 'BLEED', 1); }
+          };
+        case 3:
+          return {
+            name: '살풀이', type: 'MAGIC', intent: '✨ 자신의 디버프 전부 정화 + 🛡️ 방어 30',
+            execute: () => {
+              const { removedCount } = engine.statuses.removeAll(self, [STATUS_CATEGORY.DEBUFF]);
+              engine.emitLog(`✨ [살풀이] 쟌느가 춤을 추며 디버프 ${removedCount}종을 털어냅니다.`, 'log-sys');
+              engine.gainArmor(self, 30, '살풀이');
+            }
+          };
+        case 4:
+          return { name: '작두 타기', intent: '⚔️ 물리 5 × 4타', execute: () => engine.executeAttack(self, player, 5, null, 4) };
+        case 5:
+          return {
+            name: '신내림', type: 'MAGIC', intent: '🛡️ 방어 40 + ⚡ 설리반 2',
+            execute: () => { engine.gainArmor(self, 40, '신내림'); engine.statuses.apply(self, self, 'SULLIVAN', 2); }
+          };
+        case 6:
+          return {
+            name: '억압하는 방울', intent: '⚔️ 물리 12 + 💢 난투 2',
+            execute: () => { engine.executeAttack(self, player, 12); engine.statuses.apply(self, player, 'BRAWL', 2); }
+          };
+        case 7:
+          return { name: '대굿 준비', type: 'MAGIC', intent: '🛡️ 방어 50 (강력한 공격을 준비합니다)', execute: () => engine.gainArmor(self, 50, '대굿 준비') };
+        case 8:
+          return { name: '강림: 천벌', intent: '💥 강타: 물리 66', execute: () => engine.executeAttack(self, player, 66) };
+        case 9:
+          return {
+            name: '탈진', type: 'MAGIC', intent: '💤 행동 없음 (기력을 소진해 쉬고 있습니다)',
+            execute: () => { engine.log('쟌느가 거친 숨을 몰아쉬며 아무런 행동도 하지 못합니다.', 'log-sys'); }
           };
       }
     }
@@ -3516,7 +3652,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.93 설리반-뇌진탕, 나엘-인내 수치 조정 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.94 몬스터4종 추가 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
