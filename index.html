@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.88 주리 밸패, 실명 픽스</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.89 토끼기사/시종 상향</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -650,7 +650,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.88)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.89)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -872,6 +872,22 @@ const RelicDB = {
             allCards: true,
             note: '✨ 유물 [별빛 망토] 발동! 전체 카드 중 1장을 선택하십시오.'
           });
+        }
+      }
+    }
+  },
+  '016': {
+    id: '016', name: '로시난테', priority: 20,
+    desc: '매 전투 첫 턴 시작 시 덱에 남은 토끼기사의 지혜를 전부 추가로 뽑음',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        const wisdoms = owner.deck.filter(c => c.id === '008');
+        if (wisdoms.length > 0) {
+          wisdoms.forEach(c => {
+            owner.deck.splice(owner.deck.indexOf(c), 1);
+            owner.hand.push(c);
+          });
+          engine.emitLog(`🐎 [유물: 로시난테] 첫 턴 돌격! 덱에서 [토끼기사의 지혜] ${wisdoms.length}장을 추가로 뽑았습니다!`, 'log-passive');
         }
       }
     }
@@ -1179,9 +1195,14 @@ const CardDB = {
   '006': { id: '006', name: '보존계약', cost: 2, type: 'MAGIC', hits: 0, desc: '적에게 계약 2 부여', play: (engine, u, t) => engine.statuses.apply(u, t, 'CONTRACT', 2) },
   '007': { id: '007', name: '반격', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 도깨비바늘 1 부여', play: (engine, u) => engine.statuses.apply(u, u, 'GOBLIN_NEEDLE', 1) },
   '008': {
-    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'ATTACK', hits: 0, desc: '타수 0, 사용되어 무덤에 갈 때 적에게 물리 데미지 37',
-    play: (engine, u, t, isReplay) => { if (isReplay && EngineConfig.TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY) CardDB['008'].onEnterGraveyardFromPlay(engine, u, t); },
-    onEnterGraveyardFromPlay: (engine, u, t) => engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 37, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '토끼기사의 지혜(묘지행)' }))
+    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'ATTACK', hits: 0,
+    desc: '타수 0, 사용되어 무덤에 갈 때 적에게 물리 데미지 40',
+    play: (engine, u, t, isReplay) => {
+      if (isReplay && EngineConfig.TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY) CardDB['008'].onEnterGraveyardFromPlay(engine, u, t);
+    },
+    onEnterGraveyardFromPlay: (engine, u, t) => engine.dealDamage(new DamagePacket({
+      source: u, target: t, amount: 40, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '토끼기사의 지혜(묘지행)'
+    }))
   },
   '009': { id: '009', name: '숭고', cost: 1, type: 'MAGIC', hits: 0, desc: '자신의 랜덤 디버프 1개 제거', play: (engine, u) => engine.statuses.removeRandom(u, STATUS_CATEGORY.DEBUFF) },
   '010': { id: '010', name: '얼음방패', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 방어도 18 부여', play: (engine, u) => engine.gainArmor(u, 18, '얼음방패') },
@@ -1238,12 +1259,21 @@ const CardDB = {
   '026': { id: '026', name: '실명', cost: 2, type: 'MAGIC', hits: 0, desc: '모두에게 실명 2 부여', play: (engine, u, t) => { engine.statuses.apply(u, u, 'BLIND', 2); engine.statuses.apply(u, t, 'BLIND', 2); } },
   '027': { id: '027', name: '전화위복', cost: 1, type: 'MAGIC', hits: 0, desc: '다음 내 턴 종료까지 상태이상 피해 입을 때마다 그 다음 턴 1드로우 추가', play: (engine, u) => engine.statuses.setOrMaxContext(u, 'CTX_BLESSING_IN_DISGUISE', 2) },
   '028': {
-    id: '028', name: '토끼시종의 부름', cost: 1, type: 'ATTACK', hits: 1, desc: '물리 7, 묘지의 토끼기사의 지혜를 모두 손으로 가져오고 이번 턴 코스트 1',
+    id: '028', name: '토끼시종의 부름', cost: 1, type: 'ATTACK', hits: 1,
+    desc: '물리 7, 묘지의 토끼기사의 지혜를 모두 손으로 가져오고 이번 턴 코스트 -1 (없을 시 1드로우)',
     play: (engine, u, t) => {
       engine.executeAttack(u, t, 7);
-      u.graveyard.filter(c => c.id === '008').forEach(c => {
-        u.graveyard.splice(u.graveyard.indexOf(c), 1); c.turnCostOverride = 1; u.hand.push(c);
-      });
+      const wisdoms = u.graveyard.filter(c => c.id === '008');
+      if (wisdoms.length > 0) {
+        wisdoms.forEach(c => {
+          u.graveyard.splice(u.graveyard.indexOf(c), 1);
+          c.turnCostMod = (c.turnCostMod || 0) - 1;
+          u.hand.push(c);
+        });
+        engine.emitLog(`📯 [토끼시종의 부름] 묘지에서 [토끼기사의 지혜] ${wisdoms.length}장을 회수했습니다! (이번 턴 코스트 -1)`, 'log-sys');
+      } else {
+        engine.drawCards(u, 1);
+      }
     }
   },
   '029': { id: '029', name: '눈사태', cost: 2, type: 'MAGIC', hits: 0, desc: '자신에게 바바야가 2 부여', play: (engine, u) => engine.statuses.apply(u, u, 'BABA_YAGA', 2) },
@@ -1305,6 +1335,22 @@ const CardDB = {
       const r2 = engine.statuses.removeAll(t, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
       const cnt = EngineConfig.COUNT_REMOVED_BY_STACKS ? (r1.removedStacks + r2.removedStacks) : (r1.removedCount + r2.removedCount);
       if (cnt >= 7) engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 77, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '희망의 기사(추가 피해)' }));
+    }
+  },
+  '041': {
+    id: '041', name: '토끼기사의 고집불통', cost: 0, type: 'MAGIC', hits: 0,
+    desc: '덱에 존재하는 토끼기사의 지혜를 모두 묘지로 보낸다',
+    play: (engine, u) => {
+      const wisdoms = u.deck.filter(c => c.id === '008');
+      if (wisdoms.length > 0) {
+        wisdoms.forEach(c => {
+          u.deck.splice(u.deck.indexOf(c), 1);
+          engine.moveCardToGraveyard(u, c, false);
+        });
+        engine.emitLog(`😤 [토끼기사의 고집불통] 덱의 [토끼기사의 지혜] ${wisdoms.length}장을 묘지로 보냈습니다.`, 'log-sys');
+      } else {
+        engine.emitLog(`😤 [토끼기사의 고집불통] 덱에 남은 [토끼기사의 지혜]가 없습니다.`, 'log-sys');
+      }
     }
   }
 };
@@ -1977,13 +2023,21 @@ class CombatEngine {
   notifyRender() { if (this.onRenderCallback) this.onRenderCallback(); }
   getOpponent(entity) { return entity === this.player ? this.enemy : this.player; }
 
+  // 1) createCardInstance 수정
   createCardInstance(cardId, freeCost = false) {
     const def = CardDB[cardId];
-    return { uid: `card_${this.uidCounter++}`, ...def, turnCostOverride: freeCost ? 0 : null };
+    return {
+      uid: `card_${this.uidCounter++}`,
+      ...def,
+      turnCostOverride: freeCost ? 0 : null,
+      turnCostMod: 0 // 👈 상대적 코스트 증감치 추가
+    };
   }
 
+  // 2) getEffectiveCost 수정
   getEffectiveCost(user, card) {
     let cost = card.turnCostOverride !== null ? card.turnCostOverride : card.cost;
+    cost += (card.turnCostMod || 0); // 👈 -1 등 증감치 반영
     if (card.modifySelfCost) cost = card.modifySelfCost(cost, this, user);
     return Math.max(0, cost);
   }
@@ -2207,7 +2261,10 @@ class CombatEngine {
     this.notifyRender();
   }
 
+  // 3) moveCardToGraveyard 수정
   moveCardToGraveyard(user, card, fromPlay = false) {
+    card.turnCostOverride = null; // 👈 묘지로 돌아갈 때 턴 임시 코스트 초기화
+    card.turnCostMod = 0;
     user.graveyard.push(card);
     if (card.id !== '024') user.combatTrackers.lastGraveyardCard = card;
     if (fromPlay && card.onEnterGraveyardFromPlay) {
@@ -2646,11 +2703,6 @@ const RogueManager = {
 
     if (!victory) {
       this.state.active = false;
-      this.state.relics.forEach(rid => {
-      if (RelicDB[rid]?.onCombatVictory) {
-        RelicDB[rid].onCombatVictory(this, this.rewardQueue);
-      }
-    });
       this.syncToSaveLedger();
       AppUI.mode = 'ROGUE_HUB';
       AppUI.go('screen-choice');
@@ -2677,6 +2729,13 @@ const RogueManager = {
       this.rewardQueue.push({ type: 'RELIC' });
       this.rewardQueue.push({ type: 'TRAIT' });
     }
+
+    // 👇 [수정] 승리 시에만 보유 유물의 승리 효과(별빛 망토 등) 실행
+    this.state.relics.forEach(rid => {
+      if (RelicDB[rid]?.onCombatVictory) {
+        RelicDB[rid].onCombatVictory(this, this.rewardQueue);
+      }
+    });
 
     this.syncToSaveLedger();
     AppUI.mode = 'ROGUE_HUB';
@@ -3367,7 +3426,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.88: 주리 밸런스 조정, 실명 픽스, 맥락->의념 용어 통일 | 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.89: 토끼기사/시종 상향 | 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
