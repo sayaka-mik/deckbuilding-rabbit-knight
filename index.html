@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.98</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.99</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -672,6 +672,7 @@ const RNG = {
 const SaveLedger = {
   data: {
     'stage_1_1.clear': false,
+    'stage_1_2.clear': false, // 👈 추가
     'flag.chose_revenge': false,
     'unlocked.cards': '020,013,011', // 스토리-로그라이크 연동 미확정
     'roguelike.active': false,
@@ -690,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.97)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.99)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1035,6 +1036,11 @@ const PatchNotesDB = [
   {
 	version: 'v0.98',
 	title: '시작보상 시각 피드백 추가, 에셋 프리로딩',
+	desc: ''
+  },
+  {
+	version: 'v0.99',
+	title: '스토리 1-2 겁 많은 아이 추가',
 	desc: ''
   }
 ];
@@ -1876,11 +1882,14 @@ const CardDB = {
   '040': {
     id: '040', name: '희망의 기사', cost: 1, type: 'ATTACK', hits: 1, desc: '타수 1, 물리 6, 모두의 버프/디버프 제거. 7개 이상 제거 시 추가 물리 77',
     play: (engine, u, t) => {
-      engine.executeAttack(u, t, 6);
+      const isStory1_2 = (AppUI.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_2');
+      engine.executeAttack(u, t, isStory1_2 ? 0 : 6);
       const r1 = engine.statuses.removeAll(u, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
       const r2 = engine.statuses.removeAll(t, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
       const cnt = EngineConfig.COUNT_REMOVED_BY_STACKS ? (r1.removedStacks + r2.removedStacks) : (r1.removedCount + r2.removedCount);
-      if (cnt >= 7) engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 77, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '희망의 기사(추가 피해)' }));
+      if (cnt >= 7 && !isStory1_2) {
+        engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 77, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '희망의 기사(추가 피해)' }));
+      }
     }
   },
   '041': {
@@ -3741,6 +3750,14 @@ function executeZenaCombo(engine) {
   engine.emitLog(`⚡ 석궁병 제나의 턴이 종료되었습니다.`, 'log-sys');
 }
 
+function executeGrabbitCombo(engine) {
+  engine.emitLog(`겁에 질린 굴토끼가 눈을 질끈 감고 무작정 흙먼지와 돌멩이를 집어던집니다!`, 'log-story');
+  engine.statuses.apply(engine.enemy, engine.player, 'CURSE', 3);
+  engine.statuses.apply(engine.enemy, engine.player, 'BLEED', 3);
+  engine.statuses.apply(engine.enemy, engine.player, 'DELIRIUM', 3);
+  engine.emitLog(`⚡ 굴토끼의 턴이 종료되었습니다.`, 'log-sys');
+}
+
 const StoryDB = [
   {
     id: 'stage_1_1',
@@ -3778,6 +3795,43 @@ const StoryDB = [
       },
       { type: 'TEXT', speaker: '나레이션', text: '당신의 일격에 석궁병 제나가 쓰러졌다. 당신은 아이들에게 토끼풀을 나누어주며 울타리를 완전히 허문다.' },
       { type: 'SET_SAVE', key: 'stage_1_1.clear', value: true }
+    ]
+  },
+  {
+    id: 'stage_1_2',
+    title: '1-2. 겁 많은 아이',
+    saveClearKey: 'stage_1_2.clear',
+    script: [
+      { type: 'TEXT', speaker: '나레이션', text: '울타리가 이미 무너져 내렸음에도 불구하고, 어두운 갱도 구석에서 덜덜 떨며 선뜻 밖으로 나오지 못하는 어린 굴토끼가 있었다.' },
+      { type: 'TEXT', speaker: '석궁병 제나', text: '거기 멍하니 서 있는 녀석! 살고 싶으면 당장 저 노망난 년을 막아라! 나한텐 아직 화살 한 발이 남아있다고!' },
+      { type: 'TEXT', speaker: '굴토끼', text: '히익...! 죄, 죄송해요 기사님... 시키는 대로 안 하면 저, 정말 죽을지도 몰라요...!' },
+      { type: 'SETUP_STAGE', player: { name: '토끼기사', hp: 100, maxHp: 100 }, enemy: { name: '굴토끼', hp: 85, maxHp: 85 } },
+
+      // --- 1차 공방 ---
+      { type: 'SCRIPTED_ACTION', execute: executeGrabbitCombo },
+      { type: 'TEXT', speaker: '토끼기사', text: '두려움에 눈이 멀어 스스로를 갉아먹고 있구나. 걱정 마라, 내 검날은 떨고 있는 아이를 향하지 않으니!' },
+      { type: 'GIVE_CARD', cardId: '040', freeCost: true, prompt: '손패의 [희망의 기사]를 실행해 상처 없이 모든 디버프를 걷어내십시오. (1/3)' },
+
+      // --- 2차 공방 ---
+      { type: 'TEXT', speaker: '굴토끼', text: '어, 어라...? 왜 안 때리시는 거예요?! 오, 오지 마세요! 저 진짜로 나쁜 짓을 더 할 거란 말이에요!' },
+      { type: 'SCRIPTED_ACTION', execute: executeGrabbitCombo },
+      { type: 'TEXT', speaker: '토끼기사', text: '네가 던지는 진흙과 악담 따위에는 내 털끝조차 더럽혀지지 않는다!' },
+      { type: 'GIVE_CARD', cardId: '040', freeCost: true, prompt: '손패의 [희망의 기사]를 실행해 다시 모든 디버프를 정화하십시오. (2/3)' },
+
+      // --- 3차 공방 ---
+      { type: 'TEXT', speaker: '굴토끼', text: '훌쩍... 제나 언니가 뒤에서 노려보고 있단 말이에요... 제발 그냥 쓰러져 주세요...!' },
+      { type: 'SCRIPTED_ACTION', execute: executeGrabbitCombo },
+      { type: 'TEXT', speaker: '토끼기사', text: '울지 마라! 그 어떤 족쇄도 내가 전부 끊어주마!' },
+      { type: 'GIVE_CARD', cardId: '040', freeCost: true, prompt: '손패의 [희망의 기사]를 실행해 마지막으로 디버프를 털어내십시오. (3/3)' },
+
+      // --- 전투 포기 및 엔딩 개그 ---
+      { type: 'SCRIPTED_LOGS', logs: ['🏳️ 굴토끼가 지쳐 주저앉으며 전의를 완전히 상실했습니다!'] },
+      { type: 'TEXT', speaker: '굴토끼', text: '하아... 하아... 도저히 안 통하네요. 저 포기할래요... 이제 어떡하실 건가요? 정말로 저를 안 해치실 건가요...? 앞으로 우린 어떻게 되는 거죠?' },
+      { type: 'TEXT', speaker: '나레이션', text: '굴토끼가 기대 반, 의심 반의 눈초리로 조심스럽게 올려다보던 바로 그때였다. 갱도 저편에서 엄청난 굉음이 울려 퍼졌다!' },
+      { type: 'TEXT', speaker: '토끼기사', text: '음?! 저쪽에서 악당들의 사악한 기척이 느껴지는군! 나는 결코 용서치 않는다!' },
+      { type: 'TEXT', speaker: '나레이션', text: '토끼기사는 굴토끼의 질문은 듣지도 않은 채, 흙먼지를 일으키며 소리 나는 곳으로 쏜살같이 달려가 버렸다.' },
+      { type: 'TEXT', speaker: '굴토끼', text: '...네? 아니, 저기요?! 사람 말을 끝까지 들어야죠! 방금까지 멋있는 척은 혼자 다 해놓고 그냥 가버리면 어떡해요?!' },
+      { type: 'SET_SAVE', key: 'stage_1_2.clear', value: true }
     ]
   }
 ];
@@ -4363,7 +4417,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.97 패치노트 도입 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.99 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -4823,10 +4877,12 @@ const AppUI = {
     // 5. 하단: 고정 폭 가로 스크롤 카드 렌더링 (013 복수는 설명란에 누적 피격 계산치 자동 표시)
     const gridEl = document.getElementById('hand-grid');
     const isStory1_1 = (this.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_1');
+    const isStory1_2 = (this.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_2');
     gridEl.innerHTML = p.hand.map((card, idx) => {
       const isSelected = !isQueueLocked && this.selectedCardIdx === idx;
       const revMult = isStory1_1 ? 8 : 1;
-      const baseDesc = (card.id === '013' && isStory1_1) ? card.desc.replace('1 x', '8 x') : card.desc;
+      let baseDesc = (card.id === '013' && isStory1_1) ? card.desc.replace('1 x', '8 x') : card.desc;
+      if (card.id === '040' && isStory1_2) baseDesc = '타수 1, 물리 0, 모두의 버프/디버프 제거. (스토리 전용: 겁먹은 아이를 해치지 않습니다)';
       const dynamicDesc = card.id === '013'
         ? `${baseDesc} <span style="color:var(--fx-yellow);">[현재: ${p.hitTakenCount * revMult} 피해]</span>`
         : baseDesc;
