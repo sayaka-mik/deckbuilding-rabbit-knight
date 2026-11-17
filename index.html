@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.00</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v1.01</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -691,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.00)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.01)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1047,8 +1047,12 @@ const PatchNotesDB = [
 	version: 'v1.00',
 	title: '엘리트 2종 추가: 좀비토끼 나나, 어뢰 바바, 엘리트 밸런스 패치:시즌 제나 기믹 수정(유비무환 상한선 4회 적용), 카드 밸런스 상향 패치: 착란(코스트 하향, 방어도 획득), 환영모자(재생 획득), 토끼굴의 기억(인내 부여 상향), 공평한 카라보스(코스트 하향, 버프 약탈), 토끼의 투지(타수 중첩 가능), 무지몽매(코스트 하향, 조건 완화), 토끼남작의 이빨(타수 적용), 산토끼습격(타수 적용), 실명(재생, 드로우 획득), 전화위복(조건 완화, 방어도 획득), 참을성 없는 설리반(조건 완화, 기믹 완화), 눈사태(방어도 획득), 체온교환(기믹 수정), 토끼제독의 모자(타수 적용), 버니합(조건 완화), 살랑거리는 토끼귀(기믹 변경), 토끼마녀의 금고(패널티 완화), 토끼기사의 고집불통(조건 완화), 얼어붙은 바다여(수치 조정), 안개얼음성채(방어도 획득, 피해감면 상향), 굴절(착란 추가), 생명보험(방어도 상향)',
 	desc: ''
+  },
+  {
+	version: 'v1.01',
+	'title': '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
+	'desc': ''
   }
-
 ];
 
 /**
@@ -1095,7 +1099,8 @@ const SpriteMap = {
   '토끼무희': 'dancer.png',
   '무당왕 쟌느': 'jeanne.png',
   '좀비토끼 나나': 'nana.png',
-  '어뢰 바바': 'baba.png'
+  '어뢰 바바': 'baba.png',
+  '대천사토끼 나엘': 'nael.png'
 };
 
 // 유물 25종 정의
@@ -1327,6 +1332,16 @@ const RelicDB = {
     id: '025', name: '앙상한 눈사람 과자', priority: 20,
     desc: '자신이 바바야가를 얻을 때마다 1스택을 추가로 얻습니다.',
     modifyStatusReceivedStacks: (stacks, caster, target, statusId) => statusId === 'BABA_YAGA' ? stacks + 1 : stacks
+  },
+  '026': {
+    id: '026', name: '영양제', priority: 20,
+    desc: '[토끼의 투지]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '002' ? 0 : cost
+  },
+    '027': {
+    id: '027', name: '뱀술', priority: 20,
+    desc: '[독사검]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '014' ? 0 : cost
   }
 };
 
@@ -1649,6 +1664,11 @@ const StatusDB = {
     id: 'CTX_SEEKER', code: '004', name: '의념:구도자', category: STATUS_CATEGORY.CONTEXT, priority: 10,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
     preventDebuff: true
+  },
+  CTX_ASCENDANT: {
+    id: 'CTX_ASCENDANT', code: '005', name: '의념:승천자', category: STATUS_CATEGORY.CONTEXT, priority: 10,
+    decayTiming: DECAY_TIMING.NONE,
+    preventDebuffIds: ['BRAWL', 'BLIND', 'CONCUSSION']
   }
 };
 
@@ -1670,7 +1690,8 @@ const EnemyMeta = {
   BOSS_SANTO: { type: '👑 보스', desc: '배반자의 산개(방어 28 + 도깨비바늘 2), 산구르기(물리 14 + 방어 44), 분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치), 토끼굴 매도(출혈 2 + 저주 3 + 방어 20)를 사용하는 증오에 찬 탈영병 산토입니다.' },
   BOSS_SIHYANG: { type: '👑 보스', desc: '[환영모자 트릭(방어 22 + 착란 1 + 저주 2)], [살랑거리는 귓속말(물리 16 + 상태이상 n)], [마녀의 티타임(방어 33 + 재생 2)], [광란의 버니합(물리 22 + 착란수치x4)]을 선보이는 토끼마녀 시향입니다.' },
   ELITE_ZOMBIE_NANA: { type: '🔥 엘리트', desc: '망자의 서약(언데드 2 + 저주 2), 부패한 이빨(물리 15 + 출혈 1), 시체 껍질(방어 22 + 재생 2), 원혼의 비명(물리 9x2 + 착란 1), 불사의 집념(언데드 1 + 물리 14), 묘지기의 난도질(물리 7x3), 사후경직(방어 16)을 지르는 좀비토끼 나나입니다.' },
-  ELITE_TORPEDO_BABA: { type: '🔥 엘리트', desc: '심해의 룰렛(모두에게 랜덤 버프/디버프 2종 부여), 어뢰 돌진(물리 24 + 방어 14), 해적식 약탈(플레이어 버프 2종 강탈 or 방어 24), 어뢰 연사(물리 6x3), 어뢰 장갑 전개(도깨비바늘 2 + 방어 18), 오물 투척(물리 12 + 디버프 전가), 잠수 재장전(방어 26 + 재생 2)에 미친 어뢰 바바입니다.' }
+  ELITE_TORPEDO_BABA: { type: '🔥 엘리트', desc: '심해의 룰렛(모두에게 랜덤 버프/디버프 2종 부여), 어뢰 돌진(물리 24 + 방어 14), 해적식 약탈(플레이어 버프 2종 강탈 or 방어 24), 어뢰 연사(물리 6x3), 어뢰 장갑 전개(도깨비바늘 2 + 방어 18), 오물 투척(물리 12 + 디버프 전가), 잠수 재장전(방어 26 + 재생 2)에 미친 어뢰 바바입니다.' },
+  BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 자비로운 천벌(재생 10 + 물리 9×10), 순백의 성역(플레이어 방어 100 + 출혈 6), 완전한 구원(플레이어 40% 회복 + 불완전 시 자신 80 회복), 시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)을 내리는 대천사토끼 나엘입니다.' }
 };
 
 const StatusMeta = {
@@ -1692,7 +1713,8 @@ const StatusMeta = {
   CTX_MIST_FORTRESS: { icon: '❄️', desc: '자신의 다음 턴이 끝날 때까지 입는 모든 피해가 25 감소합니다.' },
   INSURANCE: { icon: '🏷️', desc: '체력이 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 최대 HP의 35%(최소 10)를 회복합니다.' },
   UNDEAD: { icon: '🧟', desc: 'HP가 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 HP를 10까지 회복합니다. 자연 감소 외의 방식으로 해제/제거되면 HP를 40 회복합니다.' },
-  CTX_SEEKER: { icon: '✨', desc: '유지되는 동안 모든 디버프를 부여받지 않습니다.' }
+  CTX_SEEKER: { icon: '✨', desc: '유지되는 동안 모든 디버프를 부여받지 않습니다.' },
+  CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' }
 };
 
 const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
@@ -2173,7 +2195,7 @@ const EnemyDB = {
       // 6턴째 HP가 최대치(온전한 상태)라면 특수 승리 판정
       if (turn === 6 && self.hp === self.maxHp) {
         return {
-          name: '슬퍼하지 마세요', type: 'SKILL', intent: '✨ 평화 (HP 20% 회복 및 특별 보상)',
+          name: '슬퍼하지 마세요', type: 'SKILL', ignoreBlockers: true, intent: '✨ 평화 (HP 20% 회복 및 특별 보상)',
           execute: () => {
             self.peaceAchieved = true;
             engine.heal(player, Math.floor(player.maxHp * 0.2), '슬퍼하지 마세요');
@@ -2874,6 +2896,88 @@ WATER_BABA: {
         }
       }
     }
+  },
+  // 5번째 보스 대천사 나엘
+  BOSS_ARCHANGEL_NAEL: {
+    id: 'BOSS_ARCHANGEL_NAEL',
+    name: '대천사토끼 나엘',
+    maxHp: 400,
+    isBoss: true,
+    isElite: false,
+    getAction(turn, engine, self, player) {
+      const cycle = (turn - 1) % 4;
+      switch (cycle) {
+        case 0:
+          return {
+            name: '검정 빗물 비옥 대지',
+            intent: '💚 플레이어에게 재생 10 부여 + ⚔️ 물리 9 × 10타',
+            execute: () => {
+              engine.statuses.apply(self, player, 'REGEN', 10);
+              engine.executeAttack(self, player, 9, null, 10);
+            }
+          };
+        case 1:
+          return {
+            name: '순례 혈해 순교 시산',
+            type: 'MAGIC',
+            intent: '🛡️ 플레이어에게 방어도 100 부여 + 🩸 출혈 6 부여',
+            execute: () => {
+              engine.gainArmor(player, 100, '순백의 성역');
+              engine.statuses.apply(self, player, 'BLEED', 6);
+            }
+          };
+        case 2: {
+          const healPlayerAmt = Math.floor(player.maxHp * 0.4);
+          return {
+            name: '부정한 사육제',
+            type: 'MAGIC',
+            intent: `💚 플레이어 HP ${healPlayerAmt} 회복 (회복 후 플레이어가 최대 HP가 아니라면 나엘이 HP +80 회복)`,
+            execute: () => {
+              engine.heal(player, healPlayerAmt, '완전한 구원');
+              if (player.hp < player.maxHp) {
+                engine.emitLog(`👁️ [불완전한 그릇] ${player.name}의 상처가 아물지 않아 대천사토끼 나엘이 기력을 흡수합니다!`, 'log-status');
+                engine.heal(self, 80, '완전한 구원');
+              } else {
+                engine.emitLog(`✨ [완전한 그릇] ${player.name}의 육신이 온전하여 나엘이 침묵합니다.`, 'log-sys');
+              }
+            }
+          };
+        }
+        case 3: {
+          const hasTrial = !!self.trialActive;
+          const curCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
+          const judgePreview = hasTrial
+            ? (curCurse >= 1 ? `⚖️ [실망] 물리 66 (현재 저주 ${curCurse}) + ` : `⚖️ [환희] 나엘 저주 15 획득 + `)
+            : '';
+
+          return {
+            name: hasTrial ? '시험의 심판과 갱신' : '시험',
+            type: (hasTrial && curCurse >= 1) ? 'ATTACK' : 'MAGIC',
+            intent: `${judgePreview}📜 플레이어에게 재생 5 · 저주 3 · 계약 5 부여, 시험이 시작됩니다`,
+            execute: () => {
+              if (self.trialActive) {
+                const nowCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
+                if (nowCurse >= 1) {
+                  engine.emitLog(`💔 [실망] 저주(${nowCurse}스택)를 씻어내지 못한 필멸자에게 대천사가 실망합니다!`, 'log-hit');
+                  engine.executeAttack(self, player, 66);
+                } else {
+                  engine.emitLog(`🌟 [환희] 당신의 고결한 모습에 대천사가 기꺼이 저주를 짊어집니다!`, 'log-sys');
+                  engine.statuses.apply(self, self, 'CURSE', 15);
+                }
+              }
+
+              if (!engine.combatEnded) {
+                self.trialActive = true;
+                engine.emitLog(`📜 [시험] 대천사토끼 나엘이 4턴 뒤의 심판을 선고합니다!`, 'log-story');
+                engine.statuses.apply(self, player, 'REGEN', 5);
+                engine.statuses.apply(self, player, 'CURSE', 3);
+                engine.statuses.apply(self, player, 'CONTRACT', 5);
+              }
+            }
+          };
+        }
+      }
+    }
   }
 };
 
@@ -2937,9 +3041,11 @@ class StatusManager {
     const def = StatusDB[statusId];
     if (!def || stacks <= 0) return;
 
-    // 1) 디버프 면역(의념:구도자 등) 체크 (자해 디버프 포함 모두 차단)
+    // 1) 디버프 면역(의념:구도자, 의념:승천자 등) 체크
     if (def.category === STATUS_CATEGORY.DEBUFF) {
-      const blocker = target.getPassives().find(({ def: pDef }) => pDef.preventDebuff);
+      const blocker = target.getPassives().find(({ def: pDef }) =>
+        pDef.preventDebuff || (Array.isArray(pDef.preventDebuffIds) && pDef.preventDebuffIds.includes(statusId))
+      );
       if (blocker) {
         this.engine.emitFloatingText(target, '면역!', 'fct-white');
         this.engine.emitLog(`✨ [${blocker.def.name}] 효과로 ${target.name}이(가) [${def.name}] 디버프를 면역했습니다!`, 'log-sys');
@@ -3102,11 +3208,10 @@ class CombatEngine {
 
     // 1. 원래 예정된 행동 확인
     const primaryAction = enemyDef.getAction(turn, this, enemy, player);
-    const primaryBlocker = findBlocker(primaryAction);
-
-    if (!primaryBlocker) {
+    if (primaryAction.ignoreBlockers) {
       return { action: primaryAction, blocker: null, isFallback: false };
     }
+    const primaryBlocker = findBlocker(primaryAction);
 
     // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 패턴 주기 내 다음 비마법 행동 탐색
     for (let offset = 1; offset <= 12; offset++) {
@@ -3802,6 +3907,10 @@ const RogueManager = {
     eng.enemy = new Entity(eDef.name, scaledHp, false);
     eng.enemy.enemyId = enemyId;
     eng.enemy.tierDamageBonus = tier * 3;
+    eng.enemy.tierDamageBonus = tier * 3;
+    if (enemyId === 'BOSS_ARCHANGEL_NAEL') {
+      eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1);
+    }
 
     eng.onCardPlayedCallback = null;
     // 승리/패배가 결정되어도 쌓여있는 로그를 유저가 끝까지 클릭해 읽은 뒤 화면이 전환됨
@@ -4710,7 +4819,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.00 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.01 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
