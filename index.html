@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v0.96 의념 개체 도감 갱신</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v0.97 패치노트 도입</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -377,8 +377,11 @@
 
   <!-- [1] 게임 시작 화면 -->
   <div id="screen-start" class="screen active">
-    <!-- 상단 우측 BGM 온/오프 바 -->
-    <div style="display: flex; justify-content: flex-end; width: 100%;">
+    <!-- 상단 우측 패치노트 & BGM 온/오프 바 -->
+    <div style="display: flex; justify-content: flex-end; gap: 6px; width: 100%;">
+      <button onclick="AppUI.openPatchNotes()" style="padding: 6px 10px; font-size: 11.5px;">
+        📋 패치노트
+      </button>
       <button id="btn-bgm-toggle" onclick="AppUI.toggleBgm()" style="padding: 6px 10px; font-size: 11.5px;">
         🔇 BGM: OFF
       </button>
@@ -555,7 +558,7 @@
       <button onclick="AppUI.go('screen-start')">뒤로</button>
     </div>
 
-    <!-- 7개 카테고리 전환 탭 -->
+    <!-- 8개 카테고리 전환 탭 -->
     <div class="codex-tabs">
       <button id="tab-codex-CARD" class="codex-tab active" onclick="AppUI.renderCodex('CARD')">카드</button>
       <button id="tab-codex-BUFF" class="codex-tab" onclick="AppUI.renderCodex('BUFF')">버프</button>
@@ -564,10 +567,21 @@
       <button id="tab-codex-TRAIT" class="codex-tab" onclick="AppUI.renderCodex('TRAIT')">특성</button>
       <button id="tab-codex-RELIC" class="codex-tab" onclick="AppUI.renderCodex('RELIC')">유물</button>
       <button id="tab-codex-ENEMY" class="codex-tab" onclick="AppUI.renderCodex('ENEMY')">개체</button>
+      <button id="tab-codex-RULE" class="codex-tab" onclick="AppUI.renderCodex('RULE')">룰북</button>
     </div>
 
     <div id="codex-count-info" style="font-size:11px; color:var(--text-sub);"></div>
     <div id="codex-list" class="scroll-list"></div>
+  </div>
+
+    <!-- [8] 패치노트 화면 -->
+  <div id="screen-patch" class="screen">
+    <div class="screen-header">
+      <strong style="color:var(--fx-yellow);">📋 패치노트</strong>
+      <button onclick="AppUI.go('screen-start')">뒤로</button>
+    </div>
+    <div id="patch-count-info" style="font-size:11px; color:var(--text-sub);"></div>
+    <div id="patch-list" class="scroll-list"></div>
   </div>
 
   <!-- [모달 1] 통합 전술 메뉴 (특성/유물 터치 설명 + 덱/무덤 카드 조회) -->
@@ -655,7 +669,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v0.96)'];
+    const lines = ['# Sir Mad Boomer Save Data (v0.97)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -684,6 +698,320 @@ const SaveLedger = {
     return this.data;
   }
 };
+
+// 패치노트
+const PatchNotesDB = [
+  {
+    version: 'v0.97',
+    title: '유물 및 특성 조정(별빛 망토, 빳빳한 털, 잔머리, 건강 호흡법, 약초 채집가), 특성 추가(탐욕스런 앞니, 적응형 두뇌) 시작 룰 개정(고정 12장에서 고정 9장 +자유 선택 3장으로), 룰북 추가, 패치노트 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.96',
+    title: '도감 갱신(의념, 개체 추가)',
+    desc: ''
+  },
+  {
+    version: 'v0.95',
+    title: '카드 1장, 유물 9종 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.94',
+    title: '적 4종 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.93',
+    title: '밸런스 조정(설리반 뇌진탕 스택 1에서 3, 수녀 나엘 인내 획득 1에서 2)',
+    desc: ''
+  },
+  {
+    version: 'v0.92',
+    title: '기사도 10층 단위 피해량 증가에 관한 표기 개선',
+    desc: ''
+  },
+  {
+    version: 'v0.91',
+    title: '로그 추적 추가(층별 여정 요약, 사망 원인 기록)',
+    desc: ''
+  },
+  {
+    version: 'v0.90',
+    title: '재생 버그성 부활 픽스, 스토리 1-1 복수 연출 픽스, 카드 생명보험, ZOM 추가, 수녀 나엘 보상 조정',
+    desc: ''
+  },
+  {
+    version: 'v0.89',
+    title: '토끼기사의 지혜, 토끼시종의 부름 상향',
+    desc: ''
+  },
+  {
+    version: 'v0.88',
+    title: '두더지파 주리 밸런스 패치, 실명 버그 픽스',
+    desc: ''
+  },
+  {
+    version: 'v0.87',
+    title: '적 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.86',
+    title: '복수 너프, 유물 및 특성 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.85',
+    title: '난이도 상향, 버그 픽스',
+    desc: ''
+  },
+  {
+    version: 'v0.84',
+    title: '비시즌/시즌 석궁병 제나, 두더지파 주리 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.83',
+    title: '전화위복, 뇌진탕 버그 픽스',
+    desc: ''
+  },
+  {
+    version: 'v0.82',
+    title: 'spritemap 추가(이미지 추가)',
+    desc: ''
+  },
+  {
+    version: 'v0.81',
+    title: 'BGM 추가, onclick 버그 픽스',
+    desc: ''
+  },
+  {
+    version: 'v0.80',
+    title: '시각적 피드백 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.79',
+    title: 'Codex 항목 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.78',
+    title: 'UI 대폭 개선',
+    desc: ''
+  },
+  {
+    version: 'v0.77',
+    title: '스토리 로그 도입',
+    desc: ''
+  },
+  {
+    version: 'v0.76',
+    title: 'UI 개선',
+    desc: ''
+  },
+  {
+    version: 'v0.75',
+    title: '로그라이크 UX 업데이트',
+    desc: ''
+  },
+  {
+    version: 'v0.74',
+    title: '모바일 화면으로 UI 변경',
+    desc: ''
+  },
+  {
+    version: 'v0.73',
+    title: '로그라이크 모드 도입',
+    desc: ''
+  },
+  {
+    version: 'v0.69',
+    title: '카드 40종, 유물, 특성 설계',
+    desc: ''
+  },
+  {
+    version: 'v0.68',
+    title: '카드 40종 준비',
+    desc: ''
+  },
+  {
+    version: 'v0.67',
+    title: '시험용 카드 및 게임 진행 검증',
+    desc: ''
+  },
+  {
+    version: 'v0.66',
+    title: '게임명 [Sir Mad Boomer RabbitKnight]로 변경, v0.65 코드 전량 폐기, 데이터지향 카드DB로 변경',
+    desc: ''
+  },
+  {
+    version: 'v0.65',
+    title: '[Do Not Use RabbitKnight] 최종 버전, 보석 및 가시성 연출',
+    desc: ''
+  },
+  {
+    version: 'v0.64',
+    title: '상태창, 보석 위치 수정',
+    desc: ''
+  },
+  {
+    version: 'v0.62',
+    title: 'AP 제한 도입, 보석 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.61',
+    title: '덱 랜덤 셔플 개선',
+    desc: ''
+  },
+  {
+    version: 'v0.60',
+    title: '패배 시 재도전 기능 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.58',
+    title: '핸드 제한 롤백, 적 명칭 조정',
+    desc: ''
+  },
+  {
+    version: 'v0.57',
+    title: '최대 핸드 8, 적 명칭 조정',
+    desc: ''
+  },
+  {
+    version: 'v0.56',
+    title: '초기 덱 세팅 변경',
+    desc: ''
+  },
+  {
+    version: 'v0.55',
+    title: '인터미션, 엔딩 화면 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.54',
+    title: '적 행동 규칙, 엔딩 조건 조정',
+    desc: ''
+  },
+  {
+    version: 'v0.53',
+    title: '롤백, 3층 단위 카드군 저격 보상 추가, 정보 표기 개선',
+    desc: ''
+  },
+  {
+    version: 'v0.51',
+    title: '게임명 [Do Not Use RabbitKnight]로 변경, 실명, 부채계약 표기 개선, 인트로 해설 화면 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.52',
+    title: '덱 목록 상세보기 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.50',
+    title: '토끼기사의 지혜 연출 픽스, 토끼기사에게 경례 버튼 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.49',
+    title: '고요한 밤 연출 수정',
+    desc: ''
+  },
+  {
+    version: 'v0.48',
+    title: 'AP 회복, 고요한 밤, 실명 연출 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.47',
+    title: '드로우 피드백, 추가시전, 가드, 회복 연출 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.46',
+    title: '전투 UI 연출 보완 3',
+    desc: ''
+  },
+  {
+    version: 'v0.43',
+    title: '전투 UI 완전 개편',
+    desc: ''
+  },
+  {
+    version: 'v0.42',
+    title: '토끼기사의 지혜 연출 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.41',
+    title: '게임모드 정돈, 카드목록 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.36',
+    title: '게임모드 분리(3컨셉 기본덱 스타팅 / 완전랜덤 3택1 10종 스타팅)',
+    desc: ''
+  },
+  {
+    version: 'v0.26',
+    title: '게임명 [deck-building beta]에서 [NeverNorma]로 변경',
+    desc: ''
+  },
+  {
+    version: 'v0.21',
+    title: '시작 컨셉 덱 3종(연격, 상태이상, 반격) 선택 기능 추가',
+    desc: ''
+  },
+  {
+    version: 'v0.15',
+    title: '토끼기사의 지혜 사용 연출이 최초로 추가된 버전',
+    desc: ''
+  },
+  {
+    version: 'v0.19',
+    title: '코드가 1천줄을 넘기 전 마지막 버전',
+    desc: ''
+  },
+  {
+    version: 'v0.13',
+    title: '패치내용을 기록하지 않아서 v0.06으로 뜨고 뭘 추가한 건지 알 수 없는 암흑기',
+    desc: ''
+  },
+  {
+    version: 'v0.06',
+    title: '인트로 타이포 속도가 느린 버전',
+    desc: ''
+  },
+  {
+    version: 'v0.03',
+    title: '카드를 누르면 실행할지 안 물어보고 바로 실행되는 버전',
+    desc: ''
+  },
+  {
+    version: 'v0.01',
+    title: '알파 버전 코드 전량 폐기, 절차지향 선택, 카드 10종은 있는데 게임 시작 누르면 실행이 안 되는 버전',
+    desc: ''
+  },
+  {
+    version: '알파 v0.10',
+    title: 'UI 영역이 정돈되지 않고 임시 로그로 진행되지만 로그가 1줄씩 뜨며 임시테스트로 가득하고 카드 실행하다가 멈추는 버전',
+    desc: ''
+  },
+  {
+    version: '알파 v0.05',
+    title: '객체 지향적 상태 관리자들을 만들어놓았고 카드 DB가 존재하지만 임시 로그가 없어 화면 진행만 확인하는 버전',
+    desc: ''
+  },
+  {
+    version: '알파 v0.01',
+    title: '객체 지향적 상태 관리자: 전역, 시작, 인트로, 전투, 종료, 게임마스터 class 할당',
+    desc: ''
+  }
+];
 
 /**
  * ============================================================================
@@ -870,10 +1198,10 @@ const RelicDB = {
   },
   '015': {
     id: '015', name: '별빛 망토', priority: 20,
-    desc: '획득 후 5번째 전투 승리 시마다 40% 확률로 전체 카드 목록 중 택 1 보상',
+    desc: '2번의 전투 승리 시마다 40% 확률로 전체 카드 목록 중 택 1 보상',
     onCombatVictory: (rogueManager, rewardQueue) => {
       rogueManager.state.relic015Wins = (rogueManager.state.relic015Wins || 0) + 1;
-      if (rogueManager.state.relic015Wins >= 5) {
+      if (rogueManager.state.relic015Wins >= 2) {
         rogueManager.state.relic015Wins = 0;
         if (RNG.randInt(1, 100) <= 40) {
           rewardQueue.push({
@@ -966,13 +1294,13 @@ const RelicDB = {
 const TraitDB = {
   '001': {
     id: '001', name: '빳빳한 털', priority: 10,
-    desc: '최대 HP +50, 층을 오를 때마다 HP 7 회복',
+    desc: '최대 HP +50, 층을 오를 때마다 HP 5 회복',
     onAcquire: (runState) => {
       runState.maxHp += 50;
       runState.hp += 50;
     },
     onAdvanceFloor: (runState) => {
-      runState.hp = Math.min(runState.maxHp, runState.hp + 7);
+      runState.hp = Math.min(runState.maxHp, runState.hp + 5);
     }
   },
   '002': {
@@ -1037,36 +1365,67 @@ const TraitDB = {
   },
   '008': {
     id: '008', name: '잔머리', priority: 10,
-    desc: '매 전투 첫 턴 방어도 +6, 적에게 출혈 1 부여',
+    desc: '매 전투 첫 턴 기습 꼼수 발동 (자신: 방어 6, 독검 1, 재생 1 / 적: 출혈 1, 저주 1, 뇌진탕 1)',
     onPlayerTurnStart: (engine, owner, turn) => {
       if (turn === 1) {
-        engine.emitLog(`🧬 [특성: 잔머리] 기습 방어 및 출혈 1 부여!`, 'log-passive');
+        engine.emitLog(`🧬 [특성: 잔머리] 기습 꼼수 발동!`, 'log-passive');
         engine.gainArmor(owner, 6, '잔머리');
+        engine.statuses.apply(owner, owner, 'VIPER_BLADE', 1);
+        engine.statuses.apply(owner, owner, 'REGEN', 1);
         if (engine.enemy && engine.enemy.hp > 0) {
           engine.statuses.apply(owner, engine.enemy, 'BLEED', 1);
+          engine.statuses.apply(owner, engine.enemy, 'CURSE', 1);
+          engine.statuses.apply(owner, engine.enemy, 'CONCUSSION', 1);
         }
       }
     }
   },
   '009': {
     id: '009', name: '건강 호흡법', priority: 10,
-    desc: '매 2턴 시작 시 방어도 +5 획득',
+    desc: '매 2턴 시작 시 방어도 +18 획득',
     onPlayerTurnStart: (engine, owner, turn) => {
       if (turn % 2 === 0) {
-        engine.emitLog(`🧬 [특성: 건강 호흡법] ${turn}턴 방어도 +5`, 'log-passive');
-        engine.gainArmor(owner, 5, '건강 호흡법');
+        engine.emitLog(`🧬 [특성: 건강 호흡법] ${turn}턴 방어도 +18`, 'log-passive');
+        engine.gainArmor(owner, 18, '건강 호흡법');
       }
     }
   },
   '010': {
     id: '010', name: '약초 채집가', priority: 10,
-    desc: '층을 오를 때마다 HP 4 회복, 최대 HP -15',
+    desc: '층을 오를 때마다 HP 10 회복, 최대 HP -40',
     onAcquire: (runState) => {
-      runState.maxHp = Math.max(1, runState.maxHp - 15);
+      runState.maxHp = Math.max(1, runState.maxHp - 40);
       runState.hp = Math.min(runState.hp, runState.maxHp);
     },
     onAdvanceFloor: (runState) => {
-      runState.hp = Math.min(runState.maxHp, runState.hp + 4);
+      runState.hp = Math.min(runState.maxHp, runState.hp + 10);
+    }
+  },
+  '011': {
+    id: '011', name: '탐욕스런 앞니', priority: 10,
+    desc: '매 턴 덱의 모든 카드를 뽑습니다. 최대 활력 -1, 매 턴 활력 회복 -1',
+    modifyMaxEnergy: (maxE) => Math.max(1, maxE - 1),
+    modifyEnergyRecovery: (rec) => Math.max(0, rec - 1),
+    onPlayerTurnPostDraw: (engine, owner, turn) => {
+      if (owner.deck.length > 0) {
+        engine.emitLog(`🧬 [특성: 탐욕스런 앞니] 덱의 남은 카드를 모두 뽑습니다!`, 'log-passive');
+        engine.drawCards(owner, owner.deck.length);
+      }
+    }
+  },
+  '012': {
+    id: '012', name: '적응형 두뇌', priority: 11, // 👈 천무지체(10)보다 뒤에 발동하도록 우선순위(11) 부여
+    desc: '매 턴 시작 시 코스트가 1 이상인 카드 1장의 코스트를 이번 턴 동안 1 감소시킵니다.',
+    onPlayerTurnPostDraw: (engine, owner, turn) => {
+      if (owner.hand.length > 0) {
+        // 이미 0코스트인 카드(천무지체 적용분 포함)는 후보에서 제외
+        const candidates = owner.hand.filter(c => engine.getEffectiveCost(owner, c) >= 1);
+        if (candidates.length > 0) {
+          const targetCard = RNG.pickRandom(candidates);
+          targetCard.turnCostMod = (targetCard.turnCostMod || 0) - 1;
+          engine.emitLog(`🧬 [특성: 적응형 두뇌] 이번 턴 [${targetCard.name}] 코스트 -1!`, 'log-passive');
+        }
+      }
     }
   }
 };
@@ -2798,7 +3157,7 @@ class CombatEngine {
  * ============================================================================
  */
 const RogueManager = {
-  STARTER_DECK: ['001', '001', '001', '010', '010', '010', '005', '005', '002', '002', '011', '011'],
+  STARTER_DECK: ['001', '001', '001', '010', '010', '010', '005', '002', '011'],
   MIN_DECK_SIZE: 9,
   BASE_MAX_DECK_SIZE: 21,
 
@@ -2886,6 +3245,9 @@ const RogueManager = {
     AppUI.go('screen-choice');
     if (this.state.traits.length === 0 && this.state.floor === 1) {
       this.renderStartingTraitSelection();
+    } else if (this.state.deck.length < 12 && this.state.floor === 1) {
+      const currentStep = (this.state.deck.length - this.STARTER_DECK.length) + 1;
+      this.renderStartingCardDraft(Math.max(1, currentStep), 3);
     } else {
       this.enterHubForCurrentFloor();
     }
@@ -2914,7 +3276,36 @@ const RogueManager = {
       if (TraitDB[traitId]?.onAcquire) TraitDB[traitId].onAcquire(this.state);
     }
     this.syncToSaveLedger();
-    this.enterHubForCurrentFloor();
+    this.renderStartingCardDraft(1, 3);
+  },
+
+  renderStartingCardDraft(step, total) {
+    const offeredIds = Object.keys(CardDB).sort((a, b) => a.localeCompare(b));
+
+    const items = offeredIds.map(cid => {
+      const c = CardDB[cid];
+      const copies = this.state.deck.filter(x => x === cid).length;
+      const canAdd = copies < 3;
+      return {
+        title: `🃏 [${c.id}] ${c.name} (코스트 ${c.cost} | 보유 ${copies}/3)`,
+        desc: `${c.desc}${!canAdd ? ' [동명 3장 제한]' : ''}`,
+        borderColor: 'var(--fx-yellow)',
+        disabled: !canAdd,
+        onClick: () => {
+          if (!canAdd) return;
+          this.state.deck.push(cid);
+          this.syncToSaveLedger();
+          if (step < total) this.renderStartingCardDraft(step + 1, total);
+          else this.enterHubForCurrentFloor();
+        }
+      };
+    });
+
+    AppUI.setChoiceScreen(
+      `🎒 출발 보급 — 자유 카드 선택 (${step}/${total})`,
+      `기본 9장에 합류시킬 카드를 자유롭게 선택하십시오. (현재 덱 ${this.state.deck.length}/12장)`,
+      items
+    );
   },
 
   enterHubForCurrentFloor() {
@@ -3678,9 +4069,47 @@ const AppUI = {
     this.renderCodex(defaultTab);
   },
 
+  openPatchNotes() {
+    this.go('screen-patch');
+    this.renderPatchNotes();
+  },
+
+  renderPatchNotes() {
+    const parseVersion = (v) => {
+      const s = String(v || '').trim().replace(/^v/i, '');
+      // 'v096'처럼 소수점 없이 0으로 시작하는 표기도 0.96으로 정상 환산
+      if (!s.includes('.') && s.startsWith('0') && s.length > 1) {
+        return parseFloat('0.' + s.slice(1)) || 0;
+      }
+      return parseFloat(s) || 0;
+    };
+
+    const sorted = [...PatchNotesDB].sort((a, b) => parseVersion(b.version) - parseVersion(a.version));
+    document.getElementById('patch-count-info').textContent = `업데이트 기록 (${sorted.length}건 · 최신순)`;
+
+    const listEl = document.getElementById('patch-list');
+    listEl.innerHTML = sorted.map((p, idx) => {
+      const isLatest = idx === 0;
+      const descHtml = p.desc
+        ? `<div style="font-size:11.5px; color:#a9b1d6; line-height:1.45; margin-top:4px;">${p.desc}</div>`
+        : '';
+      return `
+        <div class="codex-item" style="border-left: 3px solid ${isLatest ? 'var(--fx-green)' : 'var(--accent)'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+            <strong style="color:${isLatest ? 'var(--fx-green)' : 'var(--fx-yellow)'}; font-size:13px;">${p.version}</strong>
+            ${isLatest ? '<span style="font-size:10px; color:var(--fx-green); border:1px solid var(--fx-green); border-radius:3px; padding:1px 5px;">LATEST</span>' : ''}
+          </div>
+          <div style="font-size:12.5px; font-weight:bold; color:var(--text-main); margin-top:2px;">${p.title}</div>
+          ${descHtml}
+        </div>
+      `;
+    }).join('');
+    listEl.scrollTop = 0;
+  },
+	
   renderCodex(tab) {
     // 1. 탭 활성화 하이라이트 갱신 (7종으로 확장)
-    ['CARD', 'BUFF', 'DEBUFF', 'SEEKER', 'TRAIT', 'RELIC', 'ENEMY'].forEach(t => {
+    ['CARD', 'BUFF', 'DEBUFF', 'SEEKER', 'TRAIT', 'RELIC', 'ENEMY', 'RULE'].forEach(t => {
       const btn = document.getElementById(`tab-codex-${t}`);
       if (btn) btn.classList.toggle('active', t === tab);
     });
@@ -3778,6 +4207,38 @@ const AppUI = {
           </div>
         `;
       }).join('');
+      
+    } else if (tab === 'RULE') {  // 👈 } 를 추가하여 올바르게 닫고 분기를 연결
+      countEl.textContent = '기본 진행 가이드';
+      const rules = [
+        {
+          title: '🌙 기사도 (모험의 목표)',
+          desc: '토끼기사의 끝없는 꿈속 여정을 한 층씩 오르며 앞을 막는 적들을 쓰러뜨립니다.'
+        },
+        {
+          title: '🃏 시작 덱 구성 (총 12장)',
+          desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다.'
+        },
+        {
+          title: '🔄 매 턴 카드 뽑기와 버리기',
+          desc: '내 턴이 시작될 때마다 카드를 3장 뽑습니다. 턴을 마칠 때 쓰지 않고 손에 남긴 카드는 모두 버려집니다.'
+        },
+        {
+          title: '💚 활력 (초록색 보석)',
+          desc: '체력바 옆의 초록색 보석은 카드를 쓰는 힘입니다. 매 턴 3개씩 차오르며, 카드 오른쪽 위 숫자만큼 소모합니다. 쓰지 않은 활력은 최대 1개까지 다음 턴으로 넘어갑니다.'
+        },
+        {
+          title: '🎁 전투 승리 보상',
+          desc: '전투에서 이기면 새로운 카드 1장을 얻습니다. 강력한 엘리트를 이기면 유물을, 10층마다 등장하는 보스를 이기면 유물과 특성을 추가로 얻습니다.'
+        }
+      ];
+
+      html = rules.map(r => `
+        <div class="codex-item" style="border-left: 3px solid var(--accent);">
+          <strong style="color:var(--fx-yellow); font-size:13px;">${r.title}</strong>
+          <div style="font-size:12px; color:var(--text-main); line-height:1.5; margin-top:2px;">${r.desc}</div>
+        </div>
+      `).join('');
     }
 
     listEl.innerHTML = html;
@@ -3860,7 +4321,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v0.96 의념, 개체 도감 갱신 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v0.97 패치노트 도입 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
