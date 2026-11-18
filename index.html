@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.03</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v1.04</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -691,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.03)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.04)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1062,6 +1062,11 @@ const PatchNotesDB = [
     version: 'v1.03 (2026.11.18.)',
     title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자 + 표기개선: 전화위복 + 유물:센마의 털옷이 onOwnerTurnEnd 실행 시 버그 나서 임시 주석 처리',
     desc: ''
+  },
+  {
+    version: 'v1.04 (2026.11.18.)',
+    title: '버그픽스: 센마의 털옷, 유물추가: 빵가루, 털모자, 가죽장갑, 요술망치, 사과사탕, 육포, 카드 상향: 복수(코스트 하향)',
+    desc: ''
   }
 ];
 
@@ -1160,8 +1165,8 @@ const RelicDB = {
   },
   '005': {
     id: '005', name: '마도서', priority: 20,
-    desc: '일반 전투 승리 시 10% 확률로 유물 보상 추가',
-    bonusNormalRelicChance: 10
+    desc: '일반 전투 승리 시 20% 확률로 유물 보상 추가',
+    bonusNormalRelicChance: 20
   },
   '006': {
     id: '006', name: '요람사진', priority: 20,
@@ -1367,20 +1372,48 @@ const RelicDB = {
         engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
       }
     }
+  },
+  '030': {
+    id: '030', name: '센마의 털옷', priority: 20,
+    desc: '자신의 턴 종료 시 방어도가 40 이상이면 도깨비바늘 1을 얻습니다.',
+    onPlayerTurnEnd: (engine, owner) => {
+      if (owner.armor >= 40) {
+        engine.emitLog(`🏺 [유물: 센마의 털옷] 방어도 40+ 유지 -> 도깨비바늘 1 획득!`, 'log-passive');
+        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
+      }
+    }
+  },
+  '031': {
+    id: '031', name: '빵가루', priority: 20,
+    desc: '[토끼굴의 기억]의 코스트가 1 감소합니다.',
+    modifyCardCost: (cost, card) => card.id === '016' ? cost - 1 : cost
+  },
+  '032': {
+    id: '032', name: '털모자', priority: 20,
+    desc: '[나팔소리]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '018' ? 0 : cost
+  },
+  '033': {
+    id: '033', name: '가죽장갑', priority: 20,
+    desc: '[토끼풀]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '022' ? 0 : cost
+  },
+  '034': {
+    id: '034', name: '요술망치', priority: 20,
+    desc: '[반격]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '007' ? 0 : cost
+  },
+  '035': {
+    id: '035', name: '사과사탕', priority: 20,
+    desc: '[공평한 카라보스]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '015' ? 0 : cost
+  },
+  '036': {
+    id: '036', name: '육포', priority: 20,
+    desc: '[저주]의 코스트가 0이 됩니다.',
+    modifyCardCost: (cost, card) => card.id === '003' ? 0 : cost
   }
 };
-
-// 버그 나서 격리
-//  '030': {
-//    id: '030', name: '센마의 털옷', priority: 20,
-//    desc: '자신의 턴 종료 시 방어도가 40 이상이면 도깨비바늘 1을 얻습니다.',
-//    onOwnerTurnEnd: (engine, owner) => {
-//      if (owner.armor >= 40) {
-//        engine.emitLog(`🏺 [유물: 센마의 털옷] 방어도 40+ 유지 -> 도깨비바늘 1 획득!`, 'log-passive');
-//        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
-//      }
-//    }
-//  }
 
 
 // 특성 15종 정의
@@ -1886,7 +1919,7 @@ const CardDB = {
     }
   },
   '013': {
-    id: '013', name: '복수', cost: 2, type: 'ATTACK', hits: 1,
+    id: '013', name: '복수', cost: 1, type: 'ATTACK', hits: 1,
     desc: '타수 1, 적에게 물리데미지 1 x (누적 피격 횟수)를 입힙니다. 예상 데미지 140 이상 시 비용 +1, 300 이상 시 +2',
     modifySelfCost: (baseCost, engine, u) => {
       const dmg = u.runTrackers.hitTakenCount;
@@ -3644,9 +3677,14 @@ class CombatEngine {
       this.moveCardToGraveyard(this.player, card, false);
     }
 
+    // 👇 [추가] 유물/특성 전용 플레이어 턴 종료 훅 (센마의 털옷 등)
+    this.player.getPassives().forEach(({ def, inst }) => {
+      if (!this.combatEnded && def.onPlayerTurnEnd) def.onPlayerTurnEnd(this, this.player, this.turn, inst);
+    });
+
     this.processTurnEndStatuses(this.player);
     if (this.combatEnded) return;
-
+	
     [...this.player.statuses].forEach(s => {
       if (StatusDB[s.id].decayTiming === DECAY_TIMING.PLAYER_TURN_END_CONTEXT) {
         const drop = (s.id === 'CTX_FIGHTING_SPIRIT') ? -s.stacks : -1;
@@ -4073,8 +4111,8 @@ const RogueManager = {
       } else {
         this.rewardQueue.push({ type: 'CARD' });
       }
-      if (this.hasRelic('005') && RNG.randInt(1, 100) <= 10) {
-        this.rewardQueue.push({ type: 'RELIC', note: '🏺 유물 [마도서] 10% 확률 발동!' });
+      if (this.hasRelic('005') && RNG.randInt(1, 100) <= 20) {
+        this.rewardQueue.push({ type: 'RELIC', note: '🏺 유물 [마도서] 20% 확률 발동!' });
       }
     } else if (nodeType === 'ELITE') {
       this.rewardQueue.push({ type: 'CARD' });
@@ -4936,7 +4974,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.03 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.04 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
