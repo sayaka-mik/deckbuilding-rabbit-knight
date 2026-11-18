@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.03</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v1.04</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -691,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.03)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.04)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1062,6 +1062,11 @@ const PatchNotesDB = [
     version: 'v1.03 (2026.11.18.)',
     title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자',
     desc: ''
+  },
+  {
+    version: 'v1.04 (2026.11.18.)',
+    title: '유물:센마의 털옷이 onOwnerTurnEnd 실행 시 버그 나서 임시 주석 처리',
+    desc: ''
   }
 ];
 
@@ -1367,18 +1372,21 @@ const RelicDB = {
         engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
       }
     }
-  },
-  '030': {
-    id: '030', name: '센마의 털옷', priority: 20,
-    desc: '자신의 턴 종료 시 방어도가 40 이상이면 도깨비바늘 1을 얻습니다.',
-    onOwnerTurnEnd: (engine, owner) => {
-      if (owner.armor >= 40) {
-        engine.emitLog(`🏺 [유물: 센마의 털옷] 방어도 40+ 유지 -> 도깨비바늘 1 획득!`, 'log-passive');
-        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
-      }
-    }
   }
 };
+
+// 버그 나서 격리
+//  '030': {
+//    id: '030', name: '센마의 털옷', priority: 20,
+//    desc: '자신의 턴 종료 시 방어도가 40 이상이면 도깨비바늘 1을 얻습니다.',
+//    onOwnerTurnEnd: (engine, owner) => {
+//      if (owner.armor >= 40) {
+//        engine.emitLog(`🏺 [유물: 센마의 털옷] 방어도 40+ 유지 -> 도깨비바늘 1 획득!`, 'log-passive');
+//        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
+//      }
+//    }
+//  }
+
 
 // 특성 15종 정의
 const TraitDB = {
@@ -3454,6 +3462,7 @@ class CombatEngine {
     }
 
     // 👇 [수정] !packet.missed 조건 추가로 빗나간 공격은 피격 횟수/반격 미발동
+    // 👇 [수정] 일반 적 타격이거나 [피해망상] 자해 타격일 때 반격 발동
     if (packet.isStrike && !packet.missed && (source !== target || packet.paranoiaRedirect)) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
@@ -3689,7 +3698,7 @@ class CombatEngine {
   }
 
   processTurnEndStatuses(entity) {
-    const sorted = [...entity.getPassives].sort((a, b) => (a.id === 'CONTRACT' ? 1 : b.id === 'CONTRACT' ? -1 : 0));
+    const sorted = [...entity.statuses].sort((a, b) => (a.id === 'CONTRACT' ? 1 : b.id === 'CONTRACT' ? -1 : 0));
     sorted.forEach(s => {
       if (this.combatEnded) return;
       const def = StatusDB[s.id];
@@ -4932,7 +4941,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.03 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.04 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
