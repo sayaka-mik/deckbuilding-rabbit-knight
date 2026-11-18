@@ -2,28 +2,38 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <!-- 모바일 화면 비율 고정 및 더블탭 확대 방지 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.04</title>
+  <title>Sir Mad Boomer: Rabbit Knight</title>
   <style>
+    /* ==========================================================================
+       [0] 전역 색상 변수 (CSS Variables)
+       ========================================================================== */
     :root {
-      --bg-outer: #0b0c10;
-      --bg-app: #13141c;
-      --bg-panel: #1a1b26;
-      --bg-card: #24283b;
-      --border: #414868;
-      --text-main: #c0caf5;
-      --text-sub: #787c99;
-      --accent: #7aa2f7;
+      --bg-outer: #0b0c10;  /* 브라우저 맨 바깥 여백 배경색 (PC 화면 좌우 검은 영역) */
+      --bg-app: #13141c;    /* 게임 본체(#app) 기본 배경색 */
+      --bg-panel: #1a1b26;  /* 내부 패널(초상화 틀, 손패 틀, 모달창) 배경색 */
+      --bg-card: #24283b;   /* 카드 및 일반 버튼 배경색 */
+      --border: #414868;    /* 기본 테두리 색상 */
+      --text-main: #c0caf5; /* 기본 텍스트 색상 */
+      --text-sub: #787c99;  /* 보조/설명 텍스트 색상 */
+      --accent: #7aa2f7;    /* 강조색 (주요 버튼, 코스트 동그라미, 선택된 탭) */
 
-      /* 연출 5색 */
-      --fx-red: #f7768e;    /* HP 감소 */
-      --fx-green: #9ece6a;  /* HP 증가 */
-      --fx-purple: #bb9af7; /* 디버프 획득 */
-      --fx-blue: #7dcfff;   /* 버프/방어 획득 */
-      --fx-yellow: #e0af68; /* 기타 카드 사용 */
+      /* 전투 피드백 연출 5색 (테두리 발광 및 텍스트 색상용) */
+      --fx-red: #f7768e;    /* HP 감소 / 공격 / 보스 */
+      --fx-green: #9ece6a;  /* HP 회복 / 캠프 */
+      --fx-purple: #bb9af7; /* 디버프 획득 / 엘리트 / 적 행동 예고 배너 */
+      --fx-blue: #7dcfff;   /* 버프 / 방어도 획득 / 특성 */
+      --fx-yellow: #e0af68; /* 유물 / 의념 / 카드 이름 / 대기 중인 로그 강조 */
     }
 
+    /* ==========================================================================
+       [1] 기본 리셋 및 앱 프레임 레이아웃
+       ========================================================================== */
+    /* 모든 요소의 크기 계산을 테두리 포함(border-box)으로 통일하고 드래그 선택 방지 */
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    /* 화면 정중앙에 모바일 세로형 게임기(#app)를 배치하고 전체 스크롤을 막음 */
     body {
       background: var(--bg-outer); color: var(--text-main);
       font-family: 'Pretendard', monospace, sans-serif;
@@ -31,42 +41,48 @@
       height: 100vh; height: 100dvh; overflow: hidden;
     }
 
+    /* 모바일 세로 화면 컨테이너 (최대 가로폭 440px 고정) */
     #app {
       width: 100%; max-width: 440px; height: 100%;
       background: var(--bg-app); border: 1px solid var(--border);
       position: relative; display: flex; flex-direction: column; overflow: hidden;
     }
 
+    /* 화면 전환 단위: 기본적으로 숨겨두고(display: none), .active가 붙은 화면만 표시 */
     .screen {
       display: none; flex-direction: column;
       width: 100%; height: 100%; padding: 12px; gap: 10px;
     }
     .screen.active { display: flex; }
-    .hidden { display: none !important; }
+    .hidden { display: none !important; } /* 특정 버튼/오버레이를 강제로 숨길 때 사용 */
 
+    /* 공통 버튼 스타일 */
     button {
       background: var(--bg-card); color: var(--text-main);
       border: 1px solid var(--border); border-radius: 6px;
       padding: 10px 14px; font-size: 13px; font-weight: bold; cursor: pointer;
     }
-    button:active:not(:disabled) { transform: scale(0.97); }
+    button:active:not(:disabled) { transform: scale(0.97); } /* 누를 때 살짝 작아지는 타격감 */
     button:disabled { opacity: 0.35; cursor: not-allowed; }
     button.primary { background: var(--accent); color: #111; border-color: var(--accent); }
 
-    /* 1. 시작 / 서브 화면 */
-    .menu-stack { display: flex; flex-direction: column; gap: 10px; width: 88%; margin: auto; }
+    /* ==========================================================================
+       [2] 타이틀 로비 / 서브 화면 / 비주얼 노벨 스타일
+       ========================================================================== */
+    .menu-stack { display: flex; flex-direction: column; gap: 10px; width: 88%; margin: auto; } /* 타이틀 메뉴 버튼 묶음 */
     .menu-stack button { padding: 15px; font-size: 14.5px; }
-    .screen-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-    .scroll-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
-    .list-btn { text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .screen-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border); } /* 각 화면 상단 제목+뒤로가기 줄 */
+    .scroll-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; } /* 세로 스크롤 목록(스토리, 갈림길, 도감 등) */
+    .list-btn { text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: center; } /* 목록 안의 개별 선택지 박스 */
 
+    /* 세이브 관리 화면의 텍스트 입력창 (드래그/복사를 위해 user-select: text 허용) */
     textarea.notepad {
       flex: 1; width: 100%; background: #0d0e14; color: var(--fx-green);
       border: 1px solid var(--border); border-radius: 6px; padding: 10px;
       font-family: monospace; font-size: 12px; resize: none; user-select: text;
     }
 
-    /* 비주얼 노벨 화면 */
+    /* 스토리 모드(비주얼 노벨) 상단 스탠딩 일러스트 영역 & 하단 대사창 */
     .vn-illust-area {
       flex: 1; background: var(--bg-panel); border: 1px dashed var(--border);
       border-radius: 6px; display: flex; flex-direction: column;
@@ -77,61 +93,62 @@
       border-radius: 6px; padding: 14px; display: flex; flex-direction: column;
       justify-content: space-between; cursor: pointer;
     }
-    .vn-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .vn-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; } /* 스토리 분기 선택지 묶음 */
     .vn-choice-btn { text-align: left; background: #1f2335; border: 1px solid var(--accent); padding: 9px 12px; font-size: 12.5px; }
 
-    /* 2. 전투 화면 (상단 좌우 초상화 + 중앙 보라색 통합 배너 + 3단 버튼 바 + 하단 가로 스크롤 손패) */
+    /* ==========================================================================
+       [3] 전투 화면 (#screen-combat) 4단 분할 레이아웃
+       ========================================================================== */
     #screen-combat { padding: 10px; gap: 8px; position: relative; }
 
-    /* [상단 38%] 좌(플레이어) / 우(적) 나란히 배치 */
+    /* [전투 1단 - 상단 38%] 좌(플레이어) / 우(적) 초상화 박스 나란히 배치 */
     .stage-top-row {
       height: 38%; min-height: 170px;
       display: flex; gap: 8px; width: 100%;
-      position: relative; /* (플로팅 텍스트 좌표 기준점) */
+      position: relative; /* 데미지 플로팅 텍스트(.fct-text)가 떠오르는 좌표 기준점 */
     }
+    /* 플레이어(#box-player)와 적(#box-enemy) 각각의 사각 프레임 */
     .actor-box {
       flex: 1; height: 100%; position: relative; overflow: hidden;
       background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px;
       display: flex; flex-direction: column; justify-content: flex-end;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    /* 박스 전체 초상화 배경 영역 */
+    /* 캐릭터 도트/초상화 배경 이미지 레이어 */
     .avatar-bg {
       position: absolute; inset: 0; z-index: 1;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       font-size: 12px; color: var(--text-sub); text-align: center;
-      background-color: #111218; /* 기본 배경색 */
-      background-size: cover; /* 이미지가 박스에 꽉 차게 */
-      background-position: center 20%; /* 이미지가 위쪽(얼굴 중심)으로 오도록 */
+      background-color: #111218;
+      background-size: cover;
+      background-position: center 20%; /* 캐릭터 얼굴이 잘리지 않도록 위쪽(20%) 중심 정렬 */
       background-repeat: no-repeat;
-      image-rendering: pixelated; /* 도트 선명하게 유지 */
+      image-rendering: pixelated; /* 도트 그래픽이 흐려지지 않게 픽셀 유지 */
       padding-bottom: 52px;
     }
+    /* 초상화 좌측 상단에 떠 있는 이름표 */
     .actor-name-floating {
       position: absolute; top: 6px; left: 8px; z-index: 2;
       font-size: 12px; font-weight: bold; padding: 2px 6px;
       background: rgba(11, 12, 16, 0.75); border: 1px solid var(--border); border-radius: 4px;
     }
 
-    /* 초상화 하단에 겹쳐지는 HUD 오버레이 (체력바 + 활력 보석 + 상태이상 칸) */
+    /* 초상화 하단에 반투명하게 겹쳐지는 상태창(체력바 + 활력 보석 + 버프/디버프 칸) */
     .actor-hud-overlay {
       position: relative; z-index: 2;
       background: rgba(13, 14, 20, 0.86); border-top: 1px solid var(--border);
       padding: 6px; display: flex; flex-direction: column; gap: 5px;
     }
-    /* 빨간선(체력/방어 바) + 초록선(활력 보석) 줄 */
-    .hud-vital-row {
-      display: flex; align-items: center; gap: 6px;
-    }
+    .hud-vital-row { display: flex; align-items: center; gap: 6px; } /* 체력바와 활력 보석을 한 줄에 배치 */
     .hp-bar-outer {
       flex: 1; height: 16px; background: #090a0f; border: 1px solid #414868;
       border-radius: 3px; position: relative; overflow: hidden;
     }
     .hp-bar-fill {
       height: 100%; width: 100%; background: linear-gradient(90deg, #db4b4b, #f7768e);
-      transition: width 0.25s ease-out;
+      transition: width 0.25s ease-out; /* 체력 증감 시 부드럽게 줄어드는 애니메이션 */
     }
-    /* 방어도: 숫자 대신 체력바 위에 덧씌우는 흰색 반투명 막 */
+    /* 방어도 게이지: 체력바 위에 겹쳐지는 흰색 반투명 막 */
     .armor-bar-overlay {
       position: absolute; top: 0; left: 0; height: 100%; width: 0%;
       background: rgba(255, 255, 255, 0.55);
@@ -144,19 +161,20 @@
       font-size: 10.5px; font-weight: bold; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000;
     }
 
+    /* 플레이어 활력(AP) 초록 보석 슬롯 */
     .ap-gems {
       display: flex; gap: 3px; align-items: center; flex-shrink: 0;
       padding: 2px 4px; border: 1px solid #2f3549; border-radius: 4px; background: #0d0e14;
     }
     .ap-gem {
       width: 9px; height: 9px; border-radius: 50%;
-      background: #232634; border: 1px solid #414868; transition: 0.15s;
+      background: #232634; border: 1px solid #414868; transition: 0.15s; /* 빈 보석 */
     }
     .ap-gem.on {
-      background: #41f075; border-color: #d5ffdf; box-shadow: 0 0 5px #41f075;
+      background: #41f075; border-color: #d5ffdf; box-shadow: 0 0 5px #41f075; /* 채워진 초록 보석 */
     }
 
-    /* 파란선: 테두리 쳐진 버프/디버프 슬롯 칸 */
+    /* 버프 / 디버프 / 의념 태그가 나열되는 가로 스크롤 슬롯 */
     .status-framed-box {
       min-height: 24px; border: 1px solid #2f3549; border-radius: 4px;
       background: #0b0c10; padding: 2px 4px;
@@ -166,17 +184,18 @@
       padding: 1px 5px; border-radius: 3px; background: #292e42;
       border: 1px solid #414868; cursor: pointer; white-space: nowrap; font-size: 10px;
     }
-    .s-tag.buff { border-color: var(--fx-blue); color: var(--fx-blue); }
-    .s-tag.debuff { border-color: var(--fx-purple); color: var(--fx-purple); }
-    .s-tag.context { border-color: var(--fx-yellow); color: var(--fx-yellow); }
+    .s-tag.buff { border-color: var(--fx-blue); color: var(--fx-blue); }       /* 파란 테두리: 버프 */
+    .s-tag.debuff { border-color: var(--fx-purple); color: var(--fx-purple); } /* 보라 테두리: 디버프 */
+    .s-tag.context { border-color: var(--fx-yellow); color: var(--fx-yellow); }/* 노란 테두리: 의념 */
 
-    /* [중상단 18%] 보라색 통합 박스 (로그 + 적 행동 예고 겸용) */
+    /* [전투 2단 - 중상단 18%] 보라색 통합 배너 (평소엔 적 행동 예고 / 로그 발생 시 1줄씩 클릭 재생) */
     .purple-unified-box {
       height: 18%; min-height: 78px;
       background: #181524; border: 2px solid var(--fx-purple); border-radius: 8px;
       padding: 8px 12px; display: flex; flex-direction: column; justify-content: space-between;
       position: relative; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
     }
+    /* 읽어야 할 전투 로그가 쌓여 있을 때 테두리가 노란색으로 빛나며 터치를 유도함 */
     .purple-unified-box.waiting-log {
       border-color: var(--fx-yellow); background: #211d30;
       box-shadow: inset 0 0 14px rgba(224, 175, 104, 0.22);
@@ -195,7 +214,7 @@
       font-size: 10px; color: var(--text-sub);
     }
 
-    /* 스토리 모드 전투 중 대사 오버레이 */
+    /* 스토리 모드 전투 중 보라색 배너 위에 덮어씌워지는 캐릭터 대사창 */
     .combat-vn-overlay {
       position: absolute; inset: 0; background: rgba(14, 16, 23, 0.96);
       border: 2px solid var(--accent); border-radius: 6px; padding: 10px 12px;
@@ -203,7 +222,7 @@
       cursor: pointer; z-index: 20;
     }
 
-    /* [중간 컨트롤 줄] 좌: 메뉴 / 중앙: 선택 시에만 나타나는 실행 버튼 / 우: 턴 종료 */
+    /* [전투 3단 - 중간 컨트롤 줄] 좌: 전술 메뉴 / 중앙: 카드 실행 버튼 / 우: 턴 종료 */
     .mid-control-row {
       height: 40px; display: flex; justify-content: space-between; align-items: center;
       gap: 8px; flex-shrink: 0;
@@ -221,7 +240,7 @@
       box-shadow: 0 0 12px rgba(122, 162, 247, 0.4);
     }
 
-    /* [하단 34%] 고정 크기 카드 가로 스크롤 손패 영역 */
+    /* [전투 4단 - 하단 34%] 가로 스크롤 손패(Hand) 영역 */
     .hand-section {
       flex: 1; min-height: 145px;
       background: var(--bg-panel); border: 1px solid var(--border);
@@ -232,9 +251,10 @@
       display: flex; flex-direction: row; gap: 10px;
       width: 100%; height: 100%;
       overflow-x: auto; overflow-y: hidden;
-      align-items: stretch; scroll-snap-type: x proximity;
+      align-items: stretch; scroll-snap-type: x proximity; /* 가로 스크롤 시 카드 단위로 자석처럼 붙음 */
       padding-bottom: 4px;
     }
+    /* 손패의 개별 카드 틀 (가로 128px 고정) */
     .hand-card {
       flex: 0 0 128px; width: 128px; height: 100%;
       scroll-snap-align: start;
@@ -242,11 +262,13 @@
       padding: 8px; display: flex; flex-direction: column; gap: 4px;
       cursor: pointer; position: relative; transition: transform 0.12s, border-color 0.12s;
     }
+    /* 터치해서 선택된 카드: 위로 살짝 들리며(-4px) 노란 테두리 점등 */
     .hand-card.selected {
       border-color: var(--fx-yellow); background: #2f334d;
       transform: translateY(-4px);
       box-shadow: 0 4px 12px rgba(224, 175, 104, 0.35);
     }
+    /* 카드 우측 상단 코스트 원형 배지 */
     .c-cost {
       position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
       border-radius: 50%; background: var(--accent); color: #111;
@@ -256,7 +278,10 @@
     .c-type { font-size: 10px; color: var(--fx-blue); }
     .c-desc { font-size: 10.5px; color: #a9b1d6; line-height: 1.35; margin-top: 4px; overflow-y: auto; }
 
-    /* 3. 5색 시각 연출 */
+    /* ==========================================================================
+       [4] 시각 이펙트 (5색 박스 점멸, 모달 팝업, 도감 탭, 플로팅 텍스트)
+       ========================================================================== */
+    /* 피격 시 초상화 박스가 좌우로 흔들리는 애니메이션 */
     @keyframes box-shake {
       0%, 100% { transform: translateX(0); }
       20% { transform: translateX(-6px); }
@@ -286,7 +311,7 @@
       box-shadow: inset 0 0 22px rgba(224, 175, 104, 0.5) !important;
     }
 
-    /* 모달 */
+    /* 모달 팝업 배경(어두운 암막) 및 팝업 카드 본체 */
     .modal-overlay {
       position: absolute; inset: 0; background: rgba(0, 0, 0, 0.82);
       display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -299,43 +324,20 @@
       display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
     }
 
-    /* 로그 컨트롤 바 & 1줄 스텝 뷰어 */
-    .log-ctrl-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 10.5px; color: var(--text-sub); border-bottom: 1px solid #1f2335; padding-bottom: 4px;
-    }
-    .log-ctrl-btns { display: flex; gap: 4px; }
+    /* 보라색 박스 우측 상단 미니 버튼(스킵, 전체 로그) */
     .log-mini-btn {
       padding: 2px 7px; font-size: 10px; border-radius: 4px;
       background: #1f2335; border: 1px solid #414868; color: var(--text-main);
     }
     .log-mini-btn.active { border-color: var(--accent); color: var(--accent); }
 
-    .log-step-view {
-      flex: 1; background: #141722; border: 1.5px solid var(--border); border-radius: 5px;
-      padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;
-      cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
-    }
-    .log-step-view.waiting {
-      border-color: var(--fx-yellow); background: #1b1e2e;
-      box-shadow: inset 0 0 12px rgba(224, 175, 104, 0.18);
-    }
-    .log-step-text {
-      font-family: monospace; font-size: 12.5px; font-weight: bold;
-      color: var(--text-main); line-height: 1.45; word-break: keep-all;
-    }
-    .log-step-footer {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 10.5px; color: var(--fx-yellow);
-    }
-
-    /* 도감 탭 및 리스트 스타일 */
+    /* 도감 화면 상단 8개 카테고리 가로 스크롤 탭 및 개별 항목 카드 */
     .codex-tabs {
       display: flex; gap: 4px; flex-shrink: 0;
-      overflow-x: auto; white-space: nowrap; padding-bottom: 4px; /* 👈 가로 스크롤 가능하게 수정 */
+      overflow-x: auto; white-space: nowrap; padding-bottom: 4px;
     }
     .codex-tab {
-      flex: 0 0 auto; padding: 7px 10px; font-size: 11.5px; /* 👈 탭들이 찌그러지지 않고 크기 유지 */
+      flex: 0 0 auto; padding: 7px 10px; font-size: 11.5px;
       background: #1a1b26; border: 1px solid var(--border); color: var(--text-sub);
     }
     .codex-tab.active {
@@ -347,29 +349,29 @@
       display: flex; flex-direction: column; gap: 4px;
     }
 
-    /* 4. 플로팅 텍스트 (Floating Combat Text) 연출 */
+    /* 데미지/회복/상태이상이 초상화 위로 떠올랐다가 사라지는 플로팅 텍스트(FCT) */
     @keyframes fct-float {
       0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
       15% { opacity: 1; transform: translate(-50%, -10px) scale(1.2); }
-      30% { transform: translate(-50%, -15px) scale(1); }
+      30% { opacity: 1; transform: translate(-50%, -15px) scale(1); }
       80% { opacity: 1; transform: translate(-50%, -30px) scale(1); }
       100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
     }
     .fct-text {
       position: absolute; z-index: 100;
-      font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 26px; /* 큼직한 폰트 */
+      font-family: 'Pretendard', sans-serif; font-weight: 900; font-size: 26px;
       pointer-events: none; white-space: nowrap;
       text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 6px rgba(0,0,0,0.6);
       animation: fct-float 0.8s ease-out forwards;
     }
-    .fct-red { color: #f7768e; }
-    .fct-blue { color: #7dcfff; }
-    .fct-white { color: #ffffff; }
-    .fct-cyan { color: #73daca; }
-    .fct-purple { color: #bb9af7; }
-    .fct-green { color: #9ece6a; }
+    .fct-red { color: #f7768e; }    /* 체력 피해 수치 (-15 등) */
+    .fct-blue { color: #7dcfff; }   /* 방어도 획득 (🛡️+18 등) */
+    .fct-white { color: #ffffff; }  /* 방어도 차감 / 의념 발동 / 면역 */
+    .fct-cyan { color: #73daca; }   /* 버프 획득 (재생!! 등) */
+    .fct-purple { color: #bb9af7; } /* 디버프 획득 (저주!! 등) */
+    .fct-green { color: #9ece6a; }  /* 체력 회복 (💚+7 등) */
 
-    /* 출발 보급 카드 선택 피드백 (0.3초) */
+    /* 1층 출발 보급에서 카드 3장을 고를 때 0.3초 동안 초록색 '추가!'가 튀어 오르는 연출 */
     @keyframes draft-pop {
       0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
       25% { opacity: 1; transform: translate(-50%, -55%) scale(1.15); }
@@ -393,12 +395,17 @@
 </head>
 <body>
 
+<!-- ============================================================================
+     HTML DOM 레이아웃: 총 8개의 화면(.screen)과 2개의 팝업 모달(.modal-overlay)로 구성
+     AppUI.go('화면ID')를 호출하면 해당 화면만 .active 클래스가 붙어 표시됨
+     ============================================================================ -->
 <div id="app">
+  <!-- 배경음악 오디오 객체 -->
   <audio id="bgm-audio" src="rabbitknight.mp3" loop preload="auto"></audio>
 
-  <!-- [1] 게임 시작 화면 -->
+  <!-- [화면 1] 게임 시작 타이틀 로비 -->
   <div id="screen-start" class="screen active">
-    <!-- 상단 우측 패치노트 & BGM 온/오프 바 -->
+    <!-- 우측 상단 유틸리티 버튼 (패치노트 열기, BGM 토글) -->
     <div style="display: flex; justify-content: flex-end; gap: 6px; width: 100%;">
       <button onclick="AppUI.openPatchNotes()" style="padding: 6px 10px; font-size: 11.5px;">
         📋 패치노트
@@ -407,6 +414,7 @@
         🔇 BGM: OFF
       </button>
     </div>
+    <!-- 중앙 메인 로고 도트 이미지 및 게임 제목/진행 상태 요약 -->
     <div style="margin: auto 0 10px 0; text-align: center;">
       <div id="main-logo-slot" style="width:96px; height:96px; margin:0 auto 12px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-sub); background-size: cover; background-position: center; image-rendering: pixelated;">
         [메인 도트]<br>토끼기사
@@ -414,6 +422,7 @@
       <h1 style="font-size: 20px; color: var(--accent);">Sir Mad Boomer</h1>
       <p id="start-subtitle" style="font-size: 11.5px; color: var(--text-sub); margin-top: 6px; line-height: 1.4;">Rabbit Knight</p>
     </div>
+    <!-- 하단 메인 메뉴 버튼 스택 (진행 중인 런이 있으면 #btn-rogue-continue가 나타남) -->
     <div class="menu-stack">
       <button onclick="AppUI.go('screen-save')">💾 세이브 관리 (기록장)</button>
       <button onclick="AppUI.go('screen-story-list')">📖 스토리 모드</button>
@@ -423,7 +432,7 @@
     </div>
   </div>
 
-  <!-- [2] 세이브 관리 -->
+  <!-- [화면 2] 세이브 관리 (평면 텍스트 기반 세이브 수정/복사/적용 화면) -->
   <div id="screen-save" class="screen">
     <div class="screen-header">
       <strong style="color:var(--fx-yellow);">💾 세이브 기록장</strong>
@@ -437,7 +446,7 @@
     </div>
   </div>
 
-  <!-- [3] 스토리 챕터 선택 -->
+  <!-- [화면 3] 스토리 챕터 목록 선택 화면 -->
   <div id="screen-story-list" class="screen">
     <div class="screen-header">
       <strong style="color:var(--fx-yellow);">📖 스토리 선택</strong>
@@ -446,7 +455,7 @@
     <div id="story-chapter-list" class="scroll-list"></div>
   </div>
 
-  <!-- [4] 스토리 비주얼 노벨 화면 (화면 전체 클릭 가능) -->
+  <!-- [화면 4] 스토리 비주얼 노벨 화면 (전투 돌입 전 대화 및 선택지 출력) -->
   <div id="screen-vn" class="screen" onclick="StorySequencer.onUserClickDialogue()">
     <div class="screen-header">
       <span id="vn-chapter-title" style="font-size:12px; color:var(--text-sub);">스토리</span>
@@ -458,7 +467,6 @@
       </div>
       <div style="font-size:11px; color:var(--text-sub);">(비주얼 노벨 연출 영역)</div>
     </div>
-    <!-- 기존에 있던 onclick="..." 제거 -->
     <div class="vn-textbox">
       <div>
         <div id="vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:13px; margin-bottom:6px;"></div>
@@ -469,12 +477,12 @@
     </div>
   </div>
 
-  <!-- [5] 전투 화면 (스케치 반영: 상단 좌/우 박스 + 보라색 통합 배너 + 3단 버튼 + 하단 가로 스크롤 카드) -->
+  <!-- [화면 5] 메인 전투 화면 (스토리 전투 & 기사도 로그라이크 전투 공용) -->
   <div id="screen-combat" class="screen" onclick="AppUI.handleCombatScreenClick(event)">
 
-    <!-- [상단] 좌측 플레이어 박스 / 우측 적 박스 -->
+    <!-- [전투 1단] 좌측 플레이어 박스 / 우측 적 박스 -->
     <div class="stage-top-row">
-      <!-- 좌측: 플레이어 박스 (전체 초상화 + 하단 테두리 HUD) -->
+      <!-- 좌측: 플레이어 상태 박스 (초상화, HP/방어도 바, 활력 보석, 상태이상 태그) -->
       <div id="box-player" class="actor-box">
         <div id="player-name-label" class="actor-name-floating" style="color:var(--fx-yellow);">토끼기사</div>
         <div id="sprite-player" class="avatar-bg">[내 도트 초상화]<br>토끼기사</div>
@@ -491,7 +499,7 @@
         </div>
       </div>
 
-      <!-- 우측: 적 박스 (전체 초상화 + 하단 테두리 HUD) -->
+      <!-- 우측: 적 상태 박스 (초상화, HP/방어도 바, 상태이상 태그) -->
       <div id="box-enemy" class="actor-box">
         <div id="enemy-name-label" class="actor-name-floating" style="color:var(--fx-red);">적</div>
         <div id="sprite-enemy" class="avatar-bg">[적 도트 초상화]<br>적</div>
@@ -508,7 +516,7 @@
       </div>
     </div>
 
-    <!-- [중상단 보라색 영역] 적 행동 예고 & 1줄 클릭 로그 통합 박스 -->
+    <!-- [전투 2단] 중상단 보라색 통합 박스: 적 다음 행동 예고 & 전투 로그 1줄씩 재생 -->
     <div id="purple-box" class="purple-unified-box">
       <div class="purple-top-bar">
         <span id="purple-header-label">적 다음 행동 예고</span>
@@ -525,7 +533,7 @@
         <span id="log-step-hint"></span>
       </div>
 
-      <!-- 스토리 모드 전투 중 대사 오버레이: 기존 onclick 제거 -->
+      <!-- 스토리 모드 전투 중 보라색 박스 위에 덮이는 대사창 오버레이 -->
       <div id="combat-vn-overlay" class="combat-vn-overlay hidden">
         <div>
           <div id="combat-vn-speaker" style="font-weight:bold; color:var(--fx-yellow); font-size:12.5px; margin-bottom:3px;"></div>
@@ -535,10 +543,10 @@
       </div>
     </div>
 
-    <!-- 전체 로그 기록 보관용 숨김 컨테이너 (전체 로그 모달에서 참조) -->
+    <!-- 지나간 전체 로그 텍스트를 누적 보관하는 숨김 컨테이너 ([전체 로그] 팝업에서 읽어감) -->
     <div id="log-box" class="hidden"></div>
 
-    <!-- [중간 버튼 줄] 좌: 메뉴 / 중앙: 카드 선택 시에만 뜨는 실행 버튼 / 우: 턴 종료 -->
+    <!-- [전투 3단] 중간 조작 바: 좌측 메뉴(덱/묘지 장수) / 중앙 카드 실행 버튼 / 우측 턴 종료 -->
     <div class="mid-control-row">
       <button class="mid-side-btn" onclick="AppUI.openTacticalMenu()">
         <span>📋 메뉴</span>
@@ -552,14 +560,14 @@
       <button id="btn-end-turn" class="mid-side-btn" onclick="AppUI.onClickEndTurn()">턴 종료</button>
     </div>
 
-    <!-- [하단] 고정 크기 카드 가로 스크롤 손패 -->
+    <!-- [전투 4단] 하단 가로 스크롤 손패 영역 -->
     <div class="hand-section">
       <div id="hand-grid" class="hand-carousel"></div>
     </div>
 
   </div>
 
-  <!-- [6] 길 선택 / 캠프 / 보상 선택 화면 -->
+  <!-- [화면 6] 범용 선택 화면 (초기 특성/보급 선택, 갈림길, 캠프, 전투 승리 보상, 엔딩 모두 이 화면을 재사용) -->
   <div id="screen-choice" class="screen">
     <div class="screen-header">
       <strong id="choice-header-title" style="color:var(--fx-yellow);">🧭 진행 선택</strong>
@@ -572,14 +580,13 @@
     <div id="choice-list" class="scroll-list"></div>
   </div>
 
-  <!-- [7] 도감 화면 (카드 / 버프 / 디버프 / 특성 / 유물) -->
+  <!-- [화면 7] 도감 화면 (카드 / 버프 / 디버프 / 의념 / 특성 / 유물 / 개체 / 룰북) -->
   <div id="screen-codex" class="screen">
     <div class="screen-header">
       <strong style="color:var(--fx-yellow);">📚 도감</strong>
       <button onclick="AppUI.go('screen-start')">뒤로</button>
     </div>
 
-    <!-- 8개 카테고리 전환 탭 -->
     <div class="codex-tabs">
       <button id="tab-codex-CARD" class="codex-tab active" onclick="AppUI.renderCodex('CARD')">카드</button>
       <button id="tab-codex-BUFF" class="codex-tab" onclick="AppUI.renderCodex('BUFF')">버프</button>
@@ -595,7 +602,7 @@
     <div id="codex-list" class="scroll-list"></div>
   </div>
 
-    <!-- [8] 패치노트 화면 -->
+  <!-- [화면 8] 패치노트 화면 -->
   <div id="screen-patch" class="screen">
     <div class="screen-header">
       <strong style="color:var(--fx-yellow);">📋 패치노트</strong>
@@ -605,7 +612,7 @@
     <div id="patch-list" class="scroll-list"></div>
   </div>
 
-  <!-- [모달 1] 통합 전술 메뉴 (특성/유물 터치 설명 + 덱/무덤 카드 조회) -->
+  <!-- [모달 1] 통합 전술 메뉴 팝업 (전투 중/갈림길에서 층수, 누적 피격, 보유 특성/유물, 덱/묘지 목록 확인) -->
   <div id="modal-menu" class="modal-overlay" onclick="AppUI.toggleModal('modal-menu', false)">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="screen-header">
@@ -619,7 +626,7 @@
     </div>
   </div>
 
-  <!-- [모달 2] 상태이상 / 유물 / 특성 / 카드 목록 팝업 -->
+  <!-- [모달 2] 상세 정보 팝업 (버프/디버프 배지 터치 설명, 전체 로그 보기, 덱/묘지 카드 리스트 출력 공용) -->
   <div id="modal-info" class="modal-overlay" onclick="AppUI.toggleModal('modal-info', false)">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="screen-header">
@@ -635,12 +642,20 @@
 <script>
 /**
  * ============================================================================
- * 1. RNG 모듈
+ * 1. RNG (난수 생성 및 배열 추첨 모듈)
+ * - 일반 전투에서는 무작위 난수를 생성하고,
+ * - 스토리 모드(예: 1-1장에서 용자의 행운이 무조건 30 데미지를 띄워야 할 때)에서는
+ *   riggedQueue에 미리 넣어둔 조작값(rigNext)을 우선 꺼내 쓰는 구조입니다.
  * ============================================================================
  */
 const RNG = {
+  // 스토리 연출용 난수 조작 대기열 (비어있으면 순수 랜덤, 값이 있으면 그 값을 먼저 꺼내 씀)
   riggedQueue: [],
+
+  // 다음번 randInt 호출 시 나올 숫자를 미리 예약 (스토리 스크립트의 RIG_NEXT_RANDOM에서 사용)
   rigNext(val) { this.riggedQueue.push(val); },
+
+  // min 이상 max 이하의 정수 난수 1개를 반환 (예: randInt(10, 30) -> 10~30 중 하나)
   randInt(min, max) {
     if (this.riggedQueue.length > 0) {
       const rigged = this.riggedQueue.shift();
@@ -648,10 +663,15 @@ const RNG = {
     }
     return Math.floor(Math.random() * (max - min + 1)) + min;
   },
+
+  // 배열(arr)에서 무작위로 원소 1개를 골라 반환 (예: 적 패턴 랜덤 선택, 랜덤 버프 1개 선택)
   pickRandom(arr) {
     if (!arr || !arr.length) return null;
     return arr[this.randInt(0, arr.length - 1)];
   },
+
+  // 배열(arr)에서 중복 없이 count개만큼 무작위로 뽑아 새 배열로 반환
+  // (보상 카드 3장 추첨, 유물 2개 추첨, 덱 셔플 시 전체 카드를 무작위 순서로 섞을 때 사용)
   sampleUnique(arr, count) {
     const copy = [...arr];
     const out = [];
@@ -661,56 +681,69 @@ const RNG = {
     }
     return out;
   },
+
+  // 조작 대기열 초기화 (스토리 챕터 새로 시작할 때 호출)
   reset() { this.riggedQueue = []; }
 };
 
 /**
  * ============================================================================
  * 2. SaveLedger (스토리 + 로그라이크 계승 평면 텍스트 세이브)
+ * - 브라우저 LocalStorage 대신 유저가 직접 복사/수정할 수 있는 텍스트 장부 구조
  * ============================================================================
  */
 const SaveLedger = {
   data: {
-    'stage_1_1.clear': false,
-    'stage_1_2.clear': false, // 👈 추가
-    'flag.chose_revenge': false,
-    'unlocked.cards': '020,013,011', // 스토리-로그라이크 연동 미확정
-    'roguelike.active': false,
-    'roguelike.floor': 1,
-    'roguelike.hp': 150,
-    'roguelike.maxHp': 150,
-    'roguelike.hitTakenCount': 0,
-    'roguelike.deck': '001,001,001,010,010,010,005,005,002,002,011,011',
-    'roguelike.relics': '',
-    'roguelike.traits': '',
-    'roguelike.clearedBosses': '',
-    'roguelike.relic015Wins': 0,
-    'roguelike.runLog': '',     // 층별 여정 요약
-    'roguelike.deathCause': ''  // 사망 원인
+    'stage_1_1.clear': false,     // 스토리 1-1 클리어 여부
+    'stage_1_2.clear': false,     // 스토리 1-2 클리어 여부
+    'flag.chose_revenge': false,  // 스토리 1-1 선택지 분기 플래그
+    'roguelike.active': false,    // 진행 중인 기사도(로그라이크) 세이브 존재 여부
+    'roguelike.floor': 1,         // 현재 진행 층수
+    'roguelike.hp': 150,          // 현재 체력
+    'roguelike.maxHp': 150,       // 최대 체력
+    'roguelike.hitTakenCount': 0, // 누적 피격 횟수 ([013 복수] 데미지 계산용)
+    'roguelike.deck': '001,001,001,010,010,010,005,005,002,002,011,011', // 보유 카드 ID 목록
+    'roguelike.relics': '',       // 보유 유물 ID 목록 (쉼표 구분)
+    'roguelike.traits': '',       // 보유 특성 ID 목록 (쉼표 구분)
+    'roguelike.clearedBosses': '',// 이번 도전에서 이미 격파한 보스 ID 목록 (중복 등장 방지용)
+    'roguelike.relic015Wins': 0,  // 유물 [015 별빛 망토]의 2승 카운터 추적용
+    'roguelike.runLog': '',       // 층별 행적 요약 기록 (예: 1F:굴토끼(승/4T/HP:142) > ...)
+    'roguelike.deathCause': ''    // 패배 시 마지막으로 기록된 사망 원인
   },
+
+  // 특정 세이브 키 값 읽기
   get(key) { return this.data[key]; },
+
+  // 특정 세이브 키 값 덮어쓰기
   set(key, value) { this.data[key] = value; },
+
+  // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.04)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.05)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
     return lines.join('\n');
   },
+
+  // 유저가 텍스트창에 붙여넣은 문자열을 파싱하여 data 객체에 반영 ([기록 적용하기] 버튼용)
   importText(rawText) {
     const nextData = {};
     const lines = rawText.split(/\r?\n/);
     for (const rawLine of lines) {
-      const cleanLine = rawLine.split('#')[0].trim();
+      const cleanLine = rawLine.split('#')[0].trim(); // '#' 뒷부분 주석 제거
       if (!cleanLine) continue;
       const eqIdx = cleanLine.indexOf('=');
       if (eqIdx === -1) continue;
       const key = cleanLine.slice(0, eqIdx).trim();
       const valStr = cleanLine.slice(eqIdx + 1).trim();
       if (!key) continue;
+
+      // 문자열을 원래 자료형(불리언, 숫자, 문자열 목록)으로 복원
+      // ※ deck, relics, traits는 카드/유물이 1개만 남았을 때(예: '001') 숫자로 변환되면 앞의 0이 날아가므로 무조건 문자열로 유지
       if (valStr === 'true') nextData[key] = true;
       else if (valStr === 'false') nextData[key] = false;
-      else if (!isNaN(valStr) && valStr !== '' && !valStr.includes(',') && !key.endsWith('deck') && !key.endsWith('relics') && !key.endsWith('traits') && !key.endsWith('cards')) {
+      else if (!isNaN(valStr) && valStr !== '' && !valStr.includes(',') && !key.endsWith('deck') && !key.endsWith('relics') && !key.endsWith('traits')) {
         nextData[key] = Number(valStr);
       } else {
         nextData[key] = valStr;
@@ -721,368 +754,107 @@ const SaveLedger = {
   }
 };
 
-// 패치노트
+// 패치노트DB
 const PatchNotesDB = [
-  {
-    version: 'v0.97',
-    title: '유물 및 특성 조정(별빛 망토, 빳빳한 털, 잔머리, 건강 호흡법, 약초 채집가), 특성 추가(탐욕스런 앞니, 적응형 두뇌) 시작 룰 개정(고정 12장에서 고정 9장 +자유 선택 3장으로), 룰북 추가, 패치노트 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.96',
-    title: '도감 갱신(의념, 개체 추가)',
-    desc: ''
-  },
-  {
-    version: 'v0.95',
-    title: '카드 1장, 유물 9종 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.94',
-    title: '적 4종 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.93',
-    title: '밸런스 조정(설리반 뇌진탕 스택 1에서 3, 수녀 나엘 인내 획득 1에서 2)',
-    desc: ''
-  },
-  {
-    version: 'v0.92',
-    title: '기사도 10층 단위 피해량 증가에 관한 표기 개선',
-    desc: ''
-  },
-  {
-    version: 'v0.91',
-    title: '로그 추적 추가(층별 여정 요약, 사망 원인 기록)',
-    desc: ''
-  },
-  {
-    version: 'v0.90',
-    title: '재생 버그성 부활 픽스, 스토리 1-1 복수 연출 픽스, 카드 생명보험, ZOM 추가, 수녀 나엘 보상 조정',
-    desc: ''
-  },
-  {
-    version: 'v0.89',
-    title: '토끼기사의 지혜, 토끼시종의 부름 상향',
-    desc: ''
-  },
-  {
-    version: 'v0.88',
-    title: '두더지파 주리 밸런스 패치, 실명 버그 픽스',
-    desc: ''
-  },
-  {
-    version: 'v0.87',
-    title: '적 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.86',
-    title: '복수 너프, 유물 및 특성 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.85',
-    title: '난이도 상향, 버그 픽스',
-    desc: ''
-  },
-  {
-    version: 'v0.84',
-    title: '비시즌/시즌 석궁병 제나, 두더지파 주리 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.83',
-    title: '전화위복, 뇌진탕 버그 픽스',
-    desc: ''
-  },
-  {
-    version: 'v0.82',
-    title: 'spritemap 추가(이미지 추가)',
-    desc: ''
-  },
-  {
-    version: 'v0.81',
-    title: 'BGM 추가, onclick 버그 픽스',
-    desc: ''
-  },
-  {
-    version: 'v0.80',
-    title: '시각적 피드백 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.79',
-    title: 'Codex 항목 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.78',
-    title: 'UI 대폭 개선',
-    desc: ''
-  },
-  {
-    version: 'v0.77',
-    title: '스토리 로그 도입',
-    desc: ''
-  },
-  {
-    version: 'v0.76',
-    title: 'UI 개선',
-    desc: ''
-  },
-  {
-    version: 'v0.75',
-    title: '로그라이크 UX 업데이트',
-    desc: ''
-  },
-  {
-    version: 'v0.74',
-    title: '모바일 화면으로 UI 변경',
-    desc: ''
-  },
-  {
-    version: 'v0.73',
-    title: '로그라이크 모드 도입',
-    desc: ''
-  },
-  {
-    version: 'v0.69',
-    title: '카드 40종, 유물, 특성 설계',
-    desc: ''
-  },
-  {
-    version: 'v0.68',
-    title: '카드 40종 준비',
-    desc: ''
-  },
-  {
-    version: 'v0.67',
-    title: '시험용 카드 및 게임 진행 검증',
-    desc: ''
-  },
-  {
-    version: 'v0.66',
-    title: '게임명 [Sir Mad Boomer RabbitKnight]로 변경, v0.65 코드 전량 폐기, 데이터지향 카드DB로 변경',
-    desc: ''
-  },
-  {
-    version: 'v0.65',
-    title: '[Do Not Use RabbitKnight] 최종 버전, 보석 및 가시성 연출',
-    desc: ''
-  },
-  {
-    version: 'v0.64',
-    title: '상태창, 보석 위치 수정',
-    desc: ''
-  },
-  {
-    version: 'v0.62',
-    title: 'AP 제한 도입, 보석 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.61',
-    title: '덱 랜덤 셔플 개선',
-    desc: ''
-  },
-  {
-    version: 'v0.60',
-    title: '패배 시 재도전 기능 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.58',
-    title: '핸드 제한 롤백, 적 명칭 조정',
-    desc: ''
-  },
-  {
-    version: 'v0.57',
-    title: '최대 핸드 8, 적 명칭 조정',
-    desc: ''
-  },
-  {
-    version: 'v0.56',
-    title: '초기 덱 세팅 변경',
-    desc: ''
-  },
-  {
-    version: 'v0.55',
-    title: '인터미션, 엔딩 화면 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.54',
-    title: '적 행동 규칙, 엔딩 조건 조정',
-    desc: ''
-  },
-  {
-    version: 'v0.53',
-    title: '롤백, 3층 단위 카드군 저격 보상 추가, 정보 표기 개선',
-    desc: ''
-  },
-  {
-    version: 'v0.51',
-    title: '게임명 [Do Not Use RabbitKnight]로 변경, 실명, 부채계약 표기 개선, 인트로 해설 화면 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.52',
-    title: '덱 목록 상세보기 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.50',
-    title: '토끼기사의 지혜 연출 픽스, 토끼기사에게 경례 버튼 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.49',
-    title: '고요한 밤 연출 수정',
-    desc: ''
-  },
-  {
-    version: 'v0.48',
-    title: 'AP 회복, 고요한 밤, 실명 연출 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.47',
-    title: '드로우 피드백, 추가시전, 가드, 회복 연출 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.46',
-    title: '전투 UI 연출 보완 3',
-    desc: ''
-  },
-  {
-    version: 'v0.43',
-    title: '전투 UI 완전 개편',
-    desc: ''
-  },
-  {
-    version: 'v0.42',
-    title: '토끼기사의 지혜 연출 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.41',
-    title: '게임모드 정돈, 카드목록 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.36',
-    title: '게임모드 분리(3컨셉 기본덱 스타팅 / 완전랜덤 3택1 10종 스타팅)',
-    desc: ''
-  },
-  {
-    version: 'v0.26',
-    title: '게임명 [deck-building beta]에서 [NeverNorma]로 변경',
-    desc: ''
-  },
-  {
-    version: 'v0.21',
-    title: '시작 컨셉 덱 3종(연격, 상태이상, 반격) 선택 기능 추가',
-    desc: ''
-  },
-  {
-    version: 'v0.15',
-    title: '토끼기사의 지혜 사용 연출이 최초로 추가된 버전',
-    desc: ''
-  },
-  {
-    version: 'v0.19',
-    title: '코드가 1천줄을 넘기 전 마지막 버전',
-    desc: ''
-  },
-  {
-    version: 'v0.13',
-    title: '패치내용을 기록하지 않아서 v0.06으로 뜨고 뭘 추가한 건지 알 수 없는 암흑기',
-    desc: ''
-  },
-  {
-    version: 'v0.06',
-    title: '인트로 타이포 속도가 느린 버전',
-    desc: ''
-  },
-  {
-    version: 'v0.03',
-    title: '카드를 누르면 실행할지 안 물어보고 바로 실행되는 버전',
-    desc: ''
-  },
-  {
-    version: 'v0.01',
-    title: '알파 버전 코드 전량 폐기, 절차지향 선택, 카드 10종은 있는데 게임 시작 누르면 실행이 안 되는 버전',
-    desc: ''
-  },
-  {
-    version: '알파 v0.10',
-    title: 'UI 영역이 정돈되지 않고 임시 로그로 진행되지만 로그가 1줄씩 뜨며 임시테스트로 가득하고 카드 실행하다가 멈추는 버전',
-    desc: ''
-  },
-  {
-    version: '알파 v0.05',
-    title: '객체 지향적 상태 관리자들을 만들어놓았고 카드 DB가 존재하지만 임시 로그가 없어 화면 진행만 확인하는 버전',
-    desc: ''
-  },
-  {
-    version: '알파 v0.01',
-    title: '객체 지향적 상태 관리자: 전역, 시작, 인트로, 전투, 종료, 게임마스터 class 할당',
-    desc: ''
-  },
-  {
-    version: 'v0.98',
-    title: '시작보상 시각 피드백 추가, 에셋 프리로딩',
-    desc: ''
-  },
-  {
-    version: 'v0.99 (2026.11.16.)',
-    title: '스토리 1-2 겁 많은 아이 추가',
-    desc: ''
-  },
-  {
-    version: 'v1.00 (2026.11.17.)',
-    title: '엘리트 2종 추가: 좀비토끼 나나, 어뢰 바바, 엘리트 밸런스 패치:시즌 제나 기믹 수정(유비무환 상한선 4회 적용), 카드 밸런스 상향 패치: 착란(코스트 하향, 방어도 획득), 환영모자(재생 획득), 토끼굴의 기억(인내 부여 상향), 공평한 카라보스(코스트 하향, 버프 약탈), 토끼의 투지(타수 중첩 가능), 무지몽매(코스트 하향, 조건 완화), 토끼남작의 이빨(타수 적용), 산토끼습격(타수 적용), 실명(재생, 드로우 획득), 전화위복(조건 완화, 방어도 획득), 참을성 없는 설리반(조건 완화, 기믹 완화), 눈사태(방어도 획득), 체온교환(기믹 수정), 토끼제독의 모자(타수 적용), 버니합(조건 완화), 살랑거리는 토끼귀(기믹 변경), 토끼마녀의 금고(패널티 완화), 토끼기사의 고집불통(조건 완화), 얼어붙은 바다여(수치 조정), 안개얼음성채(방어도 획득, 피해감면 상향), 굴절(착란 추가), 생명보험(방어도 상향)',
-    desc: ''
-  },
-  {
-    version: 'v1.01 (2026.11.17.)',
-    title: '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
-    desc: ''
-  },
-  {
-    version: 'v1.02 (2026.11.18.)',
-    title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락',
-    desc: ''
-  },
-  {
-    version: 'v1.03 (2026.11.18.)',
-    title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자 + 표기개선: 전화위복 + 유물:센마의 털옷이 onOwnerTurnEnd 실행 시 버그 나서 임시 주석 처리',
-    desc: ''
-  },
-  {
-    version: 'v1.04 (2026.11.18.)',
-    title: '버그픽스: 센마의 털옷, 유물추가: 빵가루, 털모자, 가죽장갑, 요술망치, 사과사탕, 육포, 카드 상향: 복수(코스트 하향)',
-    desc: ''
-  }
+  { version: 'v0.97', title: '유물 및 특성 조정(별빛 망토, 빳빳한 털, 잔머리, 건강 호흡법, 약초 채집가), 특성 추가(탐욕스런 앞니, 적응형 두뇌) 시작 룰 개정(고정 12장에서 고정 9장 +자유 선택 3장으로), 룰북 추가, 패치노트 추가', desc: '' },
+  { version: 'v0.96', title: '도감 갱신(의념, 개체 추가)', desc: '' },
+  { version: 'v0.95', title: '카드 1장, 유물 9종 추가', desc: '' },
+  { version: 'v0.94', title: '적 4종 추가', desc: '' },
+  { version: 'v0.93', title: '밸런스 조정(설리반 뇌진탕 스택 1에서 3, 수녀 나엘 인내 획득 1에서 2)', desc: '' },
+  { version: 'v0.92', title: '기사도 10층 단위 피해량 증가에 관한 표기 개선', desc: '' },
+  { version: 'v0.91', title: '로그 추적 추가(층별 여정 요약, 사망 원인 기록)', desc: '' },
+  { version: 'v0.90', title: '재생 버그성 부활 픽스, 스토리 1-1 복수 연출 픽스, 카드 생명보험, ZOM 추가, 수녀 나엘 보상 조정', desc: '' },
+  { version: 'v0.89', title: '토끼기사의 지혜, 토끼시종의 부름 상향', desc: '' },
+  { version: 'v0.88', title: '두더지파 주리 밸런스 패치, 실명 버그 픽스', desc: '' },
+  { version: 'v0.87', title: '적 추가', desc: '' },
+  { version: 'v0.86', title: '복수 너프, 유물 및 특성 추가', desc: '' },
+  { version: 'v0.85', title: '난이도 상향, 버그 픽스', desc: '' },
+  { version: 'v0.84', title: '비시즌/시즌 석궁병 제나, 두더지파 주리 추가', desc: '' },
+  { version: 'v0.83', title: '전화위복, 뇌진탕 버그 픽스', desc: '' },
+  { version: 'v0.82', title: 'spritemap 추가(이미지 추가)', desc: '' },
+  { version: 'v0.81', title: 'BGM 추가, onclick 버그 픽스', desc: '' },
+  { version: 'v0.80', title: '시각적 피드백 추가', desc: '' },
+  { version: 'v0.79', title: 'Codex 항목 추가', desc: '' },
+  { version: 'v0.78', title: 'UI 대폭 개선', desc: '' },
+  { version: 'v0.77', title: '스토리 로그 도입', desc: '' },
+  { version: 'v0.76', title: 'UI 개선', desc: '' },
+  { version: 'v0.75', title: '로그라이크 UX 업데이트', desc: '' },
+  { version: 'v0.74', title: '모바일 화면으로 UI 변경', desc: '' },
+  { version: 'v0.73', title: '로그라이크 모드 도입', desc: '' },
+  { version: 'v0.69', title: '카드 40종, 유물, 특성 설계', desc: '' },
+  { version: 'v0.68', title: '카드 40종 준비', desc: '' },
+  { version: 'v0.67', title: '시험용 카드 및 게임 진행 검증', desc: '' },
+  { version: 'v0.66', title: '게임명 [Sir Mad Boomer RabbitKnight]로 변경, v0.65 코드 전량 폐기, 데이터지향 카드DB로 변경', desc: '' },
+  { version: 'v0.65', title: '[Do Not Use RabbitKnight] 최종 버전, 보석 및 가시성 연출', desc: '' },
+  { version: 'v0.64', title: '상태창, 보석 위치 수정', desc: '' },
+  { version: 'v0.62', title: 'AP 제한 도입, 보석 추가', desc: '' },
+  { version: 'v0.61', title: '덱 랜덤 셔플 개선', desc: '' },
+  { version: 'v0.60', title: '패배 시 재도전 기능 추가', desc: '' },
+  { version: 'v0.58', title: '핸드 제한 롤백, 적 명칭 조정', desc: '' },
+  { version: 'v0.57', title: '최대 핸드 8, 적 명칭 조정', desc: '' },
+  { version: 'v0.56', title: '초기 덱 세팅 변경', desc: '' },
+  { version: 'v0.55', title: '인터미션, 엔딩 화면 추가', desc: '' },
+  { version: 'v0.54', title: '적 행동 규칙, 엔딩 조건 조정', desc: '' },
+  { version: 'v0.53', title: '롤백, 3층 단위 카드군 저격 보상 추가, 정보 표기 개선', desc: '' },
+  { version: 'v0.51', title: '게임명 [Do Not Use RabbitKnight]로 변경, 실명, 부채계약 표기 개선, 인트로 해설 화면 추가', desc: '' },
+  { version: 'v0.52', title: '덱 목록 상세보기 추가', desc: '' },
+  { version: 'v0.50', title: '토끼기사의 지혜 연출 픽스, 토끼기사에게 경례 버튼 추가', desc: '' },
+  { version: 'v0.49', title: '고요한 밤 연출 수정', desc: '' },
+  { version: 'v0.48', title: 'AP 회복, 고요한 밤, 실명 연출 추가', desc: '' },
+  { version: 'v0.47', title: '드로우 피드백, 추가시전, 가드, 회복 연출 추가', desc: '' },
+  { version: 'v0.46', title: '전투 UI 연출 보완 3', desc: '' },
+  { version: 'v0.43', title: '전투 UI 완전 개편', desc: '' },
+  { version: 'v0.42', title: '토끼기사의 지혜 연출 추가', desc: '' },
+  { version: 'v0.41', title: '게임모드 정돈, 카드목록 추가', desc: '' },
+  { version: 'v0.36', title: '게임모드 분리(3컨셉 기본덱 스타팅 / 완전랜덤 3택1 10종 스타팅)', desc: '' },
+  { version: 'v0.26', title: '게임명 [deck-building beta]에서 [NeverNorma]로 변경', desc: '' },
+  { version: 'v0.21', title: '시작 컨셉 덱 3종(연격, 상태이상, 반격) 선택 기능 추가', desc: '' },
+  { version: 'v0.15', title: '토끼기사의 지혜 사용 연출이 최초로 추가된 버전', desc: '' },
+  { version: 'v0.19', title: '코드가 1천줄을 넘기 전 마지막 버전', desc: '' },
+  { version: 'v0.13', title: '패치내용을 기록하지 않아서 v0.06으로 뜨고 뭘 추가한 건지 알 수 없는 암흑기', desc: '' },
+  { version: 'v0.06', title: '인트로 타이포 속도가 느린 버전', desc: '' },
+  { version: 'v0.03', title: '카드를 누르면 실행할지 안 물어보고 바로 실행되는 버전', desc: '' },
+  { version: 'v0.01', title: '알파 버전 코드 전량 폐기, 절차지향 선택, 카드 10종은 있는데 게임 시작 누르면 실행이 안 되는 버전', desc: '' },
+  { version: '알파 v0.10', title: 'UI 영역이 정돈되지 않고 임시 로그로 진행되지만 로그가 1줄씩 뜨며 임시테스트로 가득하고 카드 실행하다가 멈추는 버전', desc: '' },
+  { version: '알파 v0.05', title: '객체 지향적 상태 관리자들을 만들어놓았고 카드 DB가 존재하지만 임시 로그가 없어 화면 진행만 확인하는 버전', desc: '' },
+  { version: '알파 v0.01', title: '객체 지향적 상태 관리자: 전역, 시작, 인트로, 전투, 종료, 게임마스터 class 할당', desc: '' },
+  { version: 'v0.98', title: '시작보상 시각 피드백 추가, 에셋 프리로딩', desc: '' },
+  { version: 'v0.99 (2026.11.16.)', title: '스토리 1-2 겁 많은 아이 추가', desc: '' },
+  { version: 'v1.00 (2026.11.17.)', title: '엘리트 2종 추가: 좀비토끼 나나, 어뢰 바바, 엘리트 밸런스 패치:시즌 제나 기믹 수정(유비무환 상한선 4회 적용), 카드 밸런스 상향 패치: 착란(코스트 하향, 방어도 획득), 환영모자(재생 획득), 토끼굴의 기억(인내 부여 상향), 공평한 카라보스(코스트 하향, 버프 약탈), 토끼의 투지(타수 중첩 가능), 무지몽매(코스트 하향, 조건 완화), 토끼남작의 이빨(타수 적용), 산토끼습격(타수 적용), 실명(재생, 드로우 획득), 전화위복(조건 완화, 방어도 획득), 참을성 없는 설리반(조건 완화, 기믹 완화), 눈사태(방어도 획득), 체온교환(기믹 수정), 토끼제독의 모자(타수 적용), 버니합(조건 완화), 살랑거리는 토끼귀(기믹 변경), 토끼마녀의 금고(패널티 완화), 토끼기사의 고집불통(조건 완화), 얼어붙은 바다여(수치 조정), 안개얼음성채(방어도 획득, 피해감면 상향), 굴절(착란 추가), 생명보험(방어도 상향)', desc: '' },
+  { version: 'v1.01 (2026.11.17.)', title: '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술', desc: '' },
+  { version: 'v1.02 (2026.11.18.)', title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락', desc: '' },
+  { version: 'v1.03 (2026.11.18.)', title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자 + 표기개선: 전화위복 + 유물:센마의 털옷이 onOwnerTurnEnd 실행 시 버그 나서 임시 주석 처리', desc: '' },
+  { version: 'v1.04 (2026.11.18.)', title: '버그픽스: 센마의 털옷, 유물추가: 빵가루, 털모자, 가죽장갑, 요술망치, 사과사탕, 육포, 카드 상향: 복수(코스트 하향)', desc: '' },
+    { version: 'v1.05 (2026.11.18.)', title: '판정 수정: 희망의 기사 조건 트리거 로직 완화 + 코드주석 정돈 + 전투 로그 색상 전환 이슈 개선', desc: '' }
 ];
 
 /**
  * ============================================================================
- * 3. 상수, 유물 30종(RelicDB), 특성 15종(TraitDB), 상태이상(StatusDB)
+ * 3. 상수, 유물 36종(RelicDB), 특성 15종(TraitDB), 상태이상(StatusDB)
  * ============================================================================
  */
+// 전투 엔진 세부 판정 규칙 스위치
 const EngineConfig = {
-  COUNT_REMOVED_BY_STACKS: true,
-  COUNT_BUFFS_BY_STACKS: false,
-  TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY: true
+  COUNT_REMOVED_BY_STACKS: true,            // [040 희망의 기사] 정화 판정 시 종류 수가 아닌 '제거한 스택 총합(7스택+)'으로 계산
+  COUNT_BUFFS_BY_STACKS: false,             // (예비 옵션) 버프 개수 판정 시 종류 수 기준
+  TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY: true  // [024 끼토산] 등으로 [008 토끼기사의 지혜]를 재사용할 때도 묘지행 40딜 발동
 };
 
+// 피해 유형:
+// - PHYSICAL (물리): 실명(빗나감), 인내(흡수), 안개얼음성채(-25), 바바야가(누적), 방어도 차감이 모두 적용되는 일반 타격
+// - STATUS (상태이상): 실명과 인내는 무시하되, 안개얼음성채(-25), 바바야가(누적), 방어도 차감은 적용되는 도트/폭발 피해 (저주, 출혈, 착란, 인내 폭발)
+// - HP_LOSS (체력 상실): 방어도, 인내, 성채, 바바야가를 전부 무시하고 생명력을 직접 깎는 고정 피해 (얼어붙은 바다여 20% 상실, 수녀 나엘 평화 퇴장)
 const DAMAGE_TYPE = { PHYSICAL: 'PHYSICAL', STATUS: 'STATUS', HP_LOSS: 'HP_LOSS' };
+
+// 상태이상 분류: 버프(푸른색) / 디버프(보라색) / 의념(노란색, 정화나 약탈의 대상이 되지 않는 턴 맥락 효과)
 const STATUS_CATEGORY = { BUFF: 'BUFF', DEBUFF: 'DEBUFF', CONTEXT: 'CONTEXT' };
+
+// 상태이상 자연 감소(소멸) 타이밍:
+// - OWNER_TURN_START: 보유자의 턴 시작 시 감소 (바바야가)
+// - OWNER_TURN_END: 보유자의 턴 종료 시 효과 발동 및 감소 (저주, 출혈, 계약, 착란, 뇌진탕, 인내)
+// - CASTER_TURN_START: 이 효과를 건 시전자(Caster)의 다음 턴 시작 시 감소 (난투, 실명 — 건 사람의 턴이 돌아올 때까지 지속 보장)
+// - PLAYER_TURN_END_CONTEXT: 플레이어 턴 종료 시 차감되는 의념 전용 타이밍 (투지, 전화위복, 안개얼음성채, 구도자)
+// - NONE: 턴 경과로는 자연 감소하지 않음 (도깨비바늘처럼 영구 유지되거나, 독검·재생·설리반·보험·언데드처럼 특정 조건 발동 시에만 소모됨)
 const DECAY_TIMING = {
   OWNER_TURN_START: 'OWNER_TURN_START',
   OWNER_TURN_END: 'OWNER_TURN_END',
@@ -1091,34 +863,34 @@ const DECAY_TIMING = {
   NONE: 'NONE'
 };
 
-// 🎨 이미지 에셋 매핑 사전 (추후 이미지 경로 확장자까지 기입)
+// 캐릭터명 <-> 이미지 파일 경로 매핑 사전
 const SpriteMap = {
-  '메인 로고': 'logo.png',           // 예: 'logo.png'
-  '토끼기사 스탠딩': 'the_knight.png',     // 예: 'rabbit_standing.png' (스토리 모드용)
-  '토끼기사': 'knight.png',           // 전투 플레이어 (도트)
-  '석궁병 제나': 'jena.png',         // 스토리 1-1 적
-  '굴토끼': 'grabbit.png',             // 일반 적
-  '태엽토끼': 'taprabbit.png', 
-  '독니토끼': 'porabbit.png', 
-  '설산의 기사': 'winterknight.png',         // 엘리트
-  '토끼마녀 시향': 'witchrabbit.png',        // 보스
-  '비시즌 석궁병 제나': 'jena.png',
-  '시즌 제나': 'jena.png',
-  '두더지파 보스 주리': 'juri.png',
-  '탈영병 산토': 'santo.png',
-  '토끼수녀 나엘': 'nael.png',
-  '물토끼 바바': 'baba.png',
-  '눈토끼 우메': 'ume.png',
-  '토끼닌자 엘': 'ninja_l.png',
-  '토끼거북 샤미': 'shami.png',
-  '토끼무희': 'dancer.png',
-  '무당왕 쟌느': 'jeanne.png',
-  '좀비토끼 나나': 'nana.png',
-  '어뢰 바바': 'baba.png',
-  '대천사토끼 나엘': 'nael.png'
+  '메인 로고': './assets/logo.png',
+  '토끼기사 스탠딩': './assets/the_knight.png',
+  '토끼기사': './assets/knight.png',
+  '석궁병 제나': './assets/jena.png',
+  '굴토끼': './assets/grabbit.png',
+  '태엽토끼': './assets/taprabbit.png', 
+  '독니토끼': './assets/porabbit.png', 
+  '설산의 기사': './assets/winterknight.png',
+  '토끼마녀 시향': './assets/witchrabbit.png', 
+  '비시즌 석궁병 제나': './assets/jena.png',
+  '시즌 제나': './assets/jena.png',
+  '두더지파 보스 주리': './assets/juri.png',
+  '탈영병 산토': './assets/santo.png',
+  '토끼수녀 나엘': './assets/nael.png',
+  '물토끼 바바': './assets/baba.png',
+  '눈토끼 우메': './assets/ume.png',
+  '토끼닌자 엘': './assets/ninja_l.png',
+  '토끼거북 샤미': './assets/shami.png',
+  '토끼무희': './assets/dancer.png',
+  '무당왕 쟌느': './assets/jeanne.png',
+  '좀비토끼 나나': './assets/nana.png',
+  '어뢰 바바': './assets/baba.png',
+  '대천사토끼 나엘': './assets/nael.png'
 };
 
-// 유물 30종 정의
+// 유물 
 const RelicDB = {
   '001': {
     id: '001', name: '불굴의 털', priority: 20,
@@ -1415,8 +1187,7 @@ const RelicDB = {
   }
 };
 
-
-// 특성 15종 정의
+// 특성
 const TraitDB = {
   '001': {
     id: '001', name: '빳빳한 털', priority: 10,
@@ -1540,7 +1311,7 @@ const TraitDB = {
     }
   },
   '012': {
-    id: '012', name: '적응형 두뇌', priority: 11, // 👈 천무지체(10)보다 뒤에 발동하도록 우선순위(11) 부여
+    id: '012', name: '적응형 두뇌', priority: 11, // 천무지체(10)보다 뒤에 발동하도록 우선순위(11) 부여
     desc: '매 턴 시작 시 코스트가 1 이상인 카드 1장의 코스트를 이번 턴 동안 1 감소시킵니다.',
     onPlayerTurnPostDraw: (engine, owner, turn) => {
       if (owner.hand.length > 0) {
@@ -1596,7 +1367,7 @@ const TraitDB = {
   }
 };
 
-// 버프, 디버프, 의념(턴맥락)
+// 버프, 디버프, 의념(턴 맥락)
 const StatusDB = {
   CURSE: {
     id: 'CURSE', code: '001', name: '저주', category: STATUS_CATEGORY.DEBUFF, priority: 50,
@@ -1649,7 +1420,7 @@ const StatusDB = {
   CONCUSSION: {
     id: 'CONCUSSION', code: '007', name: '뇌진탕', category: STATUS_CATEGORY.DEBUFF, priority: 50,
     decayTiming: DECAY_TIMING.OWNER_TURN_END,
-    canPlayCard: () => false, // 👈 모든 카드 및 행동 사용 불가 (기절)
+    canPlayCard: () => false, // 모든 카드 및 행동 사용 불가 (기절)
     onOwnerTurnEnd: (engine, owner, instance) => engine.statuses.tryDecayDebuff(owner, instance, 1)
   },
   GOBLIN_NEEDLE: {
@@ -1698,7 +1469,7 @@ const StatusDB = {
     id: 'REGEN', code: '004', name: '재생', category: STATUS_CATEGORY.BUFF, priority: 50,
     decayTiming: DECAY_TIMING.NONE,
     onHpDecreased: (engine, owner, actualHpLost, instance) => {
-      if (owner.hp <= 0) return; // 👈 이미 치명타를 입어 HP가 0 이하면 재생 발동 안 함
+      if (owner.hp <= 0) return; // 이미 치명타를 입어 HP가 0 이하면 재생 발동 안 함
       engine.heal(owner, 7, '재생');
       engine.statuses.changeStacks(owner, instance, -1, 'DISPEL');
     }
@@ -1791,7 +1562,7 @@ const StatusDB = {
   }
 };
 
-// 일반 10종, 엘리트 4종, 보스 5종 설명
+// 도감 개체 설명: 일반 10종, 엘리트 4종, 보스 5종
 const EnemyMeta = {
   COAL_MOLE: { type: '일반 적', desc: '[흙먼지 돌진(물리 14)], [굴 파기(방어 14 + 물리 8)]를 번갈아 사용하는 가난한 굴토끼입니다.' },
   RUSTY_SOLDIER: { type: '일반 적', desc: '[태엽 감기(방어 16 + 도깨비바늘 1)]. [빨리감기(물리 32)]. [과부하 정지(휴식)]를 반복하는 태엽토끼입니다.' },
@@ -1805,16 +1576,16 @@ const EnemyMeta = {
   RABBIT_DANCER: { type: '일반 적', desc: '[우아한 스텝(방어 10 + 재생 2)], [부채춤(물리 7x2)], [칼춤(물리 16 + 출혈 1)], [매혹의 춤(저주 2 + 착란 1)]을 추는 토끼무희입니다.' },
   ELITE_SEASON_ZENA: { type: '🔥 엘리트', desc: '[디버프를 부여 받으면 다음 턴 즉시 정화(유비무환, 전투 당 최대 4회)]하고 [단궁난무(물리 6x6)]를 쉬지 않고 사용하는 시즌 제나입니다.' },
   ELITE_MIRROR_KNIGHT: { type: '🔥 엘리트', desc: '[겨울의 장막(바바야가 2 + 방어 10)], [서리 창 찌르기(물리 14)], [겨울 호흡(재생 3)]을 반복하는로 옛 설산의 기사입니다.' },
-  BOSS_JEANNE: { type: '👑 보스', desc: '접신(방어 20 + 재생 2), 원혼 부르기(저주 3 + 착란 2), 혼령 타격(물리 15 + 출혈 1), 살풀이(정화 + 방어 30), 작두 타기(물리 5x4), 신내림(방어 40 + 설리반 2), 억압하는 방울(물리 12 + 난투 2), 대굿 준비(방어 50), 강림:천벌(물리 66), 탈진(휴식)을 수행하는 무당왕 쟌느입니다.' },
-  BOSS_JURI: { type: '👑 보스', desc: '부하 소집(방어 25 + 출혈 4), 지하 참호 파기(방어 35 + 재생 3), 무자비한 난도질(물리 19 + 출혈 2), 두더지식 강제정산(강제정산 + 부당거래)을 사용하는 두더지파 보스 주리입니다.' },
-  BOSS_SANTO: { type: '👑 보스', desc: '배반자의 산개(방어 28 + 도깨비바늘 2), 산구르기(물리 14 + 방어 44), 분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치), 토끼굴 매도(출혈 2 + 저주 3 + 방어 20)를 사용하는 증오에 찬 탈영병 산토입니다.' },
+  ELITE_ZOMBIE_NANA: { type: '🔥 엘리트', desc: '[망자의 서약(언데드 2 + 저주 2)], [부패한 이빨(물리 15 + 출혈 1)], [시체 껍질(방어 22 + 재생 2)], [원혼의 비명(물리 9x2 + 착란 1)], [불사의 집념(언데드 1 + 물리 14)], [묘지기의 난도질(물리 7x3)], [사후경직(방어 16)]을 지르는 좀비토끼 나나입니다.' },
+  ELITE_TORPEDO_BABA: { type: '🔥 엘리트', desc: '[심해의 룰렛(모두에게 랜덤 버프/디버프 2종 부여)], [어뢰 돌진(물리 24 + 방어 14)], [해적식 약탈(플레이어 버프 2종 강탈 or 방어 24)], [어뢰 연사(물리 6x3)], [어뢰 장갑 전개(도깨비바늘 2 + 방어 18)], [오물 투척(물리 12 + 디버프 전가)], [잠수 재장전(방어 26 + 재생 2)]에 미친 어뢰 바바입니다.' },
+  BOSS_JEANNE: { type: '👑 보스', desc: '[접신(방어 20 + 재생 2)], [원혼 부르기(저주 3 + 착란 2)], [혼령 타격(물리 15 + 출혈 1)], [살풀이(정화 + 방어 30)], [작두 타기(물리 5x4)], [신내림(방어 40 + 설리반 2)], [억압하는 방울(물리 12 + 난투 2)], [대굿 준비(방어 50)], [강림:천벌(물리 66)], [탈진(휴식)]을 수행하는 무당왕 쟌느입니다.' },
+  BOSS_JURI: { type: '👑 보스', desc: '[부하 소집(방어 25 + 출혈 4)], [지하 참호 파기(방어 35 + 재생 3)], [무자비한 난도질(물리 19 + 출혈 2)], [두더지식 강제정산(강제정산 + 부당거래)]을 사용하는 두더지파 보스 주리입니다.' },
+  BOSS_SANTO: { type: '👑 보스', desc: '[배반자의 산개(방어 28 + 도깨비바늘 2)], [산구르기(물리 14 + 방어 44)], [분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치)], [토끼굴 매도(출혈 2 + 저주 3 + 방어 20)]를 사용하는 증오에 찬 탈영병 산토입니다.' },
   BOSS_SIHYANG: { type: '👑 보스', desc: '[환영모자 트릭(방어 22 + 착란 1 + 저주 2)], [살랑거리는 귓속말(물리 16 + 상태이상 n)], [마녀의 티타임(방어 33 + 재생 2)], [광란의 버니합(물리 22 + 착란수치x4)]을 선보이는 토끼마녀 시향입니다.' },
-  ELITE_ZOMBIE_NANA: { type: '🔥 엘리트', desc: '망자의 서약(언데드 2 + 저주 2), 부패한 이빨(물리 15 + 출혈 1), 시체 껍질(방어 22 + 재생 2), 원혼의 비명(물리 9x2 + 착란 1), 불사의 집념(언데드 1 + 물리 14), 묘지기의 난도질(물리 7x3), 사후경직(방어 16)을 지르는 좀비토끼 나나입니다.' },
-  ELITE_TORPEDO_BABA: { type: '🔥 엘리트', desc: '심해의 룰렛(모두에게 랜덤 버프/디버프 2종 부여), 어뢰 돌진(물리 24 + 방어 14), 해적식 약탈(플레이어 버프 2종 강탈 or 방어 24), 어뢰 연사(물리 6x3), 어뢰 장갑 전개(도깨비바늘 2 + 방어 18), 오물 투척(물리 12 + 디버프 전가), 잠수 재장전(방어 26 + 재생 2)에 미친 어뢰 바바입니다.' },
   BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' }
 };
 
-// 버프 8종, 디버프 7종, 의념 5종 설명
+// 도감 설명: 버프 8종, 디버프 7종, 의념 5종
 const StatusMeta = {
   CURSE: { icon: '💀', desc: '보유자의 턴이 끝날 때 스택×2 상태이상 피해를 입고 스택이 1 감소합니다.' },
   BLEED: { icon: '🩸', desc: '보유자의 턴이 끝날 때 스택×8 상태이상 피해를 입고 스택이 1 감소합니다.' },
@@ -1838,15 +1609,19 @@ const StatusMeta = {
   CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' }
 };
 
+// 랜덤 버프/디버프 추첨 풀:
+// StatusDB 전체에서 '의념(CONTEXT)'을 제외하고 순수 BUFF와 DEBUFF의 ID만 모아둔 배열
+// ([035 토끼제독의 모자], [물토끼 바바 - 퀸즈겜빗], [어뢰 바바 - 심해의 룰렛]에서 무작위 상태이상을 뽑을 때 사용)
 const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
   k => StatusDB[k].category === STATUS_CATEGORY.BUFF || StatusDB[k].category === STATUS_CATEGORY.DEBUFF
 );
 
 /**
  * ============================================================================
- * 4. 45종+ 카드 DB (CardDB) & 10종+ 적 DB (EnemyDB)
+ * 4. 카드 DB (CardDB) & 적 DB (EnemyDB)
  * ============================================================================
  */
+// 카드 45종
 const CardDB = {
   '001': { id: '001', name: '연속 때리기', cost: 1, type: 'ATTACK', hits: 2, desc: '타수 2, 적에게 물리 데미지를 10 입힙니다', play: (engine, u, t) => engine.executeAttack(u, t, 10) },
   '002': { id: '002', name: '토끼의 투지', cost: 1, type: 'MAGIC', hits: 0, desc: '이번 턴 동안 자신이 사용하는 현재 코스트가 1인 공격의 타수가 +1 증가합니다. (중첩 가능)', play: (engine, u) => engine.statuses.apply(u, u, 'CTX_FIGHTING_SPIRIT', 1) },
@@ -2156,10 +1931,10 @@ const CardDB = {
     id: '040', name: '희망의 기사', cost: 1, type: 'ATTACK', hits: 1, desc: '타수 1, 물리 6, 모두의 버프/디버프 제거. 7스택 이상 제거 시 추가 77 물리피해',
     play: (engine, u, t) => {
       const isStory1_2 = (AppUI.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_2');
-      engine.executeAttack(u, t, isStory1_2 ? 0 : 6);
       const r1 = engine.statuses.removeAll(u, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
       const r2 = engine.statuses.removeAll(t, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
       const cnt = EngineConfig.COUNT_REMOVED_BY_STACKS ? (r1.removedStacks + r2.removedStacks) : (r1.removedCount + r2.removedCount);
+      engine.executeAttack(u, t, isStory1_2 ? 0 : 6);
       if (cnt >= 7 && !isStory1_2) {
         engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 77, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '희망의 기사(추가 피해)' }));
       }
@@ -2292,7 +2067,6 @@ const EnemyDB = {
       };
     }
   },
-  // [일반 4] 비시즌 석궁병 제나 (HP 70 / 재생 유지력 / 6~7턴 기준)
   OFFSEASON_ZENA: {
     id: 'OFFSEASON_ZENA',
     name: '비시즌 석궁병 제나',
@@ -2377,7 +2151,7 @@ const EnemyDB = {
       };
     }
   },
-WATER_BABA: {
+  WATER_BABA: {
     id: 'WATER_BABA', name: '물토끼 바바', maxHp: 99, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
       const cycle = (turn - 1) % 3;
@@ -2471,7 +2245,6 @@ WATER_BABA: {
       }
     }
   },
-  // [엘리트 2] 시즌 제나 (유비무환 최대 4회 제한)
   ELITE_SEASON_ZENA: {
     id: 'ELITE_SEASON_ZENA',
     name: '시즌 제나',
@@ -2540,7 +2313,6 @@ WATER_BABA: {
       }
     }
   },
-  // [엘리트 3] 좀비토끼 나나 (언데드 활용 / 7턴 주기)
   ELITE_ZOMBIE_NANA: {
     id: 'ELITE_ZOMBIE_NANA',
     name: '좀비토끼 나나',
@@ -2606,7 +2378,6 @@ WATER_BABA: {
       }
     }
   },
-  // [엘리트 4] 어뢰 바바 (광역 랜덤 버프/디버프 + 버프 강탈 + 디버프 전이 / 7턴 주기)
   ELITE_TORPEDO_BABA: {
     id: 'ELITE_TORPEDO_BABA',
     name: '어뢰 바바',
@@ -2693,7 +2464,6 @@ WATER_BABA: {
       }
     }
   },
-  // [보스 2] 두더지파 보스 주리 (오타 수정 및 출혈/저주 50% 부당거래 적용)
   BOSS_JURI: {
     id: 'BOSS_JURI',
     name: '두더지파 보스 주리',
@@ -2786,7 +2556,6 @@ WATER_BABA: {
       }
     }
   },
-  // [보스 3] 탈영병 산토 (방어막 가속 & 파쇄 기믹 / HP 410)
   BOSS_SANTO: {
     id: 'BOSS_SANTO',
     name: '탈영병 산토',
@@ -2859,9 +2628,6 @@ WATER_BABA: {
       }
     }
   },
-  // ==========================================
-  // [신규 추가] 정직한 일반 몬스터 3종 (4턴 주기)
-  // ==========================================
   NINJA_L: {
     id: 'NINJA_L', name: '토끼닌자 엘', maxHp: 60, isBoss: false, isElite: false,
     getAction(turn, engine, self, player) {
@@ -2935,9 +2701,6 @@ WATER_BABA: {
     }
   },
 
-  // ==========================================
-  // [신규 추가] 정직한 보스 1종 (10턴 주기)
-  // ==========================================
   BOSS_JEANNE: {
     id: 'BOSS_JEANNE', name: '무당왕 쟌느', maxHp: 350, isBoss: true, isElite: false,
     getAction(turn, engine, self, player) {
@@ -3038,7 +2801,6 @@ WATER_BABA: {
       }
     }
   },
-  // 5번째 보스 대천사 나엘
   BOSS_ARCHANGEL_NAEL: {
     id: 'BOSS_ARCHANGEL_NAEL',
     name: '대천사토끼 나엘',
@@ -3124,44 +2886,57 @@ WATER_BABA: {
 
 /**
  * ============================================================================
- * 5. 코어 전투 엔진 (CombatEngine, StatusManager, Entity, DamagePacket)
+ * 5. 코어 전투 엔진 (DamagePacket, Entity, StatusManager, CombatEngine)
  * ============================================================================
+ */
+
+/**
+ * [DamagePacket] 단일 타격 또는 피해 이벤트 1건의 데이터를 담는 객체
+ * - 데미지가 여러 패시브(실명, 인내, 성채, 방어도 등)를 통과하면서 수치가 깎이거나
+ *   로그 꼬리표(logs)가 누적되는 과정을 하나의 패킷으로 추적하기 위해 사용
  */
 class DamagePacket {
   constructor({ source, target, amount, type = DAMAGE_TYPE.PHYSICAL, isStrike = false, isBonus = false, reason = '' }) {
-    this.source = source;
-    this.target = target;
-    this.baseAmount = amount;
-    this.amount = amount;
-    this.type = type;
-    this.isStrike = isStrike;
-    this.isBonus = isBonus;
-    this.reason = reason;
-    this.logs = [];
+    this.source = source;         // 피해를 가한 주체 (도트/환경 피해면 null)
+    this.target = target;         // 피해를 입는 대상
+    this.baseAmount = amount;     // 패시브 감쇠 전 원래 기본 피해량
+    this.amount = amount;         // 각종 감쇠/증폭 연산을 거치며 실시간으로 변하는 현재 피해량
+    this.type = type;             // 피해 유형 (PHYSICAL / STATUS / HP_LOSS)
+    this.isStrike = isStrike;     // 직접 타격 여부 (true일 때만 독검 소모 및 도깨비바늘·불굴의 털 반격 발동)
+    this.isBonus = isBonus;       // 추가타 여부
+    this.reason = reason;         // 로그 및 사망 원인 추적용 발동 출처 이름
+    this.logs = [];               // 피격 중 적용된 효과 메모 (예: ['인내 흡수', '방어도(-10)'])
   }
 }
 
+/**
+ * [Entity] 전투에 참여하는 개체(플레이어 또는 적) 1명의 실시간 전투 상태
+ */
 class Entity {
   constructor(name, maxHp, isPlayer = false) {
     this.name = name;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.armor = 0;
-    this.energy = 0;
-    this.maxEnergy = 4;
-    this.maxCarryOver = 1;
-    this.isPlayer = isPlayer;
-    this.enemyId = null;
-    this.traits = [];
-    this.relics = [];
-    this.statuses = [];
-    this.deck = [];
-    this.hand = [];
-    this.graveyard = [];
-    this.runTrackers = { hitTakenCount: 0 };
-    this.combatTrackers = { lastGraveyardCard: null };
+    this.armor = 0;               // 현재 방어도 (턴이 넘어가도 자동 초기화되지 않음)
+    this.energy = 0;              // 현재 활력(AP)
+    this.maxEnergy = 4;           // 최대 활력 상한 (기본 4)
+    this.maxCarryOver = 1;        // 턴 종료 시 다음 턴으로 이월되는 최대 활력 (기본 1)
+    this.isPlayer = isPlayer;     // 플레이어 여부
+    this.enemyId = null;          // 적일 경우 EnemyDB의 ID
+    this.traits = [];             // 보유 특성 인스턴스 배열
+    this.relics = [];             // 보유 유물 인스턴스 배열
+    this.statuses = [];           // 현재 걸린 버프/디버프/의념 인스턴스 배열
+    this.deck = [];               // 전투 중 뽑을 카드 더미
+    this.hand = [];               // 현재 손패
+    this.graveyard = [];          // 버려진 카드 더미 (묘지)
+    this.runTrackers = { hitTakenCount: 0 };          // 런 전체 누적 기록 ([013 복수]용 피격 횟수)
+    this.combatTrackers = { lastGraveyardCard: null };// 단일 전투 내 기록 ([024 끼토산]용 직전 묘지 카드)
   }
 
+  /**
+   * 개체가 보유한 모든 패시브(특성 + 유물 + 상태이상)를 하나로 합쳐 우선순위(priority) 오름차순으로 반환
+   * - 숫자가 낮을수록 먼저 실행됨 (예: 특성 10 -> 유물 20 -> 일반 상태이상 50 -> 인내/계약 90 -> 보험 95)
+   */
   getPassives() {
     const list = [
       ...this.traits.map(t => ({ def: TraitDB[t.id], inst: t })),
@@ -3172,17 +2947,28 @@ class Entity {
   }
 }
 
+/**
+ * [StatusManager] 버프·디버프·의념의 부여, 면역 판정, 스택 증감, 해제/제거를 전담하는 관리자
+ */
 class StatusManager {
   constructor(engine) { this.engine = engine; }
+
+  // 표기 오타 보정용 별칭 정규화
   normalizeId(statusId) { return statusId === 'BABAYAGA' ? 'BABA_YAGA' : statusId; }
+
+  // 대상에게 특정 상태이상이 걸려있는지 조회 (없으면 undefined)
   get(target, statusId) { return target.statuses.find(s => s.id === this.normalizeId(statusId)); }
 
+  /**
+   * 상태이상 부여 파이프라인:
+   * 1) 디버프 면역 체크 -> 2) 시전자 부여 스택 증감 -> 3) 피시전자 획득 스택 증감 -> 4) 합산 및 시각 연출
+   */
   apply(caster, target, rawStatusId, stacks) {
     const statusId = this.normalizeId(rawStatusId);
     const def = StatusDB[statusId];
     if (!def || stacks <= 0) return;
 
-    // 1) 디버프 면역(의념:구도자, 의념:승천자 등) 체크
+    // 1) 디버프 면역([의념:구도자], [의념:승천자]) 보유 시 무효화
     if (def.category === STATUS_CATEGORY.DEBUFF) {
       const blocker = target.getPassives().find(({ def: pDef }) =>
         pDef.preventDebuff || (Array.isArray(pDef.preventDebuffIds) && pDef.preventDebuffIds.includes(statusId))
@@ -3195,7 +2981,8 @@ class StatusManager {
     }
 
     let finalStacks = stacks;
-    // 2) 시전자(caster) 부여 스택 증감 훅 (회중시계, 검은 양초 등)
+
+    // 2) 시전자(caster)의 부여량 증가 패시브 적용 (회중시계, 검은 양초 등)
     if (caster) {
       caster.getPassives().forEach(({ def: pDef, inst }) => {
         if (pDef.modifyStatusAppliedStacks) {
@@ -3203,7 +2990,8 @@ class StatusManager {
         }
       });
     }
-    // 3) 피시전자(target) 획득 스택 증감 훅 (간호키트, 눈사람 과자 등)
+
+    // 3) 피시전자(target)의 획득량 증가 패시브 적용 (간호키트, 눈사람 과자, 검은 체질 등)
     if (target) {
       target.getPassives().forEach(({ def: pDef, inst }) => {
         if (pDef.modifyStatusReceivedStacks) {
@@ -3212,6 +3000,7 @@ class StatusManager {
       });
     }
 
+    // 4) 기존 상태가 있으면 스택 합산, 없으면 새 인스턴스 생성 후 초기화(onInit)
     let inst = this.get(target, statusId);
     if (inst) inst.stacks += finalStacks;
     else {
@@ -3220,6 +3009,7 @@ class StatusManager {
       target.statuses.push(inst);
     }
 
+    // 5) 카테고리별 테두리 색상(fx) 및 플로팅 텍스트(fct) 출력
     const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
     const fct = def.category === STATUS_CATEGORY.DEBUFF ? 'fct-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fct-cyan' : 'fct-white');
 
@@ -3229,6 +3019,7 @@ class StatusManager {
     this.engine.notifyRender();
   }
 
+  // [의념(CONTEXT)] 전용: 기존 지속 턴과 새 지속 턴 중 더 긴 값으로 설정
   setOrMaxContext(target, statusId, durationTurns) {
     let inst = this.get(target, statusId);
     if (inst) inst.stacks = Math.max(inst.stacks, durationTurns);
@@ -3236,12 +3027,20 @@ class StatusManager {
     this.engine.notifyRender();
   }
 
+  // 디버프 자연 감소 시도: 대상에게 [계약]이 걸려 있으면 다른 디버프의 자연 감소를 차단
   tryDecayDebuff(owner, instance, amount) {
     const hasContract = owner.statuses.some(s => StatusDB[s.id].preventsOtherDebuffDecay && s.id !== instance.id && s.stacks > 0);
     if (hasContract) return;
     this.changeStacks(owner, instance, -amount, 'DISPEL');
   }
 
+  /**
+   * 스택 증감 및 0 이하 소멸 처리
+   * @param {'DISPEL'|'REMOVE'|'CONSUME'} mode
+   * - 'DISPEL': 자연 만료/조건 소모로 인한 해제 -> onDispel(인내 자폭, 바바야가 반격, 설리반 기절) 발동
+   * - 'REMOVE': 카드/스킬에 의한 외부 강제 제거 -> onDispel 미발동, onRemoved(언데드 성불 회복)만 발동
+   * - 'CONSUME': 언데드 부활 등 자체 소모 -> onDispel, onRemoved 모두 미발동
+   */
   changeStacks(owner, instance, delta, mode = 'DISPEL') {
     instance.stacks += delta;
     if (instance.stacks <= 0) {
@@ -3250,11 +3049,12 @@ class StatusManager {
       const def = StatusDB[instance.id];
       this.engine.emitLog(`💨 [${mode === 'DISPEL' ? '해제' : '제거'}] ${owner.name}의 [${def.name}] 소멸`, 'log-status');
       if (mode === 'DISPEL' && def.onDispel) def.onDispel(this.engine, owner, instance);
-      if (mode !== 'CONSUME' && def.onRemoved) def.onRemoved(this.engine, owner, instance); // 👈 외부 해제/제거 시 발동
+      if (mode !== 'CONSUME' && def.onRemoved) def.onRemoved(this.engine, owner, instance);
     }
     this.engine.notifyRender();
   }
 
+  // 특정 카테고리 중 무작위 1종을 '해제(DISPEL)'
   dispelRandom(target, category) {
     const cands = target.statuses.filter(s => StatusDB[s.id].category === category);
     if (!cands.length) return;
@@ -3262,6 +3062,7 @@ class StatusManager {
     this.changeStacks(target, pick, -pick.stacks, 'DISPEL');
   }
 
+  // 특정 카테고리 중 무작위 1종을 '강제 제거(REMOVE)' ([009 숭고] 등)
   removeRandom(target, category) {
     const cands = target.statuses.filter(s => StatusDB[s.id].category === category);
     if (!cands.length) return;
@@ -3269,6 +3070,7 @@ class StatusManager {
     this.changeStacks(target, pick, -pick.stacks, 'REMOVE');
   }
 
+  // 지정한 ID의 상태이상을 '강제 제거(REMOVE)'하고 제거된 스택 수 반환 ([004 강제정산] 등)
   removeSpecific(target, statusId) {
     const inst = this.get(target, statusId);
     if (!inst) return 0;
@@ -3277,6 +3079,7 @@ class StatusManager {
     return s;
   }
 
+  // 지정한 카테고리(예: [BUFF, DEBUFF])의 모든 상태를 '강제 제거(REMOVE)'하고 종류 수·총 스택 수 반환 ([040 희망의 기사] 등)
   removeAll(target, categories) {
     const list = target.statuses.filter(s => categories.includes(StatusDB[s.id].category));
     let removedCount = 0, removedStacks = 0;
@@ -3288,16 +3091,20 @@ class StatusManager {
   }
 }
 
+/**
+ * [CombatEngine] 턴 진행, 카드 사용, 피해 계산 파이프라인, 적 AI 패턴 결정 등 전투 규칙 총괄 엔진
+ */
 class CombatEngine {
   constructor() {
-    this.uidCounter = 1;
-    this.replayDepth = 0;
-    this.turn = 1;
-    this.combatEnded = false;
+    this.uidCounter = 1;       // 전투 중 생성되는 카드 인스턴스의 고유 번호 발급기
+    this.replayDepth = 0;      // 재사용 카드([024 끼토산], [039 금고]) 무한 루프 방지용 재귀 깊이 카운터
+    this.turn = 1;             // 현재 전투 경과 턴
+    this.combatEnded = false;  // 전투 종료(승/패 확정) 플래그 — true가 되면 남은 연타나 후속 효과를 즉시 중단
     this.statuses = new StatusManager(this);
     this.player = new Entity('토끼기사', 150, true);
     this.enemy = new Entity('적', 100, false);
 
+    // UI(AppUI) 및 스토리 진행기(StorySequencer)와 연결되는 이벤트 콜백 슬롯
     this.onLogCallback = null;
     this.onRenderCallback = null;
     this.onCardPlayedCallback = null;
@@ -3309,16 +3116,18 @@ class CombatEngine {
   notifyRender() { if (this.onRenderCallback) this.onRenderCallback(); }
   getOpponent(entity) { return entity === this.player ? this.enemy : this.player; }
 
+  // CardDB 원본 정의를 바탕으로 전투용 카드 인스턴스 복제 생성
   createCardInstance(cardId, freeCost = false) {
     const def = CardDB[cardId];
     return {
       uid: `card_${this.uidCounter++}`,
       ...def,
-      turnCostOverride: freeCost ? 0 : null,
-      turnCostMod: 0 // 👈 상대적 코스트 증감치 추가
+      turnCostOverride: freeCost ? 0 : null, // 이번 턴 고정 코스트 덮어쓰기 (천무지체 등)
+      turnCostMod: 0                         // 이번 턴 상대적 코스트 증감치 (적응형 두뇌, 토끼시종의 부름 등)
     };
   }
 
+  // 카드의 현재 실전 코스트 계산: 기본값/덮어쓰기 -> 임시 증감 -> 카드 자체 조건 -> 패시브(유물/특성) 순
   getEffectiveCost(user, card) {
     let cost = card.turnCostOverride !== null ? card.turnCostOverride : card.cost;
     cost += (card.turnCostMod || 0);
@@ -3329,6 +3138,7 @@ class CombatEngine {
     return Math.max(0, cost);
   }
 
+  // 카드의 현재 실전 타수 계산 ([의념:토끼의 투지] 등 타수 증가 효과 반영)
   getEffectiveHits(user, card) {
     let hits = card.hits || 0;
     const cost = this.getEffectiveCost(user, card);
@@ -3338,6 +3148,11 @@ class CombatEngine {
     return hits;
   }
 
+  /**
+   * 적의 이번 턴 행동 결정 및 상태이상(난투, 뇌진탕) 봉인 판정
+   * - 원래 예정된 행동이 '난투(마법 금지)'에 막히면, 패턴 주기 내에서 가장 가까운 비마법 행동으로 자동 대체
+   * - '뇌진탕(모든 행동 금지)'이거나 대체할 비마법 행동이 없으면 행동 봉인 상태로 반환
+   */
   resolveEnemyAction(turn, enemy, player) {
     const enemyDef = EnemyDB[enemy.enemyId];
     if (!enemyDef) return null;
@@ -3347,7 +3162,7 @@ class CombatEngine {
       ({ def, inst }) => def.canPlayCard && !def.canPlayCard(act, this, enemy, inst)
     );
 
-    // 1. 원래 예정된 행동 확인
+    // 1. 이번 턴 원래 예정된 행동 확인
     const primaryAction = enemyDef.getAction(turn, this, enemy, player);
     if (primaryAction.ignoreBlockers) {
       return { action: primaryAction, blocker: null, isFallback: false };
@@ -3358,7 +3173,7 @@ class CombatEngine {
       return { action: primaryAction, blocker: null, isFallback: false };
     }
 
-    // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 패턴 주기 내 다음 비마법 행동 탐색
+    // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 이후 최대 12턴 패턴을 탐색해 실행 가능한 대체 행동 선택
     for (let offset = 1; offset <= 12; offset++) {
       const altAction = enemyDef.getAction(turn + offset, this, enemy, player);
       if (!findBlocker(altAction)) {
@@ -3371,17 +3186,22 @@ class CombatEngine {
       }
     }
 
-    // 3. 뇌진탕(전체 기절)이거나 모든 패턴이 마법인 경우 행동 불가 반환
+    // 3. 뇌진탕이거나 모든 패턴이 봉인된 경우 행동 불가 반환
     return { action: primaryAction, blocker: primaryBlocker, isFallback: false };
   }
 
-  // CombatEngine 클래스 내부에 메서드 추가
+  // 대상 초상화 박스에 5색 테두리/흔들림 연출 요청
   emitFx(targetEntity, fxClass) {
     if (this.onFxCallback && targetEntity) {
       this.onFxCallback(targetEntity === this.player ? 'box-player' : 'box-enemy', fxClass);
     }
   }
 
+  /**
+   * 다단히트 물리 공격 실행기
+   * - 타수(hits)만큼 반복하며 매 타격마다 개별 DamagePacket을 생성해 dealDamage로 전달
+   * - 적 공격일 경우 10층 단위 티어 보너스(+3씩) 가산, 플레이어일 경우 도금이빨/숫돌 등 타격 보너스 적용
+   */
   executeAttack(user, target, damageOrFn, currentCard = this.activeCard, explicitHits = null, onEachHit = null) {
     const isCardAttack = user === this.player && currentCard;
     const hits = explicitHits !== null
@@ -3405,78 +3225,83 @@ class CombatEngine {
         reason: `${isCardAttack ? currentCard.name : user.name} (${i + 1}/${hits}타)`
       }));
       if (onEachHit && !this.combatEnded) {
-        onEachHit(i, hits);
+        onEachHit(i, hits); // 매 타격 직후 추가 효과 실행 (산토끼습격 출혈, 토끼남작의 이빨 회복 등)
       }
     }
   }
 
-  // 👇 [추가됨] CombatEngine 클래스 내부에 플로팅 텍스트 발송기 추가
+  // 대상 초상화 위에 떠오르는 데미지/회복/상태이상 플로팅 텍스트 요청
   emitFloatingText(targetEntity, text, colorClass) {
     if (this.onFloatingTextCallback && targetEntity) {
       this.onFloatingTextCallback(targetEntity === this.player ? 'box-player' : 'box-enemy', text, colorClass);
     }
   }
 
-  // 👇 [교체됨] 방어도 감쇠 시 흰색 글씨, 데미지 적중 시 빨간 글씨
+  /**
+   * [핵심 데미지 처리 파이프라인]
+   * 모든 물리 공격, 상태이상 도트, 체력 상실 피해가 반드시 통과하는 8단계 연산 순서
+   */
   dealDamage(packet) {
     if (this.combatEnded) return;
     const { source, target } = packet;
+
+    // 1단계: 직접 타격 직전 공격자 훅 (예: [독검] 추가 피해 7 발동 및 스택 차감)
     if (packet.isStrike && source) {
       source.getPassives().forEach(({ def, inst }) => {
         if (def.onBeforeStrike) def.onBeforeStrike(this, source, target, packet, inst);
       });
     }
-    // 👇 [추가] 공격자(source)의 실명 등 주는 피해 변조 처리
+
+    // 2단계: 공격자의 주는 피해 변조 (예: [실명] 시 물리 피해를 0으로 만들고 missed = true 처리)
     if (packet.type !== DAMAGE_TYPE.HP_LOSS && source) {
       source.getPassives().forEach(({ def, inst }) => {
         if (def.modifyOutgoingDamage) def.modifyOutgoingDamage(packet, this, source, inst);
       });
     }
+
+    // 3단계: 피격자의 받는 피해 변조 (예: [인내]가 물리 피해 흡수, [안개얼음성채]가 피해 -25 차감)
     if (packet.type !== DAMAGE_TYPE.HP_LOSS) {
       target.getPassives().forEach(({ def, inst }) => {
         if (def.modifyIncomingDamage) def.modifyIncomingDamage(packet, this, target, inst);
       });
-	}
+    }
+
+    // 4단계: 방어도 차감 전 유효 피해량 확정 시 반응 (예: [바바야가] 피해 누적, [전화위복] 드로우)
     if (packet.type !== DAMAGE_TYPE.HP_LOSS && packet.amount > 0) {
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onDamageTaken) def.onDamageTaken(this, target, packet, inst);
       });
     }
 
+    // 5단계: 방어도(armor) 우선 차감 (HP_LOSS 유형은 방어도를 무시함)
     let unblocked = packet.amount;
     if (packet.type !== DAMAGE_TYPE.HP_LOSS && target.armor > 0 && unblocked > 0) {
       const absorbed = Math.min(target.armor, unblocked);
       target.armor -= absorbed;
       unblocked -= absorbed;
       packet.logs.push(`방어도(-${absorbed})`);
-      
-      this.emitFloatingText(target, `방어 ${absorbed}`, 'fct-white'); // ⬜ 방어도 흡수 흰색 글씨
+      this.emitFloatingText(target, `방어 ${absorbed}`, 'fct-white');
     }
 
-    // (이전 로직: 방어도 차감)
-    
+    // 6단계: 잔여 피해만큼 실제 HP 차감 및 시각 이펙트·전투 로그 출력
     const prevHp = target.hp;
     target.hp = Math.max(0, target.hp - unblocked);
     const actualLost = prevHp - target.hp;
 
-    // 1. 시각 효과 1: 빨간 플로팅 텍스트
     if (actualLost > 0) {
-      this.emitFloatingText(target, `-${actualLost}`, 'fct-red'); // 🟥 정상 존재함
+      this.emitFloatingText(target, `-${actualLost}`, 'fct-red');
     }
-
-    // 2. 시각 효과 2: 박스 흔들림 및 빨간 테두리
     if (actualLost > 0 || packet.amount > 0) {
-      this.emitFx(target, 'fx-red'); // 🟥 정상 존재함
+      this.emitFx(target, 'fx-red');
     }
 
-    // 3. 로그 출력
     const note = packet.logs.length ? ` [${packet.logs.join(', ')}]` : '';
     this.emitLog(`💥 [${packet.reason}] ${target.name}에게 ${packet.baseAmount} -> 실제 HP -${actualLost} (남은 HP: ${target.hp})${note}`, 'log-hit');
 
-    // 4. 피격 사유 갱신 및 피격/적 체력 감소 반응 발동
+    // 7단계: 실제 HP가 1 이상 감소했을 때의 반응 ([재생], [설리반], [보험], [언데드] 부활, [늑대 마스크] 흡혈)
     if (actualLost > 0) {
       if (target === this.player) {
-        target.lastHitReason = packet.reason || '불명';
+        target.lastHitReason = packet.reason || '불명'; // 패배 시 사망 원인 기록용 갱신
       }
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onHpDecreased) def.onHpDecreased(this, target, actualLost, inst);
@@ -3489,19 +3314,20 @@ class CombatEngine {
       }
     }
 
-    // 👇 [수정] !packet.missed 조건 추가로 빗나간 공격은 피격 횟수/반격 미발동
-    // 👇 [수정] 일반 적 타격이거나 [피해망상] 자해 타격일 때 반격 발동
+    // 8단계: 빗나가지 않은 직접 타격 피격 후 반응 (피격 횟수 누적, [도깨비바늘] 반격, [불굴의 털], [피 묻은 붕대])
+    // ※ [045 피해망상]은 자해 타격이지만 paranoiaRedirect 플래그를 통해 예외적으로 반격 트리거를 허용함
     if (packet.isStrike && !packet.missed && (source !== target || packet.paranoiaRedirect)) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onAfterBeStruck) def.onAfterBeStruck(this, target, source, packet, inst);
       });
-	}
+    }
 
     this.notifyRender();
     this.checkCombatEnd();
   }
 
+  // 방어도 획득 처리 (빙하코트 +5 등 획득량 변조 패시브 적용)
   gainArmor(target, amount, reason) {
     let finalAmount = amount;
     if (finalAmount > 0 && target) {
@@ -3516,6 +3342,7 @@ class CombatEngine {
     this.notifyRender();
   }
 
+  // 양측의 HP를 확인하여 0 이하인 쪽이 있으면 승패 확정 콜백 호출
   checkCombatEnd() {
     if (this.combatEnded || !this.onCombatEndCallback) return;
     if (this.enemy.maxHp > 0 && this.enemy.hp <= 0) {
@@ -3529,6 +3356,7 @@ class CombatEngine {
     }
   }
 
+  // 체력 회복 처리 (최대 HP 초과 불가)
   heal(target, amount, reason) {
     const prev = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + amount);
@@ -3536,12 +3364,13 @@ class CombatEngine {
 
     this.emitFx(target, 'fx-green');
     if (actualHealed > 0) {
-      this.emitFloatingText(target, `💚+${actualHealed}`, 'fct-green'); // 👈 이 부분 추가
+      this.emitFloatingText(target, `💚+${actualHealed}`, 'fct-green');
     }
     this.emitLog(`💚 [${reason}] ${target.name} HP +${actualHealed} 회복`, 'log-sys');
     this.notifyRender();
   }
 
+  // 활력(AP) 회복 처리 (최대 활력 상한 초과 불가)
   recoverEnergy(user, amount) {
     user.energy = Math.min(user.maxEnergy, user.energy + amount);
     this.emitFx(user, 'fx-yellow');
@@ -3549,6 +3378,7 @@ class CombatEngine {
     this.notifyRender();
   }
 
+  // 덱에서 count장만큼 손패로 드로우 (덱이 비면 묘지를 무작위로 섞어 덱으로 리필)
   drawCards(user, count) {
     for (let i = 0; i < count; i++) {
       if (!user.deck.length) {
@@ -3562,6 +3392,7 @@ class CombatEngine {
     this.notifyRender();
   }
 
+  // 덱에서 특정 조건(predicate)에 맞는 카드 1장을 찾아 즉시 손패로 가져옴 ([나팔소리], [환영모자] 등)
   drawSpecificFromDeck(user, predicate, label) {
     const idx = user.deck.findIndex(predicate);
     if (idx !== -1) {
@@ -3574,9 +3405,9 @@ class CombatEngine {
     this.notifyRender();
   }
 
-  // 3) moveCardToGraveyard 수정
+  // 카드를 묘지로 이동시키며 임시 코스트 변동을 초기화하고 [008 토끼기사의 지혜] 등 묘지행 트리거 실행
   moveCardToGraveyard(user, card, fromPlay = false) {
-    card.turnCostOverride = null; // 👈 묘지로 돌아갈 때 턴 임시 코스트 초기화
+    card.turnCostOverride = null;
     card.turnCostMod = 0;
     user.graveyard.push(card);
     if (card.id !== '024') user.combatTrackers.lastGraveyardCard = card;
@@ -3585,6 +3416,7 @@ class CombatEngine {
     }
   }
 
+  // 플레이어가 손패의 카드를 선택해 실행할 때의 진입점 (사용 제한·활력 체크 -> 코스트 차감 -> 효과 발동 -> 묘지행)
   playCardFromHand(handIndex) {
     if (this.combatEnded) return false;
     const card = this.player.hand[handIndex];
@@ -3616,8 +3448,9 @@ class CombatEngine {
     return true;
   }
 
+  // 카드의 실제 효과를 실행하고, 카드 사용 완료 훅(도금당근, 녹슨 징, 호박가면, 말린 당근 조각)을 호출
   resolveCardEffect(card, user, target, isReplay = false) {
-    if (this.replayDepth > 3) return;
+    if (this.replayDepth > 3) return; // 끼토산/금고 등 연속 재사용 무한 루프 방지
     if (isReplay) this.replayDepth++;
     const prev = this.activeCard;
     this.activeCard = card;
@@ -3631,6 +3464,11 @@ class CombatEngine {
     if (isReplay) this.replayDepth--;
   }
 
+  /**
+   * [플레이어 턴 시작 시퀀스]
+   * 1) 잔여 활력 이월 + 기본 3 회복 -> 2) 시전자 턴 시작 기준 디버프(난투/실명) 및 바바야가 감소
+   * -> 3) 턴 시작 패시브(망토, 전술 도약, 채권자 등) -> 4) 기본 3장 드로우 -> 5) 드로우 후 패시브(천무지체, 적응형 두뇌, 탐욕스런 앞니)
+   */
   startPlayerTurn() {
     if (this.combatEnded) return;
     this.emitLog(` [${this.turn}턴: 플레이어 차례] `, 'log-sys');
@@ -3654,14 +3492,12 @@ class CombatEngine {
       });
     });
 
-    // 특성 등 턴 시작 훅 (전술 도약 등)
     this.player.getPassives().forEach(({ def, inst }) => {
       if (def.onPlayerTurnStart) def.onPlayerTurnStart(this, this.player, this.turn, inst);
     });
 
     this.drawCards(this.player, 3);
 
-    // 드로우 직후 훅 (천무지체 등)
     this.player.getPassives().forEach(({ def, inst }) => {
       if (def.onPlayerTurnPostDraw) def.onPlayerTurnPostDraw(this, this.player, this.turn, inst);
     });
@@ -3669,6 +3505,12 @@ class CombatEngine {
     this.notifyRender();
   }
 
+  /**
+   * [턴 종료 및 적 턴 일괄 진행 시퀀스]
+   * 1) 남은 손패 전부 묘지로 버림 -> 2) 플레이어 턴 종료 유물 훅(센마의 털옷) -> 3) 플레이어 턴 종료 상태이상(저주/출혈/착란/인내)
+   * -> 4) 플레이어 의념(투지/전화위복/성채/구도자) 차감 -> 5) 적 턴 시작 상태이상(적 바바야가 폭발, 적이 건 난투/실명 감소)
+   * -> 6) 적 행동 실행 -> 7) 적 턴 종료 상태이상 처리 -> 8) 다음 턴(turn + 1) 플레이어 턴 시작
+   */
   endPlayerTurn() {
     if (this.combatEnded) return;
     while (this.player.hand.length > 0) {
@@ -3677,14 +3519,13 @@ class CombatEngine {
       this.moveCardToGraveyard(this.player, card, false);
     }
 
-    // 👇 [추가] 유물/특성 전용 플레이어 턴 종료 훅 (센마의 털옷 등)
     this.player.getPassives().forEach(({ def, inst }) => {
       if (!this.combatEnded && def.onPlayerTurnEnd) def.onPlayerTurnEnd(this, this.player, this.turn, inst);
     });
 
     this.processTurnEndStatuses(this.player);
     if (this.combatEnded) return;
-	
+
     [...this.player.statuses].forEach(s => {
       if (StatusDB[s.id].decayTiming === DECAY_TIMING.PLAYER_TURN_END_CONTEXT) {
         const drop = (s.id === 'CTX_FIGHTING_SPIRIT') ? -s.stacks : -1;
@@ -3692,7 +3533,6 @@ class CombatEngine {
       }
     });
 
-    // 적 턴 시작
     this.emitLog(` [${this.turn}턴: ${this.enemy.name} 차례] `, 'log-sys');
     [this.player, this.enemy].forEach(ent => {
       [...ent.statuses].forEach(s => {
@@ -3707,7 +3547,6 @@ class CombatEngine {
     });
     if (this.combatEnded) return;
 
-    // 적 패턴 실행 (EnemyDB)
     const resolved = this.resolveEnemyAction(this.turn, this.enemy, this.player);
     if (resolved) {
       if (resolved.blocker && !resolved.isFallback) {
@@ -3720,7 +3559,6 @@ class CombatEngine {
         resolved.action.execute();
       }
     }
-    // 👇 아래 7줄이 통째로 빠져 있었습니다!
     if (this.combatEnded) return;
 
     this.processTurnEndStatuses(this.enemy);
@@ -3730,6 +3568,7 @@ class CombatEngine {
     this.startPlayerTurn();
   }
 
+  // 턴 종료 시 발동하는 상태이상 처리 ([계약]이 항상 맨 마지막에 차감되도록 정렬하여 다른 디버프 감소 방어 보장)
   processTurnEndStatuses(entity) {
     const sorted = [...entity.statuses].sort((a, b) => (a.id === 'CONTRACT' ? 1 : b.id === 'CONTRACT' ? -1 : 0));
     sorted.forEach(s => {
@@ -3742,27 +3581,33 @@ class CombatEngine {
 
 /**
  * ============================================================================
- * 6. RogueManager (모바일 세로형 #screen-choice 연동 버전)
+ * 6. RogueManager (기사도 로그라이크 모드 진행 · 층 이동 · 보상 관리자)
+ * - 흐름: 새 런 시작 -> 0층 초기 특성 3택 1 -> 출발 보급 카드 3장 선택
+ *         -> 갈림길 선택(일반/엘리트/캠프/보스) -> 전투 또는 캠프 -> 보상 정산 -> 다음 층(advanceFloor) 반복
  * ============================================================================
  */
 const RogueManager = {
-  STARTER_DECK: ['001', '001', '001', '010', '010', '010', '005', '002', '011'],
-  MIN_DECK_SIZE: 9,
-  BASE_MAX_DECK_SIZE: 21,
+  STARTER_DECK: ['001', '001', '001', '010', '010', '010', '005', '002', '011'], // 고정 기본 덱 9장
+  MIN_DECK_SIZE: 9,        // 캠프 카드 제거 시 유지해야 하는 최소 덱 매수
+  BASE_MAX_DECK_SIZE: 21,  // 기본 최대 덱 상한 ([003 학자안경] 보유 시 24장으로 확장)
 
+  // 현재 진행 중인 로그라이크 런의 런타임 상태
   state: {
     active: false, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
     deck: [], relics: [], traits: [], clearedBosses: [],
     relic015Wins: 0,
-    runLog: [],      // 👈 추가
-    deathCause: ''   // 👈 추가
+    runLog: [],
+    deathCause: ''
   },
-  currentPaths: [],
-  rewardQueue: [],
+  currentPaths: [], // 현재 층 갈림길에 제시된 방 유형 목록 (예: ['NORMAL', 'ELITE', 'CAMP'])
+  rewardQueue: [],  // 전투 승리 후 순차적으로 처리할 보상 대기열 (카드 -> 유물 -> 특성 순)
 
+  // 현재 EnemyDB에 등록된 보스 수 × 10층을 최고층으로 자동 계산 (현재 보스 5종 = 50층)
   getMaxFloor() {
     return Object.values(EnemyDB).filter(e => e.isBoss).length * 10;
   },
+
+  // 특성을 반영한 현재 최대 덱 상한 계산
   getMaxDeckSize() {
     let max = this.BASE_MAX_DECK_SIZE;
     this.state.traits.forEach(tid => {
@@ -3770,6 +3615,8 @@ const RogueManager = {
     });
     return max;
   },
+
+  // 특성을 반영한 전투 승리 카드 보상 선택지 개수 계산 (기본 3택 1, 학자안경 시 4택 1)
   getRewardCardChoiceCount() {
     let cnt = 3;
     this.state.traits.forEach(tid => {
@@ -3777,9 +3624,11 @@ const RogueManager = {
     });
     return cnt;
   },
+
   hasRelic(id) { return this.state.relics.includes(id); },
   hasTrait(id) { return this.state.traits.includes(id); },
 
+  // 현재 런 상태를 SaveLedger(텍스트 세이브)에 동기화 저장
   syncToSaveLedger() {
     SaveLedger.set('roguelike.active', this.state.active);
     SaveLedger.set('roguelike.floor', this.state.floor);
@@ -3795,6 +3644,7 @@ const RogueManager = {
     SaveLedger.set('roguelike.deathCause', this.state.deathCause);
   },
 
+  // SaveLedger에 기록된 텍스트 데이터를 불러와 RogueManager.state에 복원
   loadFromSaveLedger() {
     const parseList = (str) => String(str || '').split(',').map(s => s.trim()).filter(Boolean);
     this.state.active = Boolean(SaveLedger.get('roguelike.active'));
@@ -3813,13 +3663,14 @@ const RogueManager = {
     this.state.deathCause = String(SaveLedger.get('roguelike.deathCause') || '');
   },
 
+  // [새 기사도 시작] 상태 초기화 후 0층 초기 특성 선택 화면으로 진입
   startNewRun() {
     this.state = {
       active: true, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
       deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: [],
       relic015Wins: 0,
-      runLog: [],      // 👈 추가
-      deathCause: ''   // 👈 추가
+      runLog: [],
+      deathCause: ''
     };
     this.syncToSaveLedger();
     AppUI.mode = 'ROGUE_HUB';
@@ -3827,6 +3678,7 @@ const RogueManager = {
     this.renderStartingTraitSelection();
   },
 
+  // [기사도 이어하기] 세이브 데이터 로드 후 미완료된 초기 세팅 단계 또는 현재 층 갈림길로 복귀
   continueFromSave() {
     this.loadFromSaveLedger();
     this.state.active = true;
@@ -3842,6 +3694,7 @@ const RogueManager = {
     }
   },
 
+  // 무작위 특성 3종을 제시해 1개를 고르는 초기 특성 화면 렌더링
   renderStartingTraitSelection() {
     const offeredIds = RNG.sampleUnique(Object.keys(TraitDB), 3);
     AppUI.setChoiceScreen(
@@ -3859,6 +3712,7 @@ const RogueManager = {
     );
   },
 
+  // 선택한 초기 특성을 적용(최대 HP 증감 등 즉시 효과 포함)하고 출발 보급 3장 선택으로 전환
   pickStartingTrait(traitId) {
     if (!this.hasTrait(traitId)) {
       this.state.traits.push(traitId);
@@ -3868,6 +3722,7 @@ const RogueManager = {
     this.renderStartingCardDraft(1, 3);
   },
 
+  // 전체 카드 도감에서 기본 9장에 추가할 자유 카드 3장을 1장씩 순차 선택하는 화면 렌더링
   renderStartingCardDraft(step, total) {
     this.isDraftPicking = false;
     const offeredIds = Object.keys(CardDB).sort((a, b) => a.localeCompare(b));
@@ -3875,7 +3730,7 @@ const RogueManager = {
     const items = offeredIds.map(cid => {
       const c = CardDB[cid];
       const copies = this.state.deck.filter(x => x === cid).length;
-      const canAdd = copies < 3;
+      const canAdd = copies < 3; // 동명 카드 최대 3장 제한
       return {
         title: `🃏 [${c.id}] ${c.name} (코스트 ${c.cost} | 보유 ${copies}/3)`,
         desc: `${c.desc}${!canAdd ? ' [동명 3장 제한]' : ''}`,
@@ -3885,6 +3740,7 @@ const RogueManager = {
           if (!canAdd || this.isDraftPicking) return;
           this.isDraftPicking = true;
 
+          // 카드 선택 시 0.3초 동안 초록색 테두리 및 '추가!' 팝업 피드백 표시
           if (el) {
             el.style.position = 'relative';
             el.classList.add('draft-picked');
@@ -3912,6 +3768,7 @@ const RogueManager = {
     );
   },
 
+  // 현재 층의 갈림길 허브로 진입 (구현된 최고층을 넘었으면 엔딩 화면으로 분기)
   enterHubForCurrentFloor() {
     AppUI.mode = 'ROGUE_HUB';
     AppUI.go('screen-choice');
@@ -3924,38 +3781,35 @@ const RogueManager = {
     this.renderPathSelection();
   },
 
-    generatePathsForCurrentFloor() {
+  /**
+   * 현재 층의 선택지(갈림길) 생성 규칙:
+   * - 10층 단위: 보스 단독 등장
+   * - 각 구간 첫 층(1, 11, 21층...): 엘리트 제외 (일반/캠프 중 등장)
+   * - 보스 직전 층(9, 19, 29층...) 또는 [006 요람사진] 보유 시: 캠프 1개 확정 포함
+   */
+  generatePathsForCurrentFloor() {
     const floor = this.state.floor;
     
-    // 1. 보스층 처리 (10, 20, 30층...)
     if (floor % 10 === 0) {
       this.currentPaths = ['BOSS'];
       return;
     }
 
-    // 2. 방 개수는 무조건 2~3개로 고정 (외길 선택권 박탈 방지)
     const optionCount = RNG.randInt(2, 3);
-
-    // 3. 중복 없는 방 후보군 풀 설정 (1, 11, 21층 등 각 구역 첫 층은 엘리트 제외 끔살 방지)
     const pool = (floor % 10 === 1) ? ['NORMAL', 'CAMP'] : ['NORMAL', 'ELITE', 'CAMP'];
-
-    // 4. 후보군에서 중복 없이 뽑기 (동일한 방이 2~3개 뜨는 현상 해결)
     let options = RNG.sampleUnique(pool, Math.min(optionCount, pool.length));
 
-    // 5. 요람사진(006) 유물 또는 보스 직전 층(9, 19, 29...) 확정 캠프 룰 적용
     const isCampMilestone = (floor % 10 === 9);
     const forceCamp = isCampMilestone || this.hasRelic('006');
 
     if (forceCamp && !options.includes('CAMP')) {
-      // 이미 서로 다른 방이 보장되어 있으므로, 
-      // 랜덤한 방 1개를 덮어써도 일반 전투나 엘리트 전투가 최소 1개는 반드시 살아남음
       options[RNG.randInt(0, options.length - 1)] = 'CAMP';
     }
 
-    // 6. 배열을 한 번 더 섞어서 UI상 캠프의 위치가 랜덤하게 나오도록 처리
     this.currentPaths = RNG.sampleUnique(options, options.length);
   },
 
+  // 생성된 갈림길(일반 / 엘리트 / 캠프 / 보스) 선택지 UI 렌더링
   renderPathSelection() {
     const meta = {
       NORMAL: { title: '⚔️ 일반', desc: '일반 적과 교전합니다. (카드 보상)', color: 'var(--accent)' },
@@ -3975,6 +3829,7 @@ const RogueManager = {
     );
   },
 
+  // 캠프 화면 렌더링: 최대 HP의 35% 휴식 회복 또는 마스터 덱에서 카드 1장 영구 제거
   renderCampView() {
     const healAmt = Math.floor(this.state.maxHp * 0.35);
     const canRemove = this.state.deck.length > this.MIN_DECK_SIZE;
@@ -3985,7 +3840,7 @@ const RogueManager = {
         borderColor: 'var(--fx-green)',
         onClick: () => {
           this.state.hp = Math.min(this.state.maxHp, this.state.hp + healAmt);
-	  this.state.runLog.push(`${this.state.floor}F:캠프(휴식/HP:${this.state.hp})`); // 👈 추가
+          this.state.runLog.push(`${this.state.floor}F:캠프(휴식/HP:${this.state.hp})`);
           this.advanceFloor();
         }
       }
@@ -4000,7 +3855,7 @@ const RogueManager = {
           borderColor: 'var(--fx-red)',
           onClick: () => {
             this.state.deck.splice(idx, 1);
-	    this.state.runLog.push(`${this.state.floor}F:캠프(제거:${c.name})`); // 👈 추가
+            this.state.runLog.push(`${this.state.floor}F:캠프(제거:${c.name})`);
             this.advanceFloor();
           }
         });
@@ -4016,6 +3871,10 @@ const RogueManager = {
     AppUI.setChoiceScreen(`⛺ ${this.state.floor}층 캠프`, '체력을 회복하거나 덱의 카드 1장을 제거하십시오.', items);
   },
 
+  /**
+   * 전투 노드(NORMAL / ELITE / BOSS) 진입 및 CombatEngine 세팅
+   * - 층수에 따라 10층 단위 티어 스케일링 적용: 적 최대 HP × 1.45^tier, 물리 공격력 +3×tier
+   */
   startCombatNode(type) {
     let enemyId = 'COAL_MOLE';
     if (type === 'NORMAL') {
@@ -4033,9 +3892,10 @@ const RogueManager = {
     eng.turn = 1;
     eng.replayDepth = 0;
 
+    // 플레이어 엔티티 초기화 및 보유 특성·유물·마스터 덱 장착
     eng.player = new Entity('토끼기사', this.state.maxHp, true);
     eng.player.hp = this.state.hp;
-    eng.player.energy = 0; // 첫 턴 3 활력 시작 보장
+    eng.player.energy = 0; // 첫 턴 시작 시 recovery(3)가 더해져 3활력으로 시작
     eng.player.runTrackers.hitTakenCount = this.state.hitTakenCount;
 
     this.state.traits.forEach(tid => {
@@ -4056,7 +3916,7 @@ const RogueManager = {
     const shuffledIds = RNG.sampleUnique(this.state.deck, this.state.deck.length);
     eng.player.deck = shuffledIds.map(cid => eng.createCardInstance(cid));
 
-    // 티어 스케일링 적용 (10층마다 체력 1.45배, 물리 공격력 +3)
+    // 적 엔티티 초기화 및 10층 단위 티어 보정 적용
     const eDef = EnemyDB[enemyId];
     const tier = Math.floor((this.state.floor - 1) / 10);
     const scaledHp = Math.floor(eDef.maxHp * Math.pow(1.45, tier));
@@ -4064,11 +3924,11 @@ const RogueManager = {
     eng.enemy.enemyId = enemyId;
     eng.enemy.tierDamageBonus = tier * 3;
     if (enemyId === 'BOSS_ARCHANGEL_NAEL') {
-      eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1);
+      eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1); // 대천사 나엘 고유 패시브 부여
     }
 
     eng.onCardPlayedCallback = null;
-    // 승리/패배가 결정되어도 쌓여있는 로그를 유저가 끝까지 클릭해 읽은 뒤 화면이 전환됨
+    // 전투 승/패 판정 후, 쌓여있는 전투 로그를 유저가 끝까지 클릭해 읽은 뒤 정산 화면으로 이동
     eng.onCombatEndCallback = (victory) => {
       AppUI.runAfterLogs(() => this.onCombatFinished(victory, type, enemyId));
     };
@@ -4078,6 +3938,11 @@ const RogueManager = {
     eng.startPlayerTurn();
   },
 
+  /**
+   * 전투 종료 후 승패 정산 및 보상 대기열(rewardQueue) 구성
+   * - 패배 시: 사망 원인 및 여정 로그 기록 후 런 종료(active = false)
+   * - 승리 시: 노드 유형(일반/엘리트/보스) 및 유물(마도서, 별빛 망토)에 따라 보상 큐 적재
+   */
   onCombatFinished(victory, nodeType, enemyId) {
     const eng = AppUI.engine;
     const eName = EnemyDB[enemyId]?.name || enemyId;
@@ -4101,8 +3966,10 @@ const RogueManager = {
     const resultTag = eng.enemy.peaceAchieved ? '평화' : '승';
     this.state.runLog.push(`${this.state.floor}F:${eName}(${resultTag}/${eng.turn}T/HP:${eng.player.hp})`);
     this.rewardQueue = [];
+
     if (nodeType === 'NORMAL') {
       if (enemyId === 'NUN_NAEL' && eng.enemy.peaceAchieved) {
+        // 토끼수녀 나엘 특수 승리(6턴까지 무피해 버티기) 시 전체 카드 중 1장 선택 보상
         this.rewardQueue.push({
           type: 'CARD',
           allCards: true,
@@ -4126,7 +3993,7 @@ const RogueManager = {
       this.rewardQueue.push({ type: 'TRAIT' });
     }
 
-    // 👇 [수정] 승리 시에만 보유 유물의 승리 효과(별빛 망토 등) 실행
+    // 승리 시 발동하는 보유 유물 효과 처리 ([015 별빛 망토] 등)
     this.state.relics.forEach(rid => {
       if (RelicDB[rid]?.onCombatVictory) {
         RelicDB[rid].onCombatVictory(this, this.rewardQueue);
@@ -4139,17 +4006,19 @@ const RogueManager = {
     this.processNextReward();
   },
 
+  // 보상 대기열에서 다음 보상을 하나씩 꺼내 화면에 표시 (모두 처리했으면 다음 층으로 이동)
   processNextReward() {
     if (this.rewardQueue.length === 0) {
       this.advanceFloor();
       return;
     }
     const next = this.rewardQueue.shift();
-    if (next.type === 'CARD') this.renderCardReward(next.note, !!next.allCards); // 👈 allCards 전달
+    if (next.type === 'CARD') this.renderCardReward(next.note, !!next.allCards);
     else if (next.type === 'RELIC') this.renderRelicReward(next.note);
     else if (next.type === 'TRAIT') this.renderTraitReward();
   },
 
+  // 카드 보상 선택 화면 렌더링 (일반 3~4택 1 또는 별빛 망토/나엘 축복 전체 카드 선택)
   renderCardReward(note = '', allCards = false) {
     const choiceCount = this.getRewardCardChoiceCount();
     const offeredIds = allCards
@@ -4191,6 +4060,7 @@ const RogueManager = {
     AppUI.setChoiceScreen(titleText, note || `원하는 카드를 1장 선택하십시오. (현재 덱 ${this.state.deck.length}/${maxDeck}장)`, items);
   },
 
+  // 미보유 유물 중 무작위 2종을 제시해 1개를 고르는 유물 보상 화면 렌더링
   renderRelicReward(note = '') {
     const unowned = Object.keys(RelicDB).filter(id => !this.hasRelic(id));
     if (unowned.length === 0) { this.processNextReward(); return; }
@@ -4219,6 +4089,7 @@ const RogueManager = {
     AppUI.setChoiceScreen('🏺 유물 보상 (2택 1)', note || '보유하지 않은 유물 중 1개를 선택하십시오.', items);
   },
 
+  // 보스 격파 후 미보유 특성 중 무작위 2종을 제시해 1개를 고르는 특성 보상 화면 렌더링
   renderTraitReward() {
     const unowned = Object.keys(TraitDB).filter(id => !this.hasTrait(id));
     if (unowned.length === 0) { this.processNextReward(); return; }
@@ -4250,6 +4121,7 @@ const RogueManager = {
     AppUI.setChoiceScreen('🧬 보스 격파 — 특성 보상 (2택 1)', '보유하지 않은 특성 중 1개를 선택하십시오.', items);
   },
 
+  // 다음 층으로 전진하며 층 이동 시 발동하는 특성 효과(빳빳한 털, 약초 채집가) 적용
   advanceFloor() {
     this.state.floor += 1;
     this.state.traits.forEach(tid => {
@@ -4259,6 +4131,7 @@ const RogueManager = {
     this.enterHubForCurrentFloor();
   },
 
+  // 구현된 최고층(현재 50층) 돌파 시 세이브를 보존한 채 대기 상태로 전환하는 완료 화면
   renderMaxFloorReached(maxFloor) {
     AppUI.setChoiceScreen(
       `🚩 구현 최고층(${maxFloor}층) 돌파 완료!`,
@@ -4277,19 +4150,24 @@ const RogueManager = {
 
 /**
  * ============================================================================
- * 7. StoryDB & StorySequencer (#screen-vn 및 #screen-combat 오버레이 연동)
+ * 7. StoryDB & StorySequencer (스토리 모드 대본 데이터 및 진행 엔진)
+ * - 흐름: StoryDB의 script 배열을 StorySequencer.queue에 복사한 뒤,
+ *         next() -> executeCommand()로 명령어를 하나씩 꺼내 실행하고
+ *         유저 입력(화면 터치 / 선택지 클릭 / 카드 사용)이 들어올 때마다 다음 명령어로 진행
  * ============================================================================
  */
+
+// [스토리 1-1 전용] 석궁병 제나의 연출용 콤보 패턴
+// - 스텝 밟기 4회, 토끼풀 4회, 화살(6딜) 4회를 무작위 순서로 섞은 뒤 실제 CombatEngine 메서드로 실행
+// - 실제 엔진을 태우므로 붉은 피격 연출, HP 감소, 누적 피격 횟수(4회 -> 1-1 복수 32딜)가 자동 연동됨
 function executeZenaCombo(engine) {
-  // 1. 스텝 4번, 토끼풀 4번, 화살 4번(각 6뎀)을 배열에 담아 랜덤으로 섞습니다.
   const actions = [
     ...Array(4).fill('STEP'),
     ...Array(4).fill('CLOVER'),
     ...Array(4).fill('ARROW')
   ].sort(() => Math.random() - 0.5);
 
-  // 2. 섞인 순서대로 진짜 엔진 메서드를 호출합니다!
-  actions.forEach((act, idx) => {
+  actions.forEach((act) => {
     if (act === 'STEP') {
       engine.recoverEnergy(engine.enemy, 1);
       engine.emitLog(`석궁병 제나의 [스텝 밟기]! 제나가 활력을 회복했습니다. 추가로 카드를 사용합니다.`, 'log-story');
@@ -4297,7 +4175,6 @@ function executeZenaCombo(engine) {
       engine.statuses.apply(engine.enemy, engine.enemy, 'REGEN', 3);
       engine.emitLog(`석궁병 제나의 [토끼풀]! 제나가 카드를 1장 뽑고 재생을 획득했습니다.`, 'log-story');
     } else if (act === 'ARROW') {
-      // 딜이 들어갈 때 알아서 붉은 이펙트, 피격 횟수 증가, HP 감소가 작동합니다.
       engine.dealDamage(new DamagePacket({
         source: engine.enemy, target: engine.player, amount: 6,
         type: DAMAGE_TYPE.PHYSICAL, isStrike: true, reason: `화살 속사`
@@ -4307,6 +4184,7 @@ function executeZenaCombo(engine) {
   engine.emitLog(`⚡ 석궁병 제나의 턴이 종료되었습니다.`, 'log-sys');
 }
 
+// [스토리 1-2 전용] 겁먹은 굴토끼의 연출용 패턴 (저주 3, 출혈 3, 착란 3 부여)
 function executeGrabbitCombo(engine) {
   engine.emitLog(`겁에 질린 굴토끼가 눈을 질끈 감고 무작정 흙먼지와 돌멩이를 집어던집니다!`, 'log-story');
   engine.statuses.apply(engine.enemy, engine.player, 'CURSE', 3);
@@ -4315,7 +4193,21 @@ function executeGrabbitCombo(engine) {
   engine.emitLog(`⚡ 굴토끼의 턴이 종료되었습니다.`, 'log-sys');
 }
 
+/**
+ * [StoryDB] 챕터별 대본 데이터
+ * 사용할 수 있는 script 명령어(type) 목록:
+ * - TEXT           : 대사 출력 (전투 전엔 #screen-vn, 전투 진입 후엔 #combat-vn-overlay에 표시)
+ * - CHOICE         : 분기 선택지 출력 및 선택한 값을 stageVars[varKey]와 SaveLedger에 저장
+ * - SETUP_STAGE    : 전투 화면(#screen-combat)으로 전환하고 플레이어/적 엔티티 생성
+ * - SCRIPTED_ACTION: 지정된 연출 함수(execute) 실행 후 전투 로그를 끝까지 읽을 때까지 대기
+ * - SCRIPTED_LOGS  : 문자열 배열(logs)을 전투 로그 큐에 넣고 유저가 읽을 때까지 대기
+ * - BRANCH         : condition(stageVars)이 참이면 steps 배열을 현재 대본의 맨 앞줄에 삽입
+ * - RIG_NEXT_RANDOM: 다음 RNG.randInt 호출 시 무조건 지정된 value가 나오도록 예약
+ * - GIVE_CARD      : 손패를 비우고 지정 카드 1장을 쥐여준 뒤 유저가 실행할 때까지 대기
+ * - SET_SAVE       : SaveLedger에 클리어 여부 등 영구 플래그 기록
+ */
 const StoryDB = [
+  // 1-1. 토끼굴의 여명 (분기 선택 및 복수/난투 튜토리얼)
   {
     id: 'stage_1_1',
     title: '1-1. 토끼굴의 여명',
@@ -4340,7 +4232,7 @@ const StoryDB = [
           { type: 'SCRIPTED_LOGS', logs: ['당신의 턴이 종료되었습니다.'] },
           { type: 'SCRIPTED_LOGS', logs: ['🚫 제나가 다시 스텝을 밟으려 했으나 [난투] 효과로 막혔다!'] },
           { type: 'SCRIPTED_LOGS', logs: ['제나의 턴이 종료되었습니다.'] },
-          { type: 'RIG_NEXT_RANDOM', value: 30 },
+          { type: 'RIG_NEXT_RANDOM', value: 30 }, // 다음 용자의 행운(10~30)이 확정 30이 나오도록 조작
           { type: 'GIVE_CARD', cardId: '011', freeCost: true, prompt: '손패의 [용자의 행운]을 선택 후 실행해 일격을 날리십시오.' }
         ]
       },
@@ -4354,6 +4246,7 @@ const StoryDB = [
       { type: 'SET_SAVE', key: 'stage_1_1.clear', value: true }
     ]
   },
+  // 1-2. 겁 많은 아이 (희망의 기사 상태이상 일괄 정화 튜토리얼)
   {
     id: 'stage_1_2',
     title: '1-2. 겁 많은 아이',
@@ -4381,7 +4274,7 @@ const StoryDB = [
       { type: 'TEXT', speaker: '토끼기사', text: '울지 마라! 그 어떤 족쇄도 내가 전부 끊어주마!' },
       { type: 'GIVE_CARD', cardId: '040', freeCost: true, prompt: '손패의 [희망의 기사]를 실행해 마지막으로 디버프를 털어내십시오. (3/3)' },
 
-      // --- 전투 포기 및 엔딩 개그 ---
+      // --- 전투 포기 및 개그 엔딩 ---
       { type: 'SCRIPTED_LOGS', logs: ['🏳️ 굴토끼가 지쳐 주저앉으며 전의를 완전히 상실했습니다!'] },
       { type: 'TEXT', speaker: '굴토끼', text: '하아... 하아... 도저히 안 통하네요. 저 포기할래요... 이제 어떡하실 건가요? 정말로 저를 안 해치실 건가요...? 앞으로 우린 어떻게 되는 거죠?' },
       { type: 'TEXT', speaker: '나레이션', text: '굴토끼가 기대 반, 의심 반의 눈초리로 조심스럽게 올려다보던 바로 그때였다. 갱도 저편에서 엄청난 굉음이 울려 퍼졌다!' },
@@ -4393,25 +4286,36 @@ const StoryDB = [
   }
 ];
 
+/**
+ * [StorySequencer] 스토리 대본을 순차 실행하고 유저 입력 대기를 관리하는 상태 머신
+ */
 const StorySequencer = {
-  engine: null, activeChapter: null, queue: [], stageVars: {}, state: 'IDLE',
-  inCombatStage: false, logTimer: null, pendingLogs: [], pendingLogAfterHook: null,
+  engine: null,
+  activeChapter: null,   // 현재 플레이 중인 StoryDB 챕터 객체
+  queue: [],             // 앞으로 실행할 남은 명령어 큐
+  stageVars: {},         // 현재 챕터 내 임시 변수 저장소 (예: { route: 1 })
+  state: 'IDLE',         // 현재 대기 상태 ('IDLE' | 'WAIT_TEXT' | 'WAIT_CHOICE' | 'WAIT_CARD' | 'WAIT_LOGS' | 'WAIT_FINISH')
+  inCombatStage: false,  // SETUP_STAGE를 지나 전투 화면(#screen-combat)에 진입했는지 여부
+  logTimer: null,        // (구버전 타이머 호환용)
 
   init(combatEngine) { this.engine = combatEngine; },
 
+  // 선택한 챕터 초기화 및 실행 시작
   startChapter(chapterId) {
     const chapter = StoryDB.find(c => c.id === chapterId);
     if (!chapter) return;
     this.clearTimers();
     RNG.reset();
     this.activeChapter = chapter;
-    this.queue = [...chapter.script];
+    this.queue = [...chapter.script]; // 원본 script 훼손 방지를 위해 얕은 복사
     this.stageVars = {};
     this.state = 'IDLE';
     this.inCombatStage = false;
 
     this.engine.combatEnded = false;
     this.engine.onCombatEndCallback = null;
+
+    // 유저가 GIVE_CARD로 받은 카드를 실행했을 때, 로그 출력이 끝난 뒤 다음 스크립트로 자동 진행
     this.engine.onCardPlayedCallback = () => {
       if (this.state === 'WAIT_CARD') {
         this.state = 'IDLE';
@@ -4420,11 +4324,12 @@ const StorySequencer = {
         });
       }
     };
+
     document.getElementById('vn-chapter-title').textContent = chapter.title;
     AppUI.mode = 'STORY';
     AppUI.go('screen-vn');
 
-    // 👇 AppUI.go 이후에 요소가 활성화되므로 이 위치에서 이미지를 주입해야 안전합니다.
+    // 비주얼 노벨 스탠딩 일러스트 적용 (#screen-vn이 활성화된 뒤 적용해야 정상 표시됨)
     const vnUrl = SpriteMap['토끼기사 스탠딩'];
     const vnSlot = document.getElementById('vn-sprite-slot');
     if (vnSlot && vnUrl) {
@@ -4440,6 +4345,7 @@ const StorySequencer = {
 
   clearTimers() { if (this.logTimer) { clearInterval(this.logTimer); this.logTimer = null; } },
 
+  // 큐에서 다음 명령어 1개를 꺼내 실행 (큐가 비었으면 챕터 클리어 안내 출력)
   next() {
     if (this.queue.length === 0) {
       this.state = 'WAIT_FINISH';
@@ -4449,13 +4355,17 @@ const StorySequencer = {
     this.executeCommand(this.queue.shift());
   },
 
+  // 명령어 type별 실제 동작 처리기
   executeCommand(cmd) {
     switch (cmd.type) {
       case 'TEXT':
+        // 대사 출력 후 유저 화면 터치 대기 (inCombatStage에 따라 출력 위치 자동 분기)
         this.state = 'WAIT_TEXT';
         AppUI.showStoryText(cmd.speaker || '나레이션', cmd.text, this.inCombatStage);
         break;
+
       case 'CHOICE':
+        // 선택지 버튼 생성 후 유저 클릭 대기 -> 선택 결과를 stageVars 및 SaveLedger에 저장
         this.state = 'WAIT_CHOICE';
         AppUI.showStoryChoices(cmd.speaker || '선택', cmd.text, cmd.options, (opt) => {
           this.stageVars[cmd.varKey] = opt.value;
@@ -4464,7 +4374,9 @@ const StorySequencer = {
           this.next();
         });
         break;
+
       case 'SETUP_STAGE':
+        // 비주얼 노벨 화면에서 전투 화면(#screen-combat)으로 전환하고 양측 캐릭터 초기화
         this.inCombatStage = true;
         this.engine.player = new Entity(cmd.player.name, cmd.player.maxHp || cmd.player.hp, true);
         this.engine.player.hp = cmd.player.hp;
@@ -4477,6 +4389,7 @@ const StorySequencer = {
         break;
 
       case 'SCRIPTED_ACTION':
+        // 스크립트 전투 함수(executeZenaCombo 등) 실행 -> 쌓인 전투 로그를 유저가 모두 클릭할 때까지 대기
         this.state = 'WAIT_LOGS';
         AppUI.hideCombatVnOverlay();
         if (cmd.execute) cmd.execute(this.engine);
@@ -4486,8 +4399,8 @@ const StorySequencer = {
         });
         break;
 
-      // ✅ [추가] Route 1의 단일 로그('제나가 다시 스텝을 밟으려 했으나...')도 클릭 큐로 출력되도록 연결
       case 'SCRIPTED_LOGS':
+        // 지정된 로그 줄들을 전투 로그 큐에 넣고 유저가 모두 읽을 때까지 대기
         this.state = 'WAIT_LOGS';
         AppUI.hideCombatVnOverlay();
         (cmd.logs || []).forEach(line => this.engine.emitLog(line, 'log-story'));
@@ -4498,6 +4411,7 @@ const StorySequencer = {
         break;
 
       case 'BRANCH':
+        // 분기 조건 충족 시 해당 steps를 남은 대본(queue)의 맨 앞(unshift)에 끼워 넣어 즉시 실행
         if (typeof cmd.condition === 'function' && cmd.condition(this.stageVars, SaveLedger) && Array.isArray(cmd.steps)) {
           this.queue.unshift(...cmd.steps);
         }
@@ -4505,46 +4419,41 @@ const StorySequencer = {
         break;
 
       case 'RIG_NEXT_RANDOM':
+        // 다음 난수 추첨 결과를 지정값으로 고정
         RNG.rigNext(cmd.value);
         this.next();
         break;
 
       case 'GIVE_CARD': {
+        // 손패를 비우고 지정 카드를 1장 지급·자동 선택 상태로 둔 뒤 유저가 [카드 실행]을 누를 때까지 대기
         this.state = 'WAIT_CARD';
         AppUI.hideCombatVnOverlay();
         this.engine.player.hand = [];
         const cardInst = this.engine.createCardInstance(cmd.cardId, !!cmd.freeCost);
         this.engine.player.hand.push(cardInst);
-        // ❌ 에러를 유발하던 document.getElementById('intent-title') 2줄을 완전히 제거했습니다!
         AppUI.selectedCardIdx = 0;
         AppUI.renderStageActors();
         break;
       }
+
       case 'SET_SAVE':
+        // 클리어 플래그 등 영구 데이터 저장 후 즉시 다음 명령어로 진행
         SaveLedger.set(cmd.key, cmd.value);
         this.next();
         break;
+
       default:
         this.next();
         break;
     }
   },
 
-  finishPendingLogs() {
-    this.clearTimers();
-    while (this.pendingLogs.length > 0) this.engine.emitLog(this.pendingLogs.shift(), 'log-story');
-    if (this.pendingLogAfterHook) { this.pendingLogAfterHook(); this.pendingLogAfterHook = null; }
-    this.state = 'IDLE';
-    this.next();
-  },
-
+  // 유저가 대사창(#screen-vn 또는 #combat-vn-overlay)을 터치했을 때 현재 상태에 맞춰 다음 단계로 진행
   onUserClickDialogue() {
     if (this.state === 'WAIT_TEXT') {
       this.state = 'IDLE';
       AppUI.hideCombatVnOverlay();
       this.next();
-    } else if (this.state === 'WAIT_LOGS') {
-      this.finishPendingLogs();
     } else if (this.state === 'WAIT_FINISH') {
       this.state = 'IDLE';
       AppUI.hideCombatVnOverlay();
@@ -4555,37 +4464,48 @@ const StorySequencer = {
 
 /**
  * ============================================================================
- * 8. AppUI (모바일 세로형 화면 전환, 5색 연출, 2단계 카드 실행, 상세 팝업 컨트롤러)
+ * 8. AppUI (화면 전환, 순차 로그 연출 큐, 전투 HUD 렌더링, 팝업/도감 컨트롤러)
+ * - 역할: 데이터(DB)와 코어 로직(Engine, RogueManager, StorySequencer)의 결과를
+ *         실제 HTML DOM 요소에 그려주고, 유저의 터치 입력을 각 엔진으로 전달함
  * ============================================================================
  */
 const AppUI = {
   engine: null,
-  mode: 'LOBBY',
-  selectedCardIdx: null,
+  mode: 'LOBBY',          // 현재 앱 상태 ('LOBBY' | 'STORY' | 'ROGUE_HUB' | 'ROGUE_COMBAT')
+  selectedCardIdx: null,  // 손패에서 터치해 선택 중인 카드 인덱스 (선택 안 했으면 null)
 
-  // --- [추가] 절차적 로그 재생용 큐 & 상태 ---
-  logViewMode: 'STEP', // 'STEP'(1줄 클릭) | 'FULL'(전체/실시간 로그)
-  presentationQueue: [],
-  pendingFxList: [],
-  pendingFloatingTexts: [], // 👇 추가됨
-  postQueueActions: [], // 승리/패배 화면 전환 등 로그를 다 읽은 후 실행할 콜백
+  // --- [순차 로그 연출 큐 상태] ---
+  // 엔진이 순식간에 계산한 전투 결과를 유저가 한 줄씩 터치하며 읽을 수 있도록 보관하는 대기열
+  logViewMode: 'STEP',       // 'STEP'(1줄씩 클릭 재생) | 'FULL'(즉시 전체 출력)
+  presentationQueue: [],     // 재생 대기 중인 로그 프레임 목록 ({ msg, cls, fxList, floatingTextList, snapshot })
+  pendingFxList: [],         // 현재 로그 줄이 출력될 때 함께 터뜨릴 5색 테두리/흔들림 연출 임시 바구니
+  pendingFloatingTexts: [],  // 현재 로그 줄이 출력될 때 함께 띄울 플로팅 텍스트(-15, 방어 등) 임시 바구니
+  postQueueActions: [],      // 쌓인 로그를 유저가 끝까지 다 읽은 직후 실행할 후속 작업 (승/패 결과 화면 이동 등)
 
+  // ==========================================================================
+  // [A] 초기화 및 전역 화면 · BGM 제어
+  // ==========================================================================
+
+  // 앱 최초 실행 시 1회 호출: 전투 엔진 생성 및 콜백 연결, 세이브/로고 초기화
   init() {
     this.engine = new CombatEngine();
-    // 5색 이펙트가 발생하면 바로 터뜨리지 않고 현재 로그 프레임에 묶어둠
+
+    // 1) 엔진에서 5색 박스 연출 요청이 오면 즉시 실행하지 않고 현재 로그 프레임 바구니에 적재
     this.engine.onFxCallback = (boxId, fxClass) => {
       this.pendingFxList.push({ boxId, fxClass });
     };
 
+    // 2) 엔진에서 플로팅 텍스트 요청이 오면 현재 로그 프레임 바구니에 적재
     this.engine.onFloatingTextCallback = (boxId, text, colorClass) => {
       this.pendingFloatingTexts.push({ boxId, text, colorClass });
     };
 
-    // 로그가 1줄 발생할 때마다 현재 캐릭터 상태 스냅샷과 함께 큐에 적재
+    // 3) 엔진에서 로그 1줄이 발생할 때마다 그 시점의 체력/방어 스냅샷과 함께 재생 큐에 등록
     this.engine.onLogCallback = (msg, cls) => {
       this.enqueueLogStep(msg, cls);
     };
-    // 큐가 비어있을 때만 즉시 렌더링, 큐가 돌고 있으면 스냅샷이 렌더링을 담당
+
+    // 4) 대기 중인 로그 큐가 비어있을 때만 화면을 즉시 갱신 (큐가 돌고 있으면 스냅샷이 화면을 제어)
     this.engine.onRenderCallback = () => {
       if (this.presentationQueue.length === 0) {
         this.renderStageActors();
@@ -4595,15 +4515,16 @@ const AppUI = {
     StorySequencer.init(this.engine);
     this.refreshSaveTextarea();
 
-    // 메인 로고 이미지 적용
+    // 타이틀 화면 메인 로고 이미지 적용
     const logoUrl = SpriteMap['메인 로고'];
     const logoSlot = document.getElementById('main-logo-slot');
     if (logoSlot && logoUrl) {
       logoSlot.style.backgroundImage = `url('${logoUrl}')`;
-      logoSlot.innerHTML = ''; // 텍스트 숨김
+      logoSlot.innerHTML = '';
     }
   },
 
+  // 우측 상단 BGM 온/오프 토글
   toggleBgm() {
     const audio = document.getElementById('bgm-audio');
     const btn = document.getElementById('btn-bgm-toggle');
@@ -4625,23 +4546,25 @@ const AppUI = {
     }
   },
 
+  // 전투 화면(#screen-combat) 빈 곳을 터치했을 때의 통합 입력 처리
   handleCombatScreenClick(event) {
-    // 1. 메뉴, 턴 종료, 스킵 버튼이나 버프/디버프 배지(.s-tag)를 직접 누른 경우엔 진행 차단
+    // 1. 메뉴, 턴 종료, 스킵 버튼이나 상태이상 배지(.s-tag)를 직접 누른 경우엔 화면 넘김 차단
     if (event.target.closest('button, .s-tag')) return;
 
-    // 2. 스토리 모드 전투 중 대사 오버레이가 떠 있으면 대사 진행
+    // 2. 스토리 모드 전투 중 대사 오버레이가 떠 있으면 스토리 대사 진행
     const vnOverlay = document.getElementById('combat-vn-overlay');
     if (vnOverlay && !vnOverlay.classList.contains('hidden')) {
       StorySequencer.onUserClickDialogue();
       return;
     }
 
-    // 3. 대기 중인 1줄 로그가 남아있으면 다음 줄 진행
+    // 3. 읽어야 할 전투 로그가 남아있으면 다음 로그 1줄 진행
     if (this.presentationQueue.length > 0) {
       this.advanceLogStep();
     }
   },
 
+  // 지정한 화면 ID(.screen)만 활성화하고 나머지는 숨김
   go(screenId) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
     const target = document.getElementById(screenId);
@@ -4651,16 +4574,34 @@ const AppUI = {
     }
   },
 
+  // 현재 진행 상태를 세이브에 동기화한 뒤 타이틀 로비(#screen-start)로 복귀
+  returnToLobby() {
+    StorySequencer.clearTimers();
+    if (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB') {
+      RogueManager.syncToSaveLedger();
+    }
+    this.mode = 'LOBBY';
+    this.selectedCardIdx = null;
+    this.go('screen-start');
+  },
+
+  // ==========================================================================
+  // [B] 팝업 모달 · 전술 메뉴 · 도감 · 패치노트 · 세이브 UI
+  // ==========================================================================
+
+  // 모달 오버레이 열기/닫기
   toggleModal(id, show) {
     document.getElementById(id).classList.toggle('open', show);
   },
 
+  // 범용 정보 팝업(#modal-info)에 제목과 HTML 본문을 채워 띄움
   openInfo(title, descHtml) {
     document.getElementById('info-title').textContent = title;
     document.getElementById('info-desc').innerHTML = descHtml;
     this.toggleModal('modal-info', true);
   },
 
+  // 상태이상 배지 터치 시 해당 버프/디버프/의념의 설명과 누적 수치를 팝업으로 표시
   openStatusInfo(statusId, stacks, accumulated) {
     const def = StatusDB[statusId];
     const meta = StatusMeta[statusId] || { icon: '📌', desc: '상태 효과' };
@@ -4668,13 +4609,13 @@ const AppUI = {
     this.openInfo(`${meta.icon} ${def.name} (스택: ${stacks})`, `${meta.desc}${accText}`);
   },
 
-  // 보라색 박스의 [전체 로그] 버튼을 눌렀을 때 지나간 로그 전체를 팝업으로 표시
+  // 보라색 배너 우측 [전체 로그] 버튼 클릭 시 지나간 전투 로그 전체를 팝업으로 출력
   openFullLogModal() {
     const logHtml = document.getElementById('log-box').innerHTML;
     this.openInfo('📜 전투 로그 기록', logHtml || '<div style="color:var(--text-sub);">기록된 로그가 없습니다.</div>');
   },
 
-  // 전술 메뉴 모달 열기 (특성/유물 터치 시 설명 팝업 + 덱/무덤 카드 목록 확인)
+  // [메뉴] 버튼 클릭 시 전술 메뉴 팝업 열기 (층수, 누적 피격, 보유 특성/유물 배지, 덱/무덤 조회 버튼)
   openTacticalMenu() {
     const isRogue = (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB');
     const floorText = isRogue ? `${RogueManager.state.floor}층 (상한 ${RogueManager.getMaxFloor()}층)` : '스토리 스테이지';
@@ -4716,188 +4657,7 @@ const AppUI = {
     this.toggleModal('modal-menu', true);
   },
 
-  openCodex(defaultTab = 'CARD') {
-    this.go('screen-codex');
-    this.renderCodex(defaultTab);
-  },
-
-  openPatchNotes() {
-    this.go('screen-patch');
-    this.renderPatchNotes();
-  },
-
-  renderPatchNotes() {
-	    const parseVersion = (v) => {
-      const raw = String(v || '').trim();
-      const isAlpha = raw.startsWith('알파');
-      const s = raw.replace(/^알파\s*/i, '').replace(/^v/i, '');
-      const num = (!s.includes('.') && s.startsWith('0') && s.length > 1)
-        ? (parseFloat('0.' + s.slice(1)) || 0)
-        : (parseFloat(s) || 0);
-      return isAlpha ? -100 + num : num; // 알파 버전은 항상 본편(v0.01) 아래에서 수치순 정렬
-    };
-
-    const sorted = [...PatchNotesDB].sort((a, b) => parseVersion(b.version) - parseVersion(a.version));
-    document.getElementById('patch-count-info').textContent = `업데이트 기록 (${sorted.length}건 · 최신순)`;
-
-    const listEl = document.getElementById('patch-list');
-    listEl.innerHTML = sorted.map((p, idx) => {
-      const isLatest = idx === 0;
-      const descHtml = p.desc
-        ? `<div style="font-size:11.5px; color:#a9b1d6; line-height:1.45; margin-top:4px;">${p.desc}</div>`
-        : '';
-      return `
-        <div class="codex-item" style="border-left: 3px solid ${isLatest ? 'var(--fx-green)' : 'var(--accent)'};">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-            <strong style="color:${isLatest ? 'var(--fx-green)' : 'var(--fx-yellow)'}; font-size:13px;">${p.version}</strong>
-            ${isLatest ? '<span style="font-size:10px; color:var(--fx-green); border:1px solid var(--fx-green); border-radius:3px; padding:1px 5px;">LATEST</span>' : ''}
-          </div>
-          <div style="font-size:12.5px; font-weight:bold; color:var(--text-main); margin-top:2px;">${p.title}</div>
-          ${descHtml}
-        </div>
-      `;
-    }).join('');
-    listEl.scrollTop = 0;
-  },
-	
-  renderCodex(tab) {
-    // 1. 탭 활성화 하이라이트 갱신 (7종으로 확장)
-    ['CARD', 'BUFF', 'DEBUFF', 'SEEKER', 'TRAIT', 'RELIC', 'ENEMY', 'RULE'].forEach(t => {
-      const btn = document.getElementById(`tab-codex-${t}`);
-      if (btn) btn.classList.toggle('active', t === tab);
-    });
-
-    const listEl = document.getElementById('codex-list');
-    const countEl = document.getElementById('codex-count-info');
-    let html = '';
-
-    if (tab === 'CARD') {
-      // (기존 카드 렌더링 유지)
-      const cards = Object.values(CardDB).sort((a, b) => a.id.localeCompare(b.id));
-      countEl.textContent = `전체 카드 목록 (${cards.length}종)`;
-      html = cards.map(c => {
-        const hitText = c.hits > 0 ? ` | 타수 ${c.hits}` : '';
-        const typeColor = c.type === 'ATTACK' ? 'var(--fx-red)' : 'var(--fx-blue)';
-        return `
-          <div class="codex-item">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--fx-yellow); font-size:13px;">[${c.id}] ${c.name}</strong>
-              <span style="font-size:11px; color:${typeColor}; font-weight:bold;">코스트 ${c.cost} · ${c.type}${hitText}</span>
-            </div>
-            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${c.desc}</div>
-          </div>
-        `;
-      }).join('');
-
-    } else if (tab === 'BUFF' || tab === 'DEBUFF') {
-      // (기존 버프/디버프 렌더링 유지)
-      const isBuff = tab === 'BUFF';
-      const statuses = Object.values(StatusDB)
-        .filter(s => s.category === tab && !s.id.startsWith('CTX_'))
-        .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
-      countEl.textContent = `${isBuff ? '버프' : '디버프'} 목록 (${statuses.length}종)`;
-      html = statuses.map(s => {
-        const meta = StatusMeta[s.id] || { icon: '📌', desc: '설명 없음' };
-        const color = isBuff ? 'var(--fx-blue)' : 'var(--fx-purple)';
-        return `
-          <div class="codex-item" style="border-left: 3px solid ${color};">
-            <strong style="color:${color}; font-size:13px;">${meta.icon} [${s.code}] ${s.name}</strong>
-            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${meta.desc}</div>
-          </div>
-        `;
-      }).join('');
-
-    } else if (tab === 'SEEKER') {
-      // 👈 [추가] 의념 (CTX_로 시작하는 턴 맥락 버프들)
-      const seekers = Object.values(StatusDB).filter(s => s.id.startsWith('CTX_'));
-      countEl.textContent = `의념 목록 (${seekers.length}종)`;
-      html = seekers.map(s => {
-        const meta = StatusMeta[s.id] || { icon: '✨', desc: '설명 없음' };
-        return `
-          <div class="codex-item" style="border-left: 3px solid var(--fx-yellow);">
-            <strong style="color:var(--fx-yellow); font-size:13px;">${meta.icon} ${s.name}</strong>
-            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${meta.desc}</div>
-          </div>
-        `;
-      }).join('');
-
-    } else if (tab === 'TRAIT') {
-      // (기존 특성 렌더링 유지)
-      const traits = Object.values(TraitDB).sort((a, b) => a.id.localeCompare(b.id));
-      countEl.textContent = `특성 목록 (${traits.length}종)`;
-      html = traits.map(t => `
-        <div class="codex-item" style="border-left: 3px solid var(--fx-blue);">
-          <strong style="color:var(--fx-blue); font-size:13px;">🧬 [${t.id}] ${t.name}</strong>
-          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${t.desc}</div>
-        </div>
-      `).join('');
-
-    } else if (tab === 'RELIC') {
-      // (기존 유물 렌더링 유지)
-      const relics = Object.values(RelicDB).sort((a, b) => a.id.localeCompare(b.id));
-      countEl.textContent = `유물 목록 (${relics.length}종)`;
-      html = relics.map(r => `
-        <div class="codex-item" style="border-left: 3px solid var(--fx-yellow);">
-          <strong style="color:var(--fx-yellow); font-size:13px;">🏺 [${r.id}] ${r.name}</strong>
-          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${r.desc}</div>
-        </div>
-      `).join('');
-
-    } else if (tab === 'ENEMY') {
-      // 👈 [추가] 개체(적) 도감 렌더링
-      const enemies = Object.values(EnemyDB);
-      countEl.textContent = `개체 도감 (${enemies.length}종)`;
-      html = enemies.map(e => {
-        const meta = EnemyMeta[e.id] || { type: '개체', desc: '정보 없음' };
-        const borderCol = e.isBoss ? 'var(--fx-red)' : (e.isElite ? 'var(--fx-purple)' : 'var(--border)');
-        return `
-          <div class="codex-item" style="border-left: 3px solid ${borderCol};">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main); font-size:13px;">👾 ${e.name}</strong>
-              <span style="font-size:10.5px; color:var(--fx-yellow); font-weight:bold;">${meta.type} · 기본 HP ${e.maxHp}</span>
-            </div>
-            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4; margin-top:2px;">${meta.desc}</div>
-          </div>
-        `;
-      }).join('');
-      
-    } else if (tab === 'RULE') {  // 👈 } 를 추가하여 올바르게 닫고 분기를 연결
-      countEl.textContent = '기본 진행 가이드';
-      const rules = [
-        {
-          title: '🌙 기사도 (모험의 목표)',
-          desc: '토끼기사의 끝없는 꿈속 여정을 한 층씩 오르며 앞을 막는 적들을 쓰러뜨립니다.'
-        },
-        {
-          title: '🃏 시작 덱 구성 (총 12장)',
-          desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다. 카드는 최소 9장~최대 21장까지 보유할 수 있습니다.'
-        },
-        {
-          title: '🔄 매 턴 카드 뽑기와 버리기',
-          desc: '내 턴이 시작될 때마다 카드를 3장 뽑습니다. 턴을 마칠 때 쓰지 않고 손에 남긴 카드는 모두 버려집니다.'
-        },
-        {
-          title: '💚 활력 (초록색 보석)',
-          desc: '체력바 옆의 초록색 보석은 카드를 쓰는 힘입니다. 매 턴 3개씩 차오르며, 카드 오른쪽 위 숫자만큼 소모합니다. 쓰지 않은 활력은 최대 1개까지 다음 턴으로 넘어갑니다.'
-        },
-        {
-          title: '🎁 전투 승리 보상',
-          desc: '전투에서 이기면 새로운 카드 1장을 얻습니다. 강력한 엘리트를 이기면 유물을, 10층마다 등장하는 보스를 이기면 유물과 특성을 추가로 얻습니다.'
-        }
-      ];
-
-      html = rules.map(r => `
-        <div class="codex-item" style="border-left: 3px solid var(--accent);">
-          <strong style="color:var(--fx-yellow); font-size:13px;">${r.title}</strong>
-          <div style="font-size:12px; color:var(--text-main); line-height:1.5; margin-top:2px;">${r.desc}</div>
-        </div>
-      `).join('');
-    }
-
-    listEl.innerHTML = html;
-    listEl.scrollTop = 0;
-  },
-
+  // 마스터 덱(MASTER) / 남은 덱(DECK) / 무덤(GRAVE) 카드 목록 팝업 출력
   openPileViewer(pileType) {
     let cards = [];
     let title = '';
@@ -4933,6 +4693,169 @@ const AppUI = {
     this.openInfo(title, html);
   },
 
+  // 도감 화면 열기 및 카테고리별(카드/버프/디버프/의념/특성/유물/개체/룰북) 목록 렌더링
+  openCodex(defaultTab = 'CARD') {
+    this.go('screen-codex');
+    this.renderCodex(defaultTab);
+  },
+
+  renderCodex(tab) {
+    ['CARD', 'BUFF', 'DEBUFF', 'SEEKER', 'TRAIT', 'RELIC', 'ENEMY', 'RULE'].forEach(t => {
+      const btn = document.getElementById(`tab-codex-${t}`);
+      if (btn) btn.classList.toggle('active', t === tab);
+    });
+
+    const listEl = document.getElementById('codex-list');
+    const countEl = document.getElementById('codex-count-info');
+    let html = '';
+
+    if (tab === 'CARD') {
+      const cards = Object.values(CardDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `전체 카드 목록 (${cards.length}종)`;
+      html = cards.map(c => {
+        const hitText = c.hits > 0 ? ` | 타수 ${c.hits}` : '';
+        const typeColor = c.type === 'ATTACK' ? 'var(--fx-red)' : 'var(--fx-blue)';
+        return `
+          <div class="codex-item">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="color:var(--fx-yellow); font-size:13px;">[${c.id}] ${c.name}</strong>
+              <span style="font-size:11px; color:${typeColor}; font-weight:bold;">코스트 ${c.cost} · ${c.type}${hitText}</span>
+            </div>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${c.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'BUFF' || tab === 'DEBUFF') {
+      const isBuff = tab === 'BUFF';
+      const statuses = Object.values(StatusDB)
+        .filter(s => s.category === tab && !s.id.startsWith('CTX_'))
+        .sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+      countEl.textContent = `${isBuff ? '버프' : '디버프'} 목록 (${statuses.length}종)`;
+      html = statuses.map(s => {
+        const meta = StatusMeta[s.id] || { icon: '📌', desc: '설명 없음' };
+        const color = isBuff ? 'var(--fx-blue)' : 'var(--fx-purple)';
+        return `
+          <div class="codex-item" style="border-left: 3px solid ${color};">
+            <strong style="color:${color}; font-size:13px;">${meta.icon} [${s.code}] ${s.name}</strong>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${meta.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'SEEKER') {
+      const seekers = Object.values(StatusDB).filter(s => s.id.startsWith('CTX_'));
+      countEl.textContent = `의념 목록 (${seekers.length}종)`;
+      html = seekers.map(s => {
+        const meta = StatusMeta[s.id] || { icon: '✨', desc: '설명 없음' };
+        return `
+          <div class="codex-item" style="border-left: 3px solid var(--fx-yellow);">
+            <strong style="color:var(--fx-yellow); font-size:13px;">${meta.icon} ${s.name}</strong>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${meta.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'TRAIT') {
+      const traits = Object.values(TraitDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `특성 목록 (${traits.length}종)`;
+      html = traits.map(t => `
+        <div class="codex-item" style="border-left: 3px solid var(--fx-blue);">
+          <strong style="color:var(--fx-blue); font-size:13px;">🧬 [${t.id}] ${t.name}</strong>
+          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${t.desc}</div>
+        </div>
+      `).join('');
+
+    } else if (tab === 'RELIC') {
+      const relics = Object.values(RelicDB).sort((a, b) => a.id.localeCompare(b.id));
+      countEl.textContent = `유물 목록 (${relics.length}종)`;
+      html = relics.map(r => `
+        <div class="codex-item" style="border-left: 3px solid var(--fx-yellow);">
+          <strong style="color:var(--fx-yellow); font-size:13px;">🏺 [${r.id}] ${r.name}</strong>
+          <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4;">${r.desc}</div>
+        </div>
+      `).join('');
+
+    } else if (tab === 'ENEMY') {
+      const enemies = Object.values(EnemyDB);
+      countEl.textContent = `개체 도감 (${enemies.length}종)`;
+      html = enemies.map(e => {
+        const meta = EnemyMeta[e.id] || { type: '개체', desc: '정보 없음' };
+        const borderCol = e.isBoss ? 'var(--fx-red)' : (e.isElite ? 'var(--fx-purple)' : 'var(--border)');
+        return `
+          <div class="codex-item" style="border-left: 3px solid ${borderCol};">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="color:var(--text-main); font-size:13px;">👾 ${e.name}</strong>
+              <span style="font-size:10.5px; color:var(--fx-yellow); font-weight:bold;">${meta.type} · 기본 HP ${e.maxHp}</span>
+            </div>
+            <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4; margin-top:2px;">${meta.desc}</div>
+          </div>
+        `;
+      }).join('');
+
+    } else if (tab === 'RULE') {
+      countEl.textContent = '기본 진행 가이드';
+      const rules = [
+        { title: '🌙 기사도 (모험의 목표)', desc: '토끼기사의 끝없는 꿈속 여정을 한 층씩 오르며 앞을 막는 적들을 쓰러뜨립니다.' },
+        { title: '🃏 시작 덱 구성 (총 12장)', desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다. 카드는 최소 9장~최대 21장까지 보유할 수 있습니다.' },
+        { title: '🔄 매 턴 카드 뽑기와 버리기', desc: '내 턴이 시작될 때마다 카드를 3장 뽑습니다. 턴을 마칠 때 쓰지 않고 손에 남긴 카드는 모두 버려집니다.' },
+        { title: '💚 활력 (초록색 보석)', desc: '체력바 옆의 초록색 보석은 카드를 쓰는 힘입니다. 매 턴 3개씩 차오르며, 카드 오른쪽 위 숫자만큼 소모합니다. 쓰지 않은 활력은 최대 1개까지 다음 턴으로 넘어갑니다.' },
+        { title: '🎁 전투 승리 보상', desc: '전투에서 이기면 새로운 카드 1장을 얻습니다. 강력한 엘리트를 이기면 유물을, 10층마다 등장하는 보스를 이기면 유물과 특성을 추가로 얻습니다.' }
+      ];
+
+      html = rules.map(r => `
+        <div class="codex-item" style="border-left: 3px solid var(--accent);">
+          <strong style="color:var(--fx-yellow); font-size:13px;">${r.title}</strong>
+          <div style="font-size:12px; color:var(--text-main); line-height:1.5; margin-top:2px;">${r.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    listEl.innerHTML = html;
+    listEl.scrollTop = 0;
+  },
+
+  // 패치노트 화면 열기 및 버전 번호 기준 최신순 정렬 렌더링
+  openPatchNotes() {
+    this.go('screen-patch');
+    this.renderPatchNotes();
+  },
+
+  renderPatchNotes() {
+    const parseVersion = (v) => {
+      const raw = String(v || '').trim();
+      const isAlpha = raw.startsWith('알파');
+      const s = raw.replace(/^알파\s*/i, '').replace(/^v/i, '');
+      const num = (!s.includes('.') && s.startsWith('0') && s.length > 1)
+        ? (parseFloat('0.' + s.slice(1)) || 0)
+        : (parseFloat(s) || 0);
+      return isAlpha ? -100 + num : num; // 알파 버전은 항상 본편(v0.01) 아래에 정렬
+    };
+
+    const sorted = [...PatchNotesDB].sort((a, b) => parseVersion(b.version) - parseVersion(a.version));
+    document.getElementById('patch-count-info').textContent = `업데이트 기록 (${sorted.length}건 · 최신순)`;
+
+    const listEl = document.getElementById('patch-list');
+    listEl.innerHTML = sorted.map((p, idx) => {
+      const isLatest = idx === 0;
+      const descHtml = p.desc
+        ? `<div style="font-size:11.5px; color:#a9b1d6; line-height:1.45; margin-top:4px;">${p.desc}</div>`
+        : '';
+      return `
+        <div class="codex-item" style="border-left: 3px solid ${isLatest ? 'var(--fx-green)' : 'var(--accent)'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+            <strong style="color:${isLatest ? 'var(--fx-green)' : 'var(--fx-yellow)'}; font-size:13px;">${p.version}</strong>
+            ${isLatest ? '<span style="font-size:10px; color:var(--fx-green); border:1px solid var(--fx-green); border-radius:3px; padding:1px 5px;">LATEST</span>' : ''}
+          </div>
+          <div style="font-size:12.5px; font-weight:bold; color:var(--text-main); margin-top:2px;">${p.title}</div>
+          ${descHtml}
+        </div>
+      `;
+    }).join('');
+    listEl.scrollTop = 0;
+  },
+
+  // 세이브 텍스트창 갱신 및 로비 화면의 스토리/이어하기 버튼 상태 동기화
   refreshSaveTextarea() {
     document.getElementById('save-textarea').value = SaveLedger.exportText();
     this.renderLobbyLists();
@@ -4974,19 +4897,13 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.04 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.05 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
-  returnToLobby() {
-    StorySequencer.clearTimers();
-    if (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB') {
-      RogueManager.syncToSaveLedger();
-    }
-    this.mode = 'LOBBY';
-    this.selectedCardIdx = null;
-    this.go('screen-start');
-  },
+  // ==========================================================================
+  // [C] 로그라이크 전투 진입 · 범용 선택지 화면 · 스토리 대사 UI 브릿지
+  // ==========================================================================
 
   enterRogueCombatView() {
     this.mode = 'ROGUE_COMBAT';
@@ -4997,6 +4914,7 @@ const AppUI = {
     this.renderStageActors();
   },
 
+  // 범용 선택 화면(#screen-choice)에 제목, 부제, 선택 카드 목록을 동적 생성
   setChoiceScreen(headerTitle, subtitle, items) {
     document.getElementById('choice-header-title').textContent = headerTitle;
     document.getElementById('choice-subtitle').textContent = subtitle;
@@ -5020,12 +4938,12 @@ const AppUI = {
         <strong style="color:${item.borderColor || 'var(--text-main)'}; font-size:13.5px;">${item.title}</strong>
         <span style="font-size:11.5px; color:var(--text-sub); line-height:1.35;">${item.desc}</span>
       `;
-	  if (!item.disabled && item.onClick) div.onclick = (e) => item.onClick(e, div);
+      if (!item.disabled && item.onClick) div.onclick = (e) => item.onClick(e, div);
       listEl.appendChild(div);
     });
   },
 
-  // 스토리 비주얼 노벨 출력 (전투 전이면 #screen-vn, 전투 진입 후면 #combat-vn-overlay)
+  // 스토리 대사 출력 (전투 전이면 #screen-vn 대사창, 전투 진입 후면 #combat-vn-overlay에 출력)
   showStoryText(speaker, text, inCombat) {
     if (inCombat) {
       const ov = document.getElementById('combat-vn-overlay');
@@ -5044,6 +4962,7 @@ const AppUI = {
     document.getElementById('combat-vn-overlay').classList.add('hidden');
   },
 
+  // 스토리 분기 선택지 버튼 생성
   showStoryChoices(speaker, text, options, onSelect) {
     document.getElementById('vn-speaker').textContent = speaker;
     document.getElementById('vn-text').textContent = text;
@@ -5060,16 +4979,11 @@ const AppUI = {
     });
   },
 
-  triggerFX(targetId, fxClass) {
-    const el = document.getElementById(targetId);
-    if (!el) return;
-    el.classList.remove('fx-red', 'fx-green', 'fx-purple', 'fx-blue', 'fx-yellow');
-    void el.offsetWidth;
-    el.classList.add(fxClass);
-    setTimeout(() => el.classList.remove(fxClass), 380);
-  },
+  // ==========================================================================
+  // [D] 순차 로그 재생 큐 (스냅샷 캡처 · 1줄씩 터치 진행 · 스킵 처리)
+  // ==========================================================================
 
-  // 현재 플레이어/적의 체력·방어도·상태이상을 깊은 복사(Snapshot)
+  // 현재 시점의 양측 HP·방어도·활력·상태이상·손패를 깊은 복사(Snapshot)하여 보관
   captureStateSnapshot() {
     const cloneActor = (ent) => ({
       name: ent.name,
@@ -5098,16 +5012,17 @@ const AppUI = {
     };
   },
 
+  // 엔진에서 로그 1줄이 생성될 때 호출: 시각 연출 + 스냅샷을 하나의 스텝으로 묶어 큐에 적재
   enqueueLogStep(msg, cls = '') {
     const step = {
       msg,
       cls,
       fxList: [...this.pendingFxList],
-      floatingTextList: [...this.pendingFloatingTexts], // 👇 큐에 플로팅 텍스트 묶음 장전!
+      floatingTextList: [...this.pendingFloatingTexts],
       snapshot: this.captureStateSnapshot()
     };
     this.pendingFxList = [];
-    this.pendingFloatingTexts = []; // 👇 비우기
+    this.pendingFloatingTexts = [];
 
     const combatScreen = document.getElementById('screen-combat');
     const isCombatVisible = combatScreen && combatScreen.classList.contains('active');
@@ -5118,32 +5033,31 @@ const AppUI = {
     }
 
     this.presentationQueue.push(step);
+    // 첫 번째 로그라면 즉시 화면에 첫 프레임을 띄우고, 2번째 줄부터는 유저 터치를 기다림
     if (this.presentationQueue.length === 1) {
       this.applyPresentationStep(this.presentationQueue[0]);
     }
     this.updateLogStepUI();
   },
 
-  // 유저가 1줄 로그 박스를 클릭했을 때 다음 스텝 재생
+  // 유저가 화면을 터치했을 때 현재 로그를 넘기고 다음 로그 스텝을 재생
   advanceLogStep() {
     if (this.presentationQueue.length === 0) return;
 
-    // 현재 보고 있던 줄을 큐에서 제거
     this.presentationQueue.shift();
 
     if (this.presentationQueue.length > 0) {
-      // 다음 줄 스냅샷 적용 (체력/방어도/이펙트/로그가 이 순간 변화!)
       this.applyPresentationStep(this.presentationQueue[0]);
       this.updateLogStepUI();
     } else {
-      // 모든 로그를 다 읽었으면 실제 최신 엔진 상태로 동기화하고 후속 액션(승패 이동 등) 실행
+      // 큐의 모든 로그를 다 읽었으면 최신 상태로 동기화하고 예약된 후속 작업(승/패 이동 등) 실행
       this.updateLogStepUI();
       this.renderStageActors();
       this.checkPostQueueActions();
     }
   },
 
-  // [스킵 ⏭️] 버튼 클릭 시 밀린 로그를 한 번에 모두 출력
+  // [스킵 ⏭️] 버튼 클릭 시 남은 로그를 한꺼번에 전체 로그창에 밀어 넣고 즉시 최신 상태 표시
   flushAllLogs() {
     while (this.presentationQueue.length > 0) {
       const step = this.presentationQueue.shift();
@@ -5154,35 +5068,13 @@ const AppUI = {
     this.checkPostQueueActions();
   },
 
-  // [모드: 1줄 클릭 <-> 전체/실시간] 토글
-  toggleLogViewMode() {
-    this.logViewMode = (this.logViewMode === 'STEP') ? 'FULL' : 'STEP';
-    const btn = document.getElementById('btn-toggle-log-mode');
-    const stepBox = document.getElementById('log-step-box');
-    const fullBox = document.getElementById('log-box');
-
-    if (this.logViewMode === 'FULL') {
-      btn.textContent = '모드: 전체/실시간';
-      stepBox.classList.add('hidden');
-      fullBox.classList.remove('hidden');
-      this.flushAllLogs();
-    } else {
-      btn.textContent = '모드: 1줄 클릭';
-      stepBox.classList.remove('hidden');
-      fullBox.classList.add('hidden');
-      this.updateLogStepUI();
-    }
-  },
-
+  // 단일 로그 스텝의 텍스트 기록, 5색 박스 연출, 플로팅 텍스트, 스냅샷 HUD 렌더링을 일괄 적용
   applyPresentationStep(step) {
     this.appendDomLog(step.msg, step.cls);
     step.fxList.forEach(fx => this.triggerFX(fx.boxId, fx.fxClass));
-    
-    // 👇 로그 1줄이 화면에 풀릴 때 글씨도 같이 허공에 뿌려줌
     if (step.floatingTextList) {
       step.floatingTextList.forEach(ft => this.createFloatingText(ft.boxId, ft.text, ft.colorClass));
     }
-    
     this.renderStageActors(step.snapshot, step);
   },
 
@@ -5190,6 +5082,7 @@ const AppUI = {
     this.renderStageActors(this.presentationQueue[0]?.snapshot || null, this.presentationQueue[0] || null);
   },
 
+  // 전투 종료 화면 전환 등 "쌓인 로그를 유저가 다 읽은 뒤에 실행해야 할 콜백"을 등록
   runAfterLogs(callback) {
     if (this.presentationQueue.length === 0) {
       callback();
@@ -5209,33 +5102,47 @@ const AppUI = {
   clearLogs() {
     this.presentationQueue = [];
     this.pendingFxList = [];
-    this.pendingFloatingTexts = []; // 👇 추가됨
+    this.pendingFloatingTexts = [];
     this.postQueueActions = [];
     document.getElementById('log-box').innerHTML = '';
     this.updateLogStepUI();
   },
 
-  // 👇 랜덤 위치에서 플로팅 텍스트를 만들고 0.8초 후 삭제하는 함수
+  // ==========================================================================
+  // [E] 시각 연출 · 2단계 카드 조작 · 전투 HUD 전체 렌더링
+  // ==========================================================================
+
+  // 초상화 박스(#box-player / #box-enemy)에 5색 테두리 점멸·흔들림 클래스 부여 후 0.38초 뒤 해제
+  triggerFX(targetId, fxClass) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    el.classList.remove('fx-red', 'fx-green', 'fx-purple', 'fx-blue', 'fx-yellow');
+    void el.offsetWidth; // 동일 이펙트 연속 발동 시 CSS 애니메이션 재시작 트릭
+    el.classList.add(fxClass);
+    setTimeout(() => el.classList.remove(fxClass), 380);
+  },
+
+  // 초상화 박스 내부 무작위 좌표에서 데미지/회복/상태이상 글씨를 띄우고 0.8초 뒤 DOM에서 제거
   createFloatingText(boxId, text, colorClass) {
     const box = document.getElementById(boxId);
     if (!box || !box.parentElement) return;
-    
-    const stageRow = box.parentElement; // .stage-top-row
+
+    const stageRow = box.parentElement;
     const ft = document.createElement('div');
     ft.className = `fct-text ${colorClass}`;
     ft.textContent = text;
-    
-    // 대상 박스 내부(가로 30~70%, 세로 40~60%) 좌표를 부모 기준으로 환산
+
     const rx = box.offsetLeft + box.offsetWidth * (Math.random() * 0.4 + 0.3);
     const ry = box.offsetTop + box.offsetHeight * (Math.random() * 0.2 + 0.4);
-    
+
     ft.style.left = `${rx}px`;
     ft.style.top = `${ry}px`;
-    
+
     stageRow.appendChild(ft);
     setTimeout(() => { if (ft.parentElement) ft.remove(); }, 800);
   },
 
+  // 숨김 컨테이너(#log-box)에 지나간 로그 한 줄씩 누적 ([전체 로그] 팝업용)
   appendDomLog(msg, cls = '') {
     const box = document.getElementById('log-box');
     if (!box) return;
@@ -5246,6 +5153,7 @@ const AppUI = {
     box.appendChild(div);
   },
 
+  // 1단계 카드 조작: 손패 카드를 터치해 선택/선택 해제 (로그 재생 중이면 로그 진행 우선)
   selectCard(idx) {
     if (this.presentationQueue.length > 0) {
       this.advanceLogStep();
@@ -5255,6 +5163,7 @@ const AppUI = {
     this.renderStageActors();
   },
 
+  // 2단계 카드 조작: 중앙에 나타난 [카드 실행] 버튼을 눌러 실제 엔진에 카드 사용 요청
   executeSelectedCard() {
     if (this.presentationQueue.length > 0) {
       this.advanceLogStep();
@@ -5266,6 +5175,7 @@ const AppUI = {
     this.engine.playCardFromHand(idx);
   },
 
+  // 우측 [턴 종료] 버튼 클릭 처리
   onClickEndTurn() {
     if (this.presentationQueue.length > 0) {
       this.advanceLogStep();
@@ -5276,6 +5186,12 @@ const AppUI = {
     this.engine.endPlayerTurn();
   },
 
+  /**
+   * [전투 화면 전체 HUD 갱신 함수]
+   * - snapshot이 전달되면 해당 스냅샷 시점의 상태를, 없으면 현재 최신 엔진 상태를 기준으로 그림
+   * - 1) 좌측 플레이어 박스 -> 2) 우측 적 박스 -> 3) 중상단 보라색 배너(로그 or 적 행동 예고)
+   *   -> 4) 중간 버튼 줄(카드 실행 버튼 표시 여부) -> 5) 하단 가로 스크롤 손패 카드 순으로 렌더링
+   */
   renderStageActors(snapshot = null, activeStep = null) {
     const state = snapshot || this.captureStateSnapshot();
     const p = state.player;
@@ -5283,6 +5199,7 @@ const AppUI = {
     const isQueueLocked = this.presentationQueue.length > 0;
     const currentStep = activeStep || this.presentationQueue[0] || null;
 
+    // 상태이상 배지 HTML 생성 헬퍼
     const renderStatusTags = (ent) => {
       if (!ent.statuses.length) return `<span style="font-size:9.5px; color:#414868;">상태 없음</span>`;
       return ent.statuses.map(s => {
@@ -5294,15 +5211,15 @@ const AppUI = {
       }).join('');
     };
 
-    // 1. 좌측: 플레이어 박스 (피격 텍스트 및 방어도 텍스트 완전 제거, 방어도는 흰색 반투명 게이지로 표시)
+    // 1. 좌측: 플레이어 초상화, HP/방어도 게이지, 활력 보석, 상태이상 슬롯 갱신
     const pSpriteUrl = SpriteMap[p.name];
     const pSpriteEl = document.getElementById('sprite-player');
     if (pSpriteUrl) {
       pSpriteEl.style.backgroundImage = `url('${pSpriteUrl}')`;
-      pSpriteEl.innerHTML = ''; // 이미지 있으면 텍스트 삭제
+      pSpriteEl.innerHTML = '';
     } else {
       pSpriteEl.style.backgroundImage = 'none';
-      pSpriteEl.innerHTML = `[내 도트]<br>${p.name}`; // 이미지 없으면 텍스트
+      pSpriteEl.innerHTML = `[내 도트]<br>${p.name}`;
     }
     document.getElementById('player-name-label').textContent = p.name;
     const pPct = p.maxHp > 0 ? Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) : 0;
@@ -5317,7 +5234,7 @@ const AppUI = {
       `<div class="ap-gem ${i < p.energy ? 'on' : ''}"></div>`
     ).join('');
 
-    // 2. 우측: 적 박스 (방어도는 흰색 반투명 게이지로 표시)
+    // 2. 우측: 적 초상화, 층수 표기, HP/방어도 게이지, 상태이상 슬롯 갱신
     const floorTag = this.mode === 'ROGUE_COMBAT' ? ` (${RogueManager.state.floor}F)` : '';
     const eSpriteUrl = SpriteMap[e.name];
     const eSpriteEl = document.getElementById('sprite-enemy');
@@ -5336,7 +5253,7 @@ const AppUI = {
     document.getElementById('enemy-hp-text').textContent = `${e.hp} / ${e.maxHp}`;
     document.getElementById('enemy-status-list').innerHTML = renderStatusTags(e);
 
-    // 3. 중상단 보라색 통합 박스: [로그 대기 중이면 1줄 로그] vs [평소에는 적 다음 행동 예고]
+    // 3. 중상단 보라색 통합 박스: 로그 재생 대기 중이면 1줄 로그 출력, 평소에는 적 다음 행동 예고 출력
     document.getElementById('deck-grave-Summary').textContent = `덱${p.deckCount}/묘${p.graveCount}`;
     const purpleBox = document.getElementById('purple-box');
     const headerLabel = document.getElementById('purple-header-label');
@@ -5355,6 +5272,7 @@ const AppUI = {
       headerLabel.style.color = 'var(--fx-yellow)';
       headerLabel.textContent = `⚡ 전투 로그 진행 중`;
       mainDisplay.className = `purple-main-text ${currentStep.cls}`;
+      mainDisplay.style.color = '';
       mainDisplay.textContent = `▶ ${currentStep.msg}`;
       countEl.textContent = remaining > 0 ? `남은 로그: +${remaining}줄` : `마지막 로그`;
       hintEl.style.color = 'var(--fx-yellow)';
@@ -5366,12 +5284,13 @@ const AppUI = {
       countEl.textContent = `${state.turn}턴 진행 중`;
       hintEl.style.color = 'var(--text-sub)';
       hintEl.textContent = '아래 카드를 선택하세요';
-		
+
       if (this.mode === 'ROGUE_COMBAT' && e.enemyId && EnemyDB[e.enemyId] && e.hp > 0) {
         const resolved = this.engine.resolveEnemyAction(state.turn, this.engine.enemy, this.engine.player);
         if (resolved) {
           const act = resolved.action;
           let intentText = act.intent;
+          // 10층 단위 티어 공격력 보너스(+3씩)를 예고창 텍스트 숫자에도 실시간 합산 표기
           if (e.tierDamageBonus > 0 && intentText.includes('물리')) {
             intentText = intentText.replace(/물리\s*(\d+)/g, (_, num) => `물리 ${Number(num) + e.tierDamageBonus}`);
           }
@@ -5392,7 +5311,7 @@ const AppUI = {
             mainDisplay.style.color = 'var(--fx-yellow)';
             mainDisplay.textContent = intentText;
           }
-	}
+        }
       } else if (this.mode === 'STORY') {
         headerLabel.textContent = `📖 스토리 전투 안내`;
         mainDisplay.className = 'purple-main-text';
@@ -5401,7 +5320,7 @@ const AppUI = {
       }
     }
 
-    // 4. 중간 컨트롤 바 (선택된 카드가 있을 때만 중앙에 실행 버튼 등장!)
+    // 4. 중간 컨트롤 바: 카드가 선택되었을 때만 중앙에 실행 버튼 표시 및 활력/봉인 여부 판정
     const execBtn = document.getElementById('btn-exec-card');
     const endTurnBtn = document.getElementById('btn-end-turn');
     endTurnBtn.disabled = isQueueLocked || (this.mode !== 'ROGUE_COMBAT' || state.combatEnded);
@@ -5416,7 +5335,7 @@ const AppUI = {
       const cost = this.engine.getEffectiveCost(this.engine.player, selCard);
       const blocked = this.engine.player.getPassives().some(({ def, inst }) => def.canPlayCard && !def.canPlayCard(selCard, this.engine, this.engine.player, inst));
 
-      execBtn.classList.remove('hidden'); // 카드 선택 시 중앙에 등장!
+      execBtn.classList.remove('hidden');
       if (blocked) {
         execBtn.disabled = true;
         execBtn.textContent = `🚫 사용 불가 (난투 등)`;
@@ -5428,10 +5347,10 @@ const AppUI = {
         execBtn.textContent = `▶ [${selCard.name}] 실행`;
       }
     } else {
-      execBtn.classList.add('hidden'); // 선택 안 했을 때는 깔끔하게 숨김
+      execBtn.classList.add('hidden');
     }
 
-    // 5. 하단: 고정 폭 가로 스크롤 카드 렌더링 (013 복수는 설명란에 누적 피격 계산치 자동 표시)
+    // 5. 하단 손패 영역: 가로 스크롤 카드 렌더링 ([013 복수]는 현재 누적 피격 데미지를 실시간 계산하여 표시)
     const gridEl = document.getElementById('hand-grid');
     const isStory1_1 = (this.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_1');
     const isStory1_2 = (this.mode === 'STORY' && StorySequencer.activeChapter?.id === 'stage_1_2');
@@ -5454,16 +5373,23 @@ const AppUI = {
     }).join('');
   }
 };
+
+// ============================================================================
+// [9] 앱 부팅 (AppUI 초기화, 에셋 백그라운드 프리로딩, 전역 에러 알림)
+// ============================================================================
 AppUI.init();
-    // SpriteMap의 모든 이미지를 백그라운드에서 미리 캐싱
-    Object.values(new Set(Object.values(SpriteMap))).forEach(src => {
-      if (!src) return;
-      const img = new Image();
-      img.src = src;
-    });
-    window.onerror = (msg, src, line) => {
-      alert(`오류 발생 (${line}줄): ${msg}`);
-    };
+
+// SpriteMap에 등록된 모든 캐릭터 이미지를 백그라운드에서 미리 로드하여 전투 진입 시 깜빡임 방지
+Object.values(new Set(Object.values(SpriteMap))).forEach(src => {
+  if (!src) return;
+  const img = new Image();
+  img.src = src;
+});
+
+// 모바일/로컬 테스트 중 런타임 자바스크립트 오류가 발생했을 때 줄 번호를 즉시 팝업으로 알림
+window.onerror = (msg, src, line) => {
+  alert(`오류 발생 (${line}줄): ${msg}`);
+};
 </script>
 </body>
 </html>
