@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.02</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v1.03</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -691,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.02)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.03)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1034,35 +1034,40 @@ const PatchNotesDB = [
     desc: ''
   },
   {
-	version: 'v0.98',
-	title: '시작보상 시각 피드백 추가, 에셋 프리로딩',
-	desc: ''
+    version: 'v0.98',
+    title: '시작보상 시각 피드백 추가, 에셋 프리로딩',
+    desc: ''
   },
   {
-	version: 'v0.99',
-	title: '스토리 1-2 겁 많은 아이 추가',
-	desc: ''
+    version: 'v0.99 (2026.11.16.)',
+    title: '스토리 1-2 겁 많은 아이 추가',
+    desc: ''
   },
   {
-	version: 'v1.00',
-	title: '엘리트 2종 추가: 좀비토끼 나나, 어뢰 바바, 엘리트 밸런스 패치:시즌 제나 기믹 수정(유비무환 상한선 4회 적용), 카드 밸런스 상향 패치: 착란(코스트 하향, 방어도 획득), 환영모자(재생 획득), 토끼굴의 기억(인내 부여 상향), 공평한 카라보스(코스트 하향, 버프 약탈), 토끼의 투지(타수 중첩 가능), 무지몽매(코스트 하향, 조건 완화), 토끼남작의 이빨(타수 적용), 산토끼습격(타수 적용), 실명(재생, 드로우 획득), 전화위복(조건 완화, 방어도 획득), 참을성 없는 설리반(조건 완화, 기믹 완화), 눈사태(방어도 획득), 체온교환(기믹 수정), 토끼제독의 모자(타수 적용), 버니합(조건 완화), 살랑거리는 토끼귀(기믹 변경), 토끼마녀의 금고(패널티 완화), 토끼기사의 고집불통(조건 완화), 얼어붙은 바다여(수치 조정), 안개얼음성채(방어도 획득, 피해감면 상향), 굴절(착란 추가), 생명보험(방어도 상향)',
-	desc: ''
+    version: 'v1.00 (2026.11.17.)',
+    title: '엘리트 2종 추가: 좀비토끼 나나, 어뢰 바바, 엘리트 밸런스 패치:시즌 제나 기믹 수정(유비무환 상한선 4회 적용), 카드 밸런스 상향 패치: 착란(코스트 하향, 방어도 획득), 환영모자(재생 획득), 토끼굴의 기억(인내 부여 상향), 공평한 카라보스(코스트 하향, 버프 약탈), 토끼의 투지(타수 중첩 가능), 무지몽매(코스트 하향, 조건 완화), 토끼남작의 이빨(타수 적용), 산토끼습격(타수 적용), 실명(재생, 드로우 획득), 전화위복(조건 완화, 방어도 획득), 참을성 없는 설리반(조건 완화, 기믹 완화), 눈사태(방어도 획득), 체온교환(기믹 수정), 토끼제독의 모자(타수 적용), 버니합(조건 완화), 살랑거리는 토끼귀(기믹 변경), 토끼마녀의 금고(패널티 완화), 토끼기사의 고집불통(조건 완화), 얼어붙은 바다여(수치 조정), 안개얼음성채(방어도 획득, 피해감면 상향), 굴절(착란 추가), 생명보험(방어도 상향)',
+    desc: ''
   },
   {
-	version: 'v1.01',
-	title: '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
-	desc: ''
+    version: 'v1.01 (2026.11.17.)',
+    title: '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
+    desc: ''
   },
   {
-	version: 'v1.02',
-	title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락',
-	desc: ''
+    version: 'v1.02 (2026.11.18.)',
+    title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락',
+    desc: ''
+  },
+  {
+    version: 'v1.03 (2026.11.18.)',
+    title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자',
+    desc: ''
   }
 ];
 
 /**
  * ============================================================================
- * 3. 상수, 유물 6종(RelicDB), 특성 5종(TraitDB), 상태이상(StatusDB)
+ * 3. 상수, 유물 30종(RelicDB), 특성 15종(TraitDB), 상태이상(StatusDB)
  * ============================================================================
  */
 const EngineConfig = {
@@ -1108,7 +1113,7 @@ const SpriteMap = {
   '대천사토끼 나엘': 'nael.png'
 };
 
-// 유물 25종 정의
+// 유물 30종 정의
 const RelicDB = {
   '001': {
     id: '001', name: '불굴의 털', priority: 20,
@@ -1347,10 +1352,35 @@ const RelicDB = {
     id: '027', name: '뱀술', priority: 20,
     desc: '[독사검]의 코스트가 0이 됩니다.',
     modifyCardCost: (cost, card) => card.id === '014' ? 0 : cost
+  },
+  '028': {
+    id: '028', name: '빙하코트', priority: 20,
+    desc: '자신이 방어도를 얻을 때마다 +5 추가로 얻습니다.',
+    modifyArmorGained: (amount) => amount + 5
+  },
+  '029': {
+    id: '029', name: '고독', priority: 20,
+    desc: '매 전투 첫 턴 시작 시 도깨비바늘 1을 얻고, 도깨비바늘의 스택당 피해량이 5에서 7로 증가합니다.',
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        engine.emitLog(`🏺 [유물: 고독] 첫 턴 도깨비바늘 1 획득!`, 'log-passive');
+        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
+      }
+    }
+  },
+  '030': {
+    id: '030', name: '센마의 털옷', priority: 20,
+    desc: '자신의 턴 종료 시 방어도가 40 이상이면 도깨비바늘 1을 얻습니다.',
+    onOwnerTurnEnd: (engine, owner) => {
+      if (owner.armor >= 40) {
+        engine.emitLog(`🏺 [유물: 센마의 털옷] 방어도 40+ 유지 -> 도깨비바늘 1 획득!`, 'log-passive');
+        engine.statuses.apply(owner, owner, 'GOBLIN_NEEDLE', 1);
+      }
+    }
   }
 };
 
-// 특성 10종 정의
+// 특성 15종 정의
 const TraitDB = {
   '001': {
     id: '001', name: '빳빳한 털', priority: 10,
@@ -1487,6 +1517,46 @@ const TraitDB = {
         }
       }
     }
+  },
+  '013': {
+    id: '013', name: '검은 체질', priority: 10,
+    desc: '자신이 버프 또는 디버프를 얻을 때마다 부여 스택이 +1 증가합니다.',
+    modifyStatusReceivedStacks: (stacks, caster, target, statusId) => {
+      const cat = StatusDB[statusId]?.category;
+      if (cat === STATUS_CATEGORY.BUFF || cat === STATUS_CATEGORY.DEBUFF) {
+        return stacks + 1;
+      }
+      return stacks;
+    }
+  },
+  '014': {
+    id: '014', name: '사도묘', priority: 10,
+    desc: '전투 입장 시 [의념:승천자](난투, 실명, 뇌진탕 면역)를 얻습니다. 최대 HP -30',
+    onAcquire: (runState) => {
+      runState.maxHp = Math.max(1, runState.maxHp - 30);
+      runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        engine.emitLog(`🧬 [특성: 사도묘] [의념:승천자] 발현!`, 'log-passive');
+        engine.statuses.setOrMaxContext(owner, 'CTX_ASCENDANT', 1);
+      }
+    }
+  },
+  '015': {
+    id: '015', name: '채권자', priority: 10,
+    desc: '자신의 턴 시작 시 적이 보유한 디버프 종류당 방어도 +6을 얻습니다.',
+    onPlayerTurnStart: (engine, owner) => {
+      if (!engine.enemy || engine.enemy.hp <= 0) return;
+      const debuffTypes = engine.enemy.statuses.filter(
+        s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0
+      ).length;
+      if (debuffTypes > 0) {
+        const armorAmt = debuffTypes * 6;
+        engine.emitLog(`🧬 [특성: 채권자] 적 디버프 ${debuffTypes}종 공명 -> 방어도 +${armorAmt}`, 'log-passive');
+        engine.gainArmor(owner, armorAmt, '채권자');
+      }
+    }
   }
 };
 
@@ -1550,8 +1620,16 @@ const StatusDB = {
     id: 'GOBLIN_NEEDLE', code: '001', name: '도깨비바늘', category: STATUS_CATEGORY.BUFF, priority: 50,
     decayTiming: DECAY_TIMING.NONE,
     onAfterBeStruck: (engine, owner, attacker, packet, instance) => {
-      if (!attacker || attacker === owner) return;
-      engine.dealDamage(new DamagePacket({ source: owner, target: attacker, amount: instance.stacks * 5, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '도깨비바늘' }));
+      if (!attacker) return;
+      if (attacker === owner && (!packet || !packet.paranoiaRedirect)) return;
+      const strikeTarget = (attacker === owner) ? engine.getOpponent(owner) : attacker;
+      if (!strikeTarget || strikeTarget.hp <= 0) return;
+      const perStack = (owner.relics && owner.relics.some(r => r.id === '029')) ? 7 : 5;
+      engine.dealDamage(new DamagePacket({
+        source: owner, target: strikeTarget,
+        amount: instance.stacks * perStack,
+        type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '도깨비바늘'
+      }));
     }
   },
   VIPER_BLADE: {
@@ -1677,6 +1755,7 @@ const StatusDB = {
   }
 };
 
+// 일반 10종, 엘리트 4종, 보스 5종 설명
 const EnemyMeta = {
   COAL_MOLE: { type: '일반 적', desc: '[흙먼지 돌진(물리 14)], [굴 파기(방어 14 + 물리 8)]를 번갈아 사용하는 가난한 굴토끼입니다.' },
   RUSTY_SOLDIER: { type: '일반 적', desc: '[태엽 감기(방어 16 + 도깨비바늘 1)]. [빨리감기(물리 32)]. [과부하 정지(휴식)]를 반복하는 태엽토끼입니다.' },
@@ -1699,6 +1778,7 @@ const EnemyMeta = {
   BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' }
 };
 
+// 버프 8종, 디버프 7종, 의념 5종 설명
 const StatusMeta = {
   CURSE: { icon: '💀', desc: '보유자의 턴이 끝날 때 스택×2 상태이상 피해를 입고 스택이 1 감소합니다.' },
   BLEED: { icon: '🩸', desc: '보유자의 턴이 끝날 때 스택×8 상태이상 피해를 입고 스택이 1 감소합니다.' },
@@ -1728,7 +1808,7 @@ const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
 
 /**
  * ============================================================================
- * 4. 40종+ 카드 DB (CardDB) & 10종+ 적 DB (EnemyDB)
+ * 4. 45종+ 카드 DB (CardDB) & 10종+ 적 DB (EnemyDB)
  * ============================================================================
  */
 const CardDB = {
@@ -1839,13 +1919,16 @@ const CardDB = {
   '018': { id: '018', name: '나팔소리', cost: 1, type: 'MAGIC', hits: 0, desc: '덱에서 얼음방패 1장을 뽑고 활력 1 회복', play: (engine, u) => { engine.drawSpecificFromDeck(u, c => c.id === '010', '얼음방패'); engine.recoverEnergy(u, 1); } },
   '019': {
     id: '019', name: '얼어붙은 바다여', cost: 3, type: 'MAGIC', hits: 0,
-    desc: '자신에게 물리 20, 적에게 물리 40, 모두가 현재 체력의 20% 상실',
+    desc: '자신에게 물리 20, 적에게 물리 40, 모두가 현재 체력의 20% 상실, 이후 자신이 방어도 30 획득',
     play: (engine, u, t) => {
       engine.dealDamage(new DamagePacket({ source: u, target: u, amount: 20, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '얼어붙은 바다여(자해)' }));
       engine.dealDamage(new DamagePacket({ source: u, target: u, amount: Math.floor(u.hp * 0.2), type: DAMAGE_TYPE.HP_LOSS, isStrike: false, reason: '얼어붙은 바다여(자해 상실)' }));
       if (!engine.combatEnded) {
         engine.dealDamage(new DamagePacket({ source: u, target: t, amount: 40, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '얼어붙은 바다여(물리)' }));
         engine.dealDamage(new DamagePacket({ source: u, target: t, amount: Math.floor(t.hp * 0.2), type: DAMAGE_TYPE.HP_LOSS, isStrike: false, reason: '얼어붙은 바다여(상실)' }));
+      }
+      if (!engine.combatEnded) {
+        engine.gainArmor(u, 30, '얼어붙은 바다여');
       }
     }
   },
@@ -2104,6 +2187,23 @@ const CardDB = {
         u.combatTrackers.lastGraveyardCard = null;
       }
       engine.emitLog(`✨ [신성의식] 4턴간 디버프 면역! ([신성의식] 총 ${banished}장 전투 제외)`, 'log-sys');
+    }
+  },
+  '045': {
+    id: '045', name: '피해망상', cost: 0, type: 'MAGIC', hits: 0,
+    desc: '자신에게 물리 8 피해를 5회 입힙니다. (피해망상의 타격에는 버프:도깨비바늘이 적용됩니다.) 자신의 방어도가 40 이상일 때 코스트 +2',
+    modifySelfCost: (baseCost, engine, u) => u.armor >= 40 ? baseCost + 2 : baseCost,
+    play: (engine, u) => {
+      for (let i = 0; i < 5; i++) {
+        if (engine.combatEnded) break;
+        const pkt = new DamagePacket({
+          source: u, target: u, amount: 8,
+          type: DAMAGE_TYPE.PHYSICAL, isStrike: true,
+          reason: `피해망상 (${i + 1}/5타)`
+        });
+        pkt.paranoiaRedirect = true;
+        engine.dealDamage(pkt);
+      }
     }
   }
 };
@@ -3354,7 +3454,7 @@ class CombatEngine {
     }
 
     // 👇 [수정] !packet.missed 조건 추가로 빗나간 공격은 피격 횟수/반격 미발동
-    if (packet.isStrike && !packet.missed && source !== target) {
+    if (packet.isStrike && !packet.missed && (source !== target || packet.paranoiaRedirect)) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onAfterBeStruck) def.onAfterBeStruck(this, target, source, packet, inst);
@@ -3365,12 +3465,17 @@ class CombatEngine {
     this.checkCombatEnd();
   }
 
-  // 👇 [교체됨] 방어막 획득 시 파란색 텍스트
   gainArmor(target, amount, reason) {
-    target.armor += amount;
+    let finalAmount = amount;
+    if (finalAmount > 0 && target) {
+      target.getPassives().forEach(({ def, inst }) => {
+        if (def.modifyArmorGained) finalAmount = def.modifyArmorGained(finalAmount, this, target, inst);
+      });
+    }
+    target.armor += finalAmount;
     this.emitFx(target, 'fx-blue');
-    this.emitFloatingText(target, `🛡️+${amount}`, 'fct-blue'); // 🟦 방어막 획득 파란 글씨
-    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${amount} (현재:${target.armor})`, 'log-sys');
+    this.emitFloatingText(target, `🛡️+${finalAmount}`, 'fct-blue');
+    this.emitLog(`🛡️ [${reason}] ${target.name} 방어도 +${finalAmount} (현재:${target.armor})`, 'log-sys');
     this.notifyRender();
   }
 
@@ -3584,7 +3689,7 @@ class CombatEngine {
   }
 
   processTurnEndStatuses(entity) {
-    const sorted = [...entity.statuses].sort((a, b) => (a.id === 'CONTRACT' ? 1 : b.id === 'CONTRACT' ? -1 : 0));
+    const sorted = [...entity.getPassives].sort((a, b) => (a.id === 'CONTRACT' ? 1 : b.id === 'CONTRACT' ? -1 : 0));
     sorted.forEach(s => {
       if (this.combatEnded) return;
       const def = StatusDB[s.id];
@@ -4723,7 +4828,7 @@ const AppUI = {
         },
         {
           title: '🃏 시작 덱 구성 (총 12장)',
-          desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다.'
+          desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다. 카드는 최소 9장~최대 21장까지 보유할 수 있습니다.'
         },
         {
           title: '🔄 매 턴 카드 뽑기와 버리기',
@@ -4827,7 +4932,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.02(진행불가 버그 수정) | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.03 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
