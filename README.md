@@ -1,11 +1,7 @@
 # [Sir Mad Boomer: Rabbit Knight 토끼기사: 미친 꼰대 경]
 ## v1.05
 
-![토끼기사](./assets/knight.png)
 <img src="./assets/knight.png" width="400" height="400" style="image-rendering: pixelated;" alt="토끼기사">
-<p align="center">
-  <img src="./assets/knight.png" width="128" height="128" alt="토끼기사">
-</p>
 
 ### 코딩 노베이스 비전공자의 바이브코딩 토이 프로젝트입니다.
 ### 게임모드
