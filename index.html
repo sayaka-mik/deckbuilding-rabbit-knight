@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sir Mad Boomer: Rabbit Knight - v1.01</title>
+  <title>Sir Mad Boomer: Rabbit Knight - v1.02</title>
   <style>
     :root {
       --bg-outer: #0b0c10;
@@ -691,7 +691,7 @@ const SaveLedger = {
   get(key) { return this.data[key]; },
   set(key, value) { this.data[key] = value; },
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.01)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.02)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -1050,8 +1050,13 @@ const PatchNotesDB = [
   },
   {
 	version: 'v1.01',
-	'title': '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
-	'desc': ''
+	title: '토끼수녀 나엘 특수승리 조건 미발동 문제 보완, 보스 1종 추가: 대천사토끼 나엘, 유물 2종 추가: 영양제, 뱀술',
+	desc: ''
+  },
+  {
+	version: 'v1.02',
+	title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락',
+	desc: ''
   }
 ];
 
@@ -1673,25 +1678,25 @@ const StatusDB = {
 };
 
 const EnemyMeta = {
-  COAL_MOLE: { type: '일반 적', desc: '[흙먼지 돌진(물리 14)] [굴 파기(방어 14 + 물리 8)]를 번갈아 사용하는 가난한 굴토끼입니다.' },
+  COAL_MOLE: { type: '일반 적', desc: '[흙먼지 돌진(물리 14)], [굴 파기(방어 14 + 물리 8)]를 번갈아 사용하는 가난한 굴토끼입니다.' },
   RUSTY_SOLDIER: { type: '일반 적', desc: '[태엽 감기(방어 16 + 도깨비바늘 1)]. [빨리감기(물리 32)]. [과부하 정지(휴식)]를 반복하는 태엽토끼입니다.' },
   WASP_SWARM: { type: '일반 적', desc: '[연속 찌르기(물리 5×3)], [독액 살포(물리 10 + 출혈 2)]로 출혈을 일으키는 독니토끼입니다.' },
   OFFSEASON_ZENA: { type: '일반 적', desc: '[약초 다지기(재생 3 + 방어 9)], [비시즌 사격(물리 7×3)], [토끼풀 찜질(재생 2 + 물리 13)]을 반복하는 비시즌 석궁병 제나입니다.' },
   NUN_NAEL: { type: '일반 적', desc: '[두려워 마세요(방어막 초기화 + 착란 2 + 방어 10], [싸우지 마세요(착란 1 + 인내 2)]를 강조하는 토끼수녀 나엘입니다. 나엘의 말을 듣는다면 좋은 일이 일어날 수도?' },
   WATER_BABA: { type: '일반 적', desc: '[퀸즈겜빗(50% 확률로 모두가 랜덤 버프/디버프 2종 2스택 획득)], [허풍쟁이(물리 5 + 모든 디버프 제거, 3종류 이상 제거 시 물리 30)], [무아지경(모두 설리반 1~2 랜덤 부여)]을 반복하는 망나니 물토끼 바바입니다.' },
-  SNOW_UME: { type: '일반 적', desc: '방한대책(도깨비바늘 1 + 재생 2), 장작패기(물리 24 + 재생 1), 고집쟁이(물리 13 + 난투 2 + 적 재생 1)를 반복하는 눈토끼 우메입니다.' },
-  NINJA_L: { type: '일반 적', desc: '수리검 던지기(물리 4x2), 연막탄(방어 8 +실명), 급소 찌르기(물리 12 + 출혈 1), 숨 고르기(방어 5 + 재생 1)을 연마한 토끼닌자 엘입니다.' },
-  TURTLE_SHAMI: { type: '일반 적', desc: '단단한 등껍질(방어 20), 웅크리기(방어 15 + 인내), 짓누르기(물리 24), 느릿한 반격(물리 8 + 도깨비바늘 1)을 구사하는 토끼거북 샤미입니다.' },
-  RABBIT_DANCER: { type: '일반 적', desc: '우아한 스텝(방어 10 + 재생 2), 부채춤(물리 7x2), 칼춤(물리 16 + 출혈 1), 매혹의 춤(저주 2 + 착란 1)을 추는 토끼무희입니다.' },
-  ELITE_SEASON_ZENA: { type: '🔥 엘리트', desc: '디버프를 부여 받으면 다음 턴 즉시 정화(유비무환, 전투 당 최대 4회)하고 단궁난무(물리 6x6)를 쉬지 않고 사용하는 시즌 제나입니다.' },
-  ELITE_MIRROR_KNIGHT: { type: '🔥 엘리트', desc: '겨울의 장막(바바야가 2 + 방어 10), 서리 창 찌르기(물리 14), 겨울 호흡(재생 3)을 반복하는로 옛 설산의 기사입니다.' },
+  SNOW_UME: { type: '일반 적', desc: '[방한대책(도깨비바늘 1 + 재생 2)], [장작패기(물리 24 + 재생 1)], [고집쟁이(물리 13 + 난투 2 + 적 재생 1)]를 반복하는 눈토끼 우메입니다.' },
+  NINJA_L: { type: '일반 적', desc: '[수리검 던지기(물리 4x2)], [연막탄(방어 8 +실명)], [급소 찌르기(물리 12 + 출혈 1)], [숨 고르기(방어 5 + 재생 1)]를 연마한 토끼닌자 엘입니다.' },
+  TURTLE_SHAMI: { type: '일반 적', desc: '[단단한 등껍질(방어 20)], [웅크리기(방어 15 + 인내)], [짓누르기(물리 24)], [느릿한 반격(물리 8 + 도깨비바늘 1)]을 구사하는 토끼거북 샤미입니다.' },
+  RABBIT_DANCER: { type: '일반 적', desc: '[우아한 스텝(방어 10 + 재생 2)], [부채춤(물리 7x2)], [칼춤(물리 16 + 출혈 1)], [매혹의 춤(저주 2 + 착란 1)]을 추는 토끼무희입니다.' },
+  ELITE_SEASON_ZENA: { type: '🔥 엘리트', desc: '[디버프를 부여 받으면 다음 턴 즉시 정화(유비무환, 전투 당 최대 4회)]하고 [단궁난무(물리 6x6)]를 쉬지 않고 사용하는 시즌 제나입니다.' },
+  ELITE_MIRROR_KNIGHT: { type: '🔥 엘리트', desc: '[겨울의 장막(바바야가 2 + 방어 10)], [서리 창 찌르기(물리 14)], [겨울 호흡(재생 3)]을 반복하는로 옛 설산의 기사입니다.' },
   BOSS_JEANNE: { type: '👑 보스', desc: '접신(방어 20 + 재생 2), 원혼 부르기(저주 3 + 착란 2), 혼령 타격(물리 15 + 출혈 1), 살풀이(정화 + 방어 30), 작두 타기(물리 5x4), 신내림(방어 40 + 설리반 2), 억압하는 방울(물리 12 + 난투 2), 대굿 준비(방어 50), 강림:천벌(물리 66), 탈진(휴식)을 수행하는 무당왕 쟌느입니다.' },
   BOSS_JURI: { type: '👑 보스', desc: '부하 소집(방어 25 + 출혈 4), 지하 참호 파기(방어 35 + 재생 3), 무자비한 난도질(물리 19 + 출혈 2), 두더지식 강제정산(강제정산 + 부당거래)을 사용하는 두더지파 보스 주리입니다.' },
   BOSS_SANTO: { type: '👑 보스', desc: '배반자의 산개(방어 28 + 도깨비바늘 2), 산구르기(물리 14 + 방어 44), 분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치), 토끼굴 매도(출혈 2 + 저주 3 + 방어 20)를 사용하는 증오에 찬 탈영병 산토입니다.' },
   BOSS_SIHYANG: { type: '👑 보스', desc: '[환영모자 트릭(방어 22 + 착란 1 + 저주 2)], [살랑거리는 귓속말(물리 16 + 상태이상 n)], [마녀의 티타임(방어 33 + 재생 2)], [광란의 버니합(물리 22 + 착란수치x4)]을 선보이는 토끼마녀 시향입니다.' },
   ELITE_ZOMBIE_NANA: { type: '🔥 엘리트', desc: '망자의 서약(언데드 2 + 저주 2), 부패한 이빨(물리 15 + 출혈 1), 시체 껍질(방어 22 + 재생 2), 원혼의 비명(물리 9x2 + 착란 1), 불사의 집념(언데드 1 + 물리 14), 묘지기의 난도질(물리 7x3), 사후경직(방어 16)을 지르는 좀비토끼 나나입니다.' },
   ELITE_TORPEDO_BABA: { type: '🔥 엘리트', desc: '심해의 룰렛(모두에게 랜덤 버프/디버프 2종 부여), 어뢰 돌진(물리 24 + 방어 14), 해적식 약탈(플레이어 버프 2종 강탈 or 방어 24), 어뢰 연사(물리 6x3), 어뢰 장갑 전개(도깨비바늘 2 + 방어 18), 오물 투척(물리 12 + 디버프 전가), 잠수 재장전(방어 26 + 재생 2)에 미친 어뢰 바바입니다.' },
-  BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 자비로운 천벌(재생 10 + 물리 9×10), 순백의 성역(플레이어 방어 100 + 출혈 6), 완전한 구원(플레이어 40% 회복 + 불완전 시 자신 80 회복), 시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)을 내리는 대천사토끼 나엘입니다.' }
+  BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' }
 };
 
 const StatusMeta = {
@@ -2922,7 +2927,7 @@ WATER_BABA: {
             type: 'MAGIC',
             intent: '🛡️ 플레이어에게 방어도 100 부여 + 🩸 출혈 6 부여',
             execute: () => {
-              engine.gainArmor(player, 100, '순백의 성역');
+              engine.gainArmor(player, 100, '순례 혈해 순교 시산');
               engine.statuses.apply(self, player, 'BLEED', 6);
             }
           };
@@ -2933,10 +2938,10 @@ WATER_BABA: {
             type: 'MAGIC',
             intent: `💚 플레이어 HP ${healPlayerAmt} 회복 (회복 후 플레이어가 최대 HP가 아니라면 나엘이 HP +80 회복)`,
             execute: () => {
-              engine.heal(player, healPlayerAmt, '완전한 구원');
+              engine.heal(player, healPlayerAmt, '부정한 사육제');
               if (player.hp < player.maxHp) {
                 engine.emitLog(`👁️ [불완전한 그릇] ${player.name}의 상처가 아물지 않아 대천사토끼 나엘이 기력을 흡수합니다!`, 'log-status');
-                engine.heal(self, 80, '완전한 구원');
+                engine.heal(self, 80, '부정한 사육제');
               } else {
                 engine.emitLog(`✨ [완전한 그릇] ${player.name}의 육신이 온전하여 나엘이 침묵합니다.`, 'log-sys');
               }
@@ -3211,7 +3216,11 @@ class CombatEngine {
     if (primaryAction.ignoreBlockers) {
       return { action: primaryAction, blocker: null, isFallback: false };
     }
+
     const primaryBlocker = findBlocker(primaryAction);
+    if (!primaryBlocker) {
+      return { action: primaryAction, blocker: null, isFallback: false };
+    }
 
     // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 패턴 주기 내 다음 비마법 행동 탐색
     for (let offset = 1; offset <= 12; offset++) {
@@ -3906,7 +3915,6 @@ const RogueManager = {
     const scaledHp = Math.floor(eDef.maxHp * Math.pow(1.45, tier));
     eng.enemy = new Entity(eDef.name, scaledHp, false);
     eng.enemy.enemyId = enemyId;
-    eng.enemy.tierDamageBonus = tier * 3;
     eng.enemy.tierDamageBonus = tier * 3;
     if (enemyId === 'BOSS_ARCHANGEL_NAEL') {
       eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1);
@@ -4819,7 +4827,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.01 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.02(진행불가 버그 수정) | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -5226,7 +5234,7 @@ const AppUI = {
             mainDisplay.className = 'purple-main-text';
             mainDisplay.style.color = 'var(--text-sub)';
             mainDisplay.textContent = `(취소됨) ${act.name} — ${intentText}`;
-          } else if (resolved.isFallback) {
+          } else if (resolved.isFallback && resolved.blocker) {
             headerLabel.textContent = `💢 [${resolved.blocker.def.name}] 대체 행동 [${act.name}]`;
             mainDisplay.className = 'purple-main-text';
             mainDisplay.style.color = 'var(--fx-yellow)';
@@ -5306,7 +5314,9 @@ AppUI.init();
       const img = new Image();
       img.src = src;
     });
-
+    window.onerror = (msg, src, line) => {
+      alert(`오류 발생 (${line}줄): ${msg}`);
+    };
 </script>
 </body>
 </html>
