@@ -719,7 +719,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.05)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.07)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -825,7 +825,9 @@ const PatchNotesDB = [
   { version: 'v1.02 (2026.11.18.)', title: '기사도 전투 진입 불가 버그 수정: 원인, resolveEnemyAction 함수의 ignoreBlockers, primaryBlocker 코드 누락', desc: '' },
   { version: 'v1.03 (2026.11.18.)', title: '기존 카드 밸런스 패치: 얼어붙은 바다여(방어도 추가), 신규 카드 추가: 피해망상, 신규 유물 추가: 빙하코트, 고독, 센마의 털옷, 신규 특성 추가: 검은 체질, 사도묘, 채권자 + 표기개선: 전화위복 + 유물:센마의 털옷이 onOwnerTurnEnd 실행 시 버그 나서 임시 주석 처리', desc: '' },
   { version: 'v1.04 (2026.11.18.)', title: '버그픽스: 센마의 털옷, 유물추가: 빵가루, 털모자, 가죽장갑, 요술망치, 사과사탕, 육포, 카드 상향: 복수(코스트 하향)', desc: '' },
-    { version: 'v1.05 (2026.11.18.)', title: '판정 수정: 희망의 기사 조건 트리거 로직 완화 + 코드주석 정돈 + 전투 로그 색상 전환 이슈 개선', desc: '' }
+    { version: 'v1.05 (2026.11.18.)', title: '판정 수정: 희망의 기사 조건 트리거 로직 완화 + 코드주석 정돈 + 전투 로그 색상 전환 이슈 개선', desc: '' },
+    { version: 'v1.06 (2026.11.19.)', title: '추가: 유물 037 온기가 남은 검집, 카드 046 토끼시종의 만능 꾸러미, 카드 047 폭풍검, 의념 006 기사도, 의념 007 폭풍우, 수정: 008 토끼기사의 지혜(상향), 카드 002 토끼의 투지, 카드 025 토끼남작의 이빨, 카드 033 산토끼 습격, 판정 조정: 카드 002 독검, 카드 037 살랑거리는 토끼귀, 카드 038 버니합', desc: '' },
+  { version: 'v1.07 (2026.11.19.)', title: '코드 오류 수정, 밸런스 상향: 카드 014 독사검, 버프 002 독검', desc: '' }
 ];
 
 /**
@@ -1184,6 +1186,32 @@ const RelicDB = {
     id: '036', name: '육포', priority: 20,
     desc: '[저주]의 코스트가 0이 됩니다.',
     modifyCardCost: (cost, card) => card.id === '003' ? 0 : cost
+  },
+  '037': {
+    id: '037', name: '온기가 남은 검집', priority: 20,
+    desc: '묘지에 있는 카드를 가져오거나 재사용할 때, 해당 카드 1장당 방어도 +7 획득',
+    onGraveyardCardAccess: (engine, owner, count) => {
+      if (count > 0) {
+        const total = count * 7;
+        engine.emitLog(`🏺 [유물: 온기가 남은 검집] 묘지 연계(${count}장) -> 방어도 +${total}`, 'log-passive');
+        engine.gainArmor(owner, total, '온기가 남은 검집');
+      }
+    }
+  },
+  '038': {
+    id: '038', name: '갈대우산', priority: 20,
+    desc: '매 전투 첫 턴 시작 시 폭풍검 1장을 뽑고 코스트 -1',
+    modifyCardCost: (cost, card) => card.id === '047' ? cost - 1 : cost,
+    onPlayerTurnStart: (engine, owner, turn) => {
+      if (turn === 1) {
+        const idx = owner.deck.findIndex(c => c.id === '047');
+        if (idx !== -1) {
+          const [card] = owner.deck.splice(idx, 1);
+          owner.hand.push(card);
+          engine.emitLog(`🏺 [유물: 갈대우산] 덱에서 [폭풍검] 1장을 추가로 뽑았습니다!`, 'log-passive');
+        }
+      }
+    }
   }
 };
 
@@ -1440,10 +1468,16 @@ const StatusDB = {
     }
   },
   VIPER_BLADE: {
-    id: 'VIPER_BLADE', code: '002', name: '독검', category: STATUS_CATEGORY.BUFF, priority: 50,
-    decayTiming: DECAY_TIMING.NONE,
+    id: 'VIPER_BLADE', code: '002', name: '독검',
+    category: STATUS_CATEGORY.BUFF, priority: 50,
+    decayTiming: DECAY_TIMING.OWNER_TURN_END,
     onBeforeStrike: (engine, owner, target, packet, instance) => {
-      engine.dealDamage(new DamagePacket({ source: owner, target, amount: 7, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '독검(추가 피해)' }));
+      engine.dealDamage(new DamagePacket({
+        source: owner, target, amount: instance.stacks * 2,
+        type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '독검(추가 피해)'
+      }));
+    },
+    onOwnerTurnEnd: (engine, owner, instance) => {
       engine.statuses.changeStacks(owner, instance, -1, 'DISPEL');
     }
   },
@@ -1559,6 +1593,24 @@ const StatusDB = {
     id: 'CTX_ASCENDANT', code: '005', name: '의념:승천자', category: STATUS_CATEGORY.CONTEXT, priority: 10,
     decayTiming: DECAY_TIMING.NONE,
     preventDebuffIds: ['BRAWL', 'BLIND', 'CONCUSSION']
+  },
+  CTX_CHIVALRY: {
+    id: 'CTX_CHIVALRY', code: '006', name: '의념:기사도',
+    category: STATUS_CATEGORY.CONTEXT, priority: 40,
+    decayTiming: DECAY_TIMING.NONE // 턴 종료 시 사라지지 않고 해당 전투 내내 영구 중첩
+  },
+  CTX_TEMPEST: {
+    id: 'CTX_TEMPEST', code: '007', name: '의념:폭풍우',
+    category: STATUS_CATEGORY.CONTEXT, priority: 40,
+    decayTiming: DECAY_TIMING.NONE,
+    // 기본 타수(card.hits)가 2 이상인 공격 카드만 스택당 +1타 추가
+    modifyHitCount: (hits, card, effectiveCost, engine, user, inst) => {
+      return (card.type === 'ATTACK' && (card.hits || 0) >= 2) ? hits + inst.stacks : hits;
+    },
+    onOwnerTurnStart: (engine, owner, inst) => {
+      inst.stacks += 1;
+      engine.emitLog(`🌪️ [의념:폭풍우] 기세가 거세집니다! (현재 +${inst.stacks}타)`, 'log-status');
+    }
   }
 };
 
@@ -1585,7 +1637,7 @@ const EnemyMeta = {
   BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' }
 };
 
-// 도감 설명: 버프 8종, 디버프 7종, 의념 5종
+// 도감 설명: 버프 8종, 디버프 7종, 의념 7종
 const StatusMeta = {
   CURSE: { icon: '💀', desc: '보유자의 턴이 끝날 때 스택×2 상태이상 피해를 입고 스택이 1 감소합니다.' },
   BLEED: { icon: '🩸', desc: '보유자의 턴이 끝날 때 스택×8 상태이상 피해를 입고 스택이 1 감소합니다.' },
@@ -1595,7 +1647,7 @@ const StatusMeta = {
   BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 물리 피해가 빗나가 피해가 0이 됩니다.' },
   CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 모든 카드와 행동을 사용할 수 없습니다.' },
   GOBLIN_NEEDLE: { icon: '🌵', desc: '피격될 때마다 공격자에게 스택×5 물리 피해를 입힙니다.' },
-  VIPER_BLADE: { icon: '🗡️', desc: '타격할 때마다 대상에게 추가 물리 피해 7을 입히고 스택이 1 감소합니다.' },
+  VIPER_BLADE: { icon: '🗡️', desc: '보유자의 턴 종료 시 스택이 1 감소합니다. 유지되는 동안 모든 직접 타격마다 스택×2의 추가 물리 피해를 입힙니다.' },
   PATIENCE: { icon: '🛡️', desc: '턴 종료 시 스택 1 감소. 입는 물리 피해를 0으로 만들고 누적(최대 400)하며, 해제될 때 누적 수치만큼 상태이상 피해를 입습니다.' },
   REGEN: { icon: '💚', desc: '보유자의 체력이 하락할 때 HP를 7 회복하고 스택이 1 감소합니다.' },
   BABA_YAGA: { icon: '🪞', desc: '턴 시작마다 스택 1 감소. 입는 모든 피해를 누적하며, 해제될 때 누적 수치만큼 적에게 물리 피해를 입힙니다.' },
@@ -1606,7 +1658,9 @@ const StatusMeta = {
   INSURANCE: { icon: '🏷️', desc: '체력이 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 최대 HP의 35%(최소 10)를 회복합니다.' },
   UNDEAD: { icon: '🧟', desc: 'HP가 0 이하가 될 때 스택을 1 소모하여 패배하지 않고 HP를 10까지 회복합니다. 자연 감소 외의 방식으로 해제/제거되면 HP를 40 회복합니다.' },
   CTX_SEEKER: { icon: '✨', desc: '유지되는 동안 모든 디버프를 부여받지 않습니다.' },
-  CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' }
+  CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' },
+  CTX_CHIVALRY: { icon: '⚔️', desc: '스택당 [토끼기사의 지혜]의 피해량이 +8 증가합니다. (전투 종료 시까지 유지)' },
+  CTX_TEMPEST: { icon: '🌪️', desc: '기본 타수가 2회 이상인 공격 카드의 타격 횟수를 스택당 1회 추가합니다. 자신의 턴이 시작될 때마다 스택이 1회 상승합니다.' }
 };
 
 // 랜덤 버프/디버프 추첨 풀:
@@ -1624,7 +1678,17 @@ const RANDOM_BUFF_DEBUFF_POOL = Object.keys(StatusDB).filter(
 // 카드 45종
 const CardDB = {
   '001': { id: '001', name: '연속 때리기', cost: 1, type: 'ATTACK', hits: 2, desc: '타수 2, 적에게 물리 데미지를 10 입힙니다', play: (engine, u, t) => engine.executeAttack(u, t, 10) },
-  '002': { id: '002', name: '토끼의 투지', cost: 1, type: 'MAGIC', hits: 0, desc: '이번 턴 동안 자신이 사용하는 현재 코스트가 1인 공격의 타수가 +1 증가합니다. (중첩 가능)', play: (engine, u) => engine.statuses.apply(u, u, 'CTX_FIGHTING_SPIRIT', 1) },
+  '002': {
+    id: '002', name: '토끼의 투지', cost: 1, type: 'MAGIC', hits: 0,
+    desc: '이번 턴 1코스트 공격 카드 타수 +1. [의념:폭풍우]를 보유하고 있다면 대신 폭풍우를 1 획득합니다.',
+    play: (engine, u) => {
+      if (engine.statuses.get(u, 'CTX_TEMPEST')) {
+        engine.statuses.apply(u, u, 'CTX_TEMPEST', 1);
+      } else {
+        engine.statuses.apply(u, u, 'CTX_FIGHTING_SPIRIT', 1);
+      }
+    }
+  },
   '003': { id: '003', name: '저주', cost: 1, type: 'MAGIC', hits: 0, desc: '적에게 저주 5 부여', play: (engine, u, t) => engine.statuses.apply(u, t, 'CURSE', 5) },
   '004': {
     id: '004', name: '강제정산', cost: 3, type: 'MAGIC', hits: 0,
@@ -1666,14 +1730,26 @@ const CardDB = {
   '006': { id: '006', name: '보존계약', cost: 2, type: 'MAGIC', hits: 0, desc: '적에게 계약 2 부여', play: (engine, u, t) => engine.statuses.apply(u, t, 'CONTRACT', 2) },
   '007': { id: '007', name: '반격', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 도깨비바늘 1 부여', play: (engine, u) => engine.statuses.apply(u, u, 'GOBLIN_NEEDLE', 1) },
   '008': {
-    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'ATTACK', hits: 0,
-    desc: '타수 0, 이 카드는 사용되어 무덤에 갈 때 적에게 물리 데미지 40을 입힙니다.',
+    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'MAGIC', hits: 0,
+    desc: '사용 후 묘지로 갈 때 적에게 물리 40 피해. [의념:기사도] 1을 획득합니다.',
     play: (engine, u, t, isReplay) => {
-      if (isReplay && EngineConfig.TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY) CardDB['008'].onEnterGraveyardFromPlay(engine, u, t);
+      // 끼토산/금고 재사용 시에도 설정이 켜져 있으면 동일하게 발동
+      if (isReplay && EngineConfig.TRIGGER_GRAVEYARD_EFFECT_ON_REPLAY) {
+        CardDB['008'].onEnterGraveyardFromPlay(engine, u, t);
+      }
     },
-    onEnterGraveyardFromPlay: (engine, u, t) => engine.dealDamage(new DamagePacket({
-      source: u, target: t, amount: 40, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, reason: '토끼기사의 지혜(묘지행)'
-    }))
+    onEnterGraveyardFromPlay: (engine, u, t) => {
+      const chivalry = engine.statuses.get(u, 'CTX_CHIVALRY')?.stacks || 0;
+      const dmg = 40 + (chivalry * 8);
+      engine.dealDamage(new DamagePacket({
+        source: u, target: t, amount: dmg,
+        type: DAMAGE_TYPE.PHYSICAL, isStrike: false,
+        reason: chivalry > 0 ? `토끼기사의 지혜 (기사도+${chivalry * 8})` : '토끼기사의 지혜'
+      }));
+      if (!engine.combatEnded) {
+        engine.statuses.apply(u, u, 'CTX_CHIVALRY', 1);
+      }
+    }
   },
   '009': { id: '009', name: '숭고', cost: 1, type: 'MAGIC', hits: 0, desc: '자신의 랜덤 디버프 1개 제거', play: (engine, u) => engine.statuses.removeRandom(u, STATUS_CATEGORY.DEBUFF) },
   '010': { id: '010', name: '얼음방패', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 방어도 18 부여', play: (engine, u) => engine.gainArmor(u, 18, '얼음방패') },
@@ -1707,7 +1783,7 @@ const CardDB = {
       engine.executeAttack(u, t, mult * u.runTrackers.hitTakenCount);
     }
   },
-  '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 독검 3 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 3) },
+  '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 [독검] 4 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 4) },
   '015': {
     id: '015', name: '공평한 카라보스', cost: 1, type: 'MAGIC', hits: 0,
     desc: '적의 랜덤 버프 1개를 제거하고, 자신이 그 버프를 1스택 얻습니다.',
@@ -1762,15 +1838,18 @@ const CardDB = {
     id: '024', name: '끼토산', cost: 1, type: 'MAGIC', hits: 0, desc: '가장 최근에 묘지로 간 이 카드 이외의 카드를 재사용',
     play: (engine, u, t) => {
       const last = u.combatTrackers.lastGraveyardCard;
-      if (last && last.id !== '024') engine.resolveCardEffect(last, u, t, true);
+      if (last && last.id !== '024') {
+        engine.resolveCardEffect(last, u, t, true);
+        engine.notifyGraveyardCardAccess(u, 1);
+      }
     }
   },
-'025': {
-    id: '025', name: '토끼남작의 이빨', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '타수 1, 물리 데미지 12, 타격할 때 자신의 HP 8 회복',
+  '025': {
+    id: '025', name: '토끼남작의 이빨', cost: 1, type: 'ATTACK', hits: 2,
+    desc: '타수 2, 물리 6, 타격 적중 시마다 HP +4 회복',
     play: (engine, u, t) => {
-      engine.executeAttack(u, t, 12, engine.activeCard, null, () => {
-        engine.heal(u, 8, '토끼남작의 이빨');
+      engine.executeAttack(u, t, 6, engine.activeCard, null, () => {
+        if (u.hp > 0) engine.heal(u, 4, '토끼남작의 이빨');
       });
     }
   },
@@ -1794,7 +1873,7 @@ const CardDB = {
   },
   '028': {
     id: '028', name: '토끼시종의 부름', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '물리 7, 묘지에 있는 토끼기사의 지혜를 모두 손으로 가져오고 이번 턴 코스트 -1 (없을 시 1드로우)',
+    desc: '물리 7, 묘지에 있는 토끼기사의 지혜를 모두 손으로 가져오고 이번 턴 코스트 -1 (없을 시 1장 드로우)',
     play: (engine, u, t) => {
       engine.executeAttack(u, t, 7);
       const wisdoms = u.graveyard.filter(c => c.id === '008');
@@ -1805,6 +1884,7 @@ const CardDB = {
           u.hand.push(c);
         });
         engine.emitLog(`📯 [토끼시종의 부름] 묘지에서 [토끼기사의 지혜] ${wisdoms.length}장을 회수했습니다! (이번 턴 코스트 -1)`, 'log-sys');
+        engine.notifyGraveyardCardAccess(u, wisdoms.length);
       } else {
         engine.drawCards(u, 1);
       }
@@ -1856,11 +1936,15 @@ const CardDB = {
     }
   },
   '033': {
-    id: '033', name: '산토끼습격', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '타수 1, 물리 데미지 13, 타격마다 적에게 출혈 1 부여',
+    id: '033', name: '산토끼습격', cost: 1, type: 'ATTACK', hits: 2,
+    desc: '타수 2, 물리 5, 홀수 타격 시 출혈 1 부여, 짝수 타격 시 방어도 +4 획득',
     play: (engine, u, t) => {
-      engine.executeAttack(u, t, 13, engine.activeCard, null, () => {
-        engine.statuses.apply(u, t, 'BLEED', 1);
+      engine.executeAttack(u, t, 5, engine.activeCard, null, (hitIdx) => {
+        if (hitIdx % 2 === 0) {
+          if (t && t.hp > 0) engine.statuses.apply(u, t, 'BLEED', 1);
+        } else {
+          engine.gainArmor(u, 4, '산토끼습격');
+        }
       });
     }
   },
@@ -1894,28 +1978,33 @@ const CardDB = {
   },
   '037': {
     id: '037', name: '살랑거리는 토끼귀', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '타수 1, 물리 10, 적의 디버프 스택만큼 자신이 방어도 4 획득',
+    desc: '타수 1, 물리 10, 적에게 걸린 디버프 종류당 방어도 +8 획득',
     play: (engine, u, t) => {
-      engine.executeAttack(u, t, 10);
-      const debuffStacks = t.statuses
-        .filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0)
-        .reduce((sum, s) => sum + s.stacks, 0);
-      if (debuffStacks > 0) {
-        engine.gainArmor(u, debuffStacks * 4, '살랑거리는 토끼귀');
-      }
+      engine.executeAttack(u, t, 10, engine.activeCard, null, () => {
+        const debuffTypes = t.statuses.filter(
+          s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0
+        ).length;
+        if (debuffTypes > 0) {
+          engine.gainArmor(u, debuffTypes * 8, '살랑거리는 토끼귀');
+        }
+      });
     }
   },
   '038': {
     id: '038', name: '버니합', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '타수 1, 물리 10, 적의 디버프 스택만큼 추가 6 물리피해',
+    desc: '타수 1, 물리 8, 적에게 걸린 디버프 총 스택 × 3 추가 물리 피해',
     play: (engine, u, t) => {
-      engine.executeAttack(u, t, 10);
-      const debuffStacks = t.statuses
-        .filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0)
-        .reduce((sum, s) => sum + s.stacks, 0);
-      if (debuffStacks > 0) {
-        engine.dealDamage(new DamagePacket({ source: u, target: t, amount: debuffStacks * 6, type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '버니합(추가 물리)' }));
-      }
+      engine.executeAttack(u, t, 8, engine.activeCard, null, () => {
+        const totalStacks = t.statuses
+          .filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0)
+          .reduce((sum, s) => sum + s.stacks, 0);
+        if (totalStacks > 0) {
+          engine.dealDamage(new DamagePacket({
+            source: u, target: t, amount: totalStacks * 3,
+            type: DAMAGE_TYPE.PHYSICAL, isStrike: false, isBonus: true, reason: '버니합(추가 피해)'
+          }));
+        }
+      });
     }
   },
   '039': {
@@ -1924,6 +2013,9 @@ const CardDB = {
     play: (engine, u, t) => {
       const snap = u.graveyard.filter(c => c.type === 'MAGIC' && c.id !== '039');
       snap.forEach(c => engine.resolveCardEffect(c, u, t, true));
+      if (!engine.combatEnded && snap.length > 0) {
+        engine.notifyGraveyardCardAccess(u, snap.length);
+      }
       engine.statuses.apply(u, u, 'CONCUSSION', 2);
     }
   },
@@ -2015,6 +2107,55 @@ const CardDB = {
         pkt.paranoiaRedirect = true;
         engine.dealDamage(pkt);
       }
+    }
+  },
+  '046': {
+    id: '046', name: '토끼시종의 만능 꾸러미', cost: 2, type: 'MAGIC', hits: 0,
+    desc: '카드 1장을 뽑습니다. 방어도를 10~24 획득합니다. 자신이 랜덤 버프를 0~2개 획득하고, 적에게 랜덤 디버프를 0~1개 부여합니다.',
+    play: (engine, u, t) => {
+      // 1. 기본 순환 (1드로우)
+      engine.drawCards(u, 1);
+
+      // 2. 랜덤 방어도 (10 ~ 24)
+      const armorAmt = RNG.randInt(10, 24);
+      engine.gainArmor(u, armorAmt, '토끼시종의 만능 꾸러미');
+
+      // 3. 자신에게 랜덤 버프 0~2개 (중복 허용)
+      const buffPool = Object.keys(StatusDB).filter(k => StatusDB[k].category === STATUS_CATEGORY.BUFF);
+      const buffCount = RNG.randInt(0, 2);
+      for (let i = 0; i < buffCount; i++) {
+        const bId = RNG.pickRandom(buffPool);
+        if (bId) engine.statuses.apply(u, u, bId, 1);
+      }
+
+      // 4. 적에게 랜덤 디버프 0~1개
+      if (t && t.hp > 0 && RNG.randInt(0, 1) === 1) {
+        const debuffPool = Object.keys(StatusDB).filter(k => StatusDB[k].category === STATUS_CATEGORY.DEBUFF);
+        const dId = RNG.pickRandom(debuffPool);
+        if (dId) engine.statuses.apply(u, t, dId, 1);
+      }
+    }
+  },
+  '047': {
+    id: '047', name: '폭풍검', cost: 3, type: 'MAGIC', hits: 0,
+    excludeOnPlay: true,
+    desc: '전투 종료 시까지 [의념:폭풍우] 1 획득. 사용 시 모든 [폭풍검](손패, 덱, 묘지의 사본 포함)이 이번 전투에서 제외됩니다.',
+    play: (engine, u) => {
+      engine.statuses.apply(u, u, 'CTX_TEMPEST', 1);
+
+      let banished = 1; // 현재 사용한 카드 1장 포함
+      ['hand', 'deck', 'graveyard'].forEach(zone => {
+        for (let i = u[zone].length - 1; i >= 0; i--) {
+          if (u[zone][i].id === '047') {
+            u[zone].splice(i, 1);
+            banished++;
+          }
+        }
+      });
+      if (u.combatTrackers.lastGraveyardCard?.id === '047') {
+        u.combatTrackers.lastGraveyardCard = null;
+      }
+      engine.emitLog(`🌪️ [폭풍검] [의념:폭풍우] 각성! ([폭풍검] 총 ${banished}장 전투 제외)`, 'log-sys');
     }
   }
 };
@@ -2902,7 +3043,7 @@ class DamagePacket {
     this.baseAmount = amount;     // 패시브 감쇠 전 원래 기본 피해량
     this.amount = amount;         // 각종 감쇠/증폭 연산을 거치며 실시간으로 변하는 현재 피해량
     this.type = type;             // 피해 유형 (PHYSICAL / STATUS / HP_LOSS)
-    this.isStrike = isStrike;     // 직접 타격 여부 (true일 때만 독검 소모 및 도깨비바늘·불굴의 털 반격 발동)
+    this.isStrike = isStrike;     // 직접 타격 여부 (true일 때만 도깨비바늘·불굴의 털 반격 발동)
     this.isBonus = isBonus;       // 추가타 여부
     this.reason = reason;         // 로그 및 사망 원인 추적용 발동 출처 이름
     this.logs = [];               // 피격 중 적용된 효과 메모 (예: ['인내 흡수', '방어도(-10)'])
@@ -3129,7 +3270,7 @@ class CombatEngine {
 
   // 카드의 현재 실전 코스트 계산: 기본값/덮어쓰기 -> 임시 증감 -> 카드 자체 조건 -> 패시브(유물/특성) 순
   getEffectiveCost(user, card) {
-    let cost = card.turnCostOverride !== null ? card.turnCostOverride : card.cost;
+    let cost = card.turnCostOverride != null ? card.turnCostOverride : card.cost;
     cost += (card.turnCostMod || 0);
     if (card.modifySelfCost) cost = card.modifySelfCost(cost, this, user);
     user.getPassives().forEach(({ def, inst }) => {
@@ -3146,6 +3287,14 @@ class CombatEngine {
       if (def.modifyHitCount) hits = def.modifyHitCount(hits, card, cost, this, user, inst);
     });
     return hits;
+  }
+
+  // 유물 037 온기가 남은 검집용
+  notifyGraveyardCardAccess(user, count) {
+    if (!user || count <= 0) return;
+    user.getPassives().forEach(({ def, inst }) => {
+      if (def.onGraveyardCardAccess) def.onGraveyardCardAccess(this, user, count, inst);
+    });
   }
 
   /**
@@ -3245,7 +3394,7 @@ class CombatEngine {
     if (this.combatEnded) return;
     const { source, target } = packet;
 
-    // 1단계: 직접 타격 직전 공격자 훅 (예: [독검] 추가 피해 7 발동 및 스택 차감)
+    // 1단계: 직접 타격 직전 공격자 훅 (예: [독검] 추가 피해 발동)
     if (packet.isStrike && source) {
       source.getPassives().forEach(({ def, inst }) => {
         if (def.onBeforeStrike) def.onBeforeStrike(this, source, target, packet, inst);
@@ -4897,7 +5046,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.05 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.07 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
