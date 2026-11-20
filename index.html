@@ -711,7 +711,16 @@ const SaveLedger = {
     'roguelike.clearedBosses': '',// 이번 도전에서 이미 격파한 보스 ID 목록 (중복 등장 방지용)
     'roguelike.relic015Wins': 0,  // 유물 [015 별빛 망토]의 2승 카운터 추적용
     'roguelike.runLog': '',       // 층별 행적 요약 기록 (예: 1F:굴토끼(승/4T/HP:142) > ...)
-    'roguelike.deathCause': ''    // 패배 시 마지막으로 기록된 사망 원인
+    'roguelike.deathCause': '',    // 패배 시 마지막으로 기록된 사망 원인
+    'dream.unlocked': false,       // 50층 돌파(몽중몽 해금) 여부
+    'dream.stars': 0,              // 격파한 몽중몽 보스 수 (별빛)
+    'dream.anchor.floor': 51,      // 콜드슬립 체크포인트 층수
+    'dream.anchor.hp': 150,        // 체크포인트 HP
+    'dream.anchor.maxHp': 150,     // 체크포인트 최대 HP
+    'dream.anchor.hitTakenCount': 0,
+    'dream.anchor.deck': '',
+    'dream.anchor.relics': '',
+    'dream.anchor.traits': ''
   },
 
   // 특정 세이브 키 값 읽기
@@ -722,7 +731,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.09)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.11)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -832,7 +841,9 @@ const PatchNotesDB = [
     { version: 'v1.06 (2026.11.19.)', title: '추가: 유물 037 온기가 남은 검집, 카드 046 토끼시종의 만능 꾸러미, 카드 047 폭풍검, 의념 006 기사도, 의념 007 폭풍우, 수정: 008 토끼기사의 지혜(상향), 카드 002 토끼의 투지, 카드 025 토끼남작의 이빨, 카드 033 산토끼 습격, 판정 조정: 카드 002 독검, 카드 037 살랑거리는 토끼귀, 카드 038 버니합', desc: '' },
   { version: 'v1.07 (2026.11.19.)', title: '코드 오류 수정, 밸런스 상향: 카드 014 독사검, 버프 002 독검', desc: '' },
   { version: 'v1.08 (2026.11.19.)', title: '신규 카드: 치아 스케일링, 신규 특성: 도굴꾼, 신규 유물: 제복, 육식 가이드북, 카드 개편: 출혈, 용자의 행운', desc: '' },
-  { version: 'v1.09 (2026.11.20.)', title: '빠른 진행(전투로그) 기능 추가, 밸런스 패치: 온기가 남은 검집 하향(방어도 7 -> 5), 독검 하향(수치 부여 4 -> 3), 토끼남작의 이빨 하향(회복량 4 -> 3)', desc: '' }
+  { version: 'v1.09 (2026.11.20.)', title: '빠른 진행(전투로그) 기능 추가, 밸런스 패치: 온기가 남은 검집 하향(방어도 7 -> 5), 독검 하향(수치 부여 4 -> 3), 토끼남작의 이빨 하향(회복량 4 -> 3)', desc: '' },
+  { version: 'v1.10 (2026.11.20.)', title: '기사도:몽중몽 업데이트', desc: '' },
+  { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' }
 ];
 
 /**
@@ -894,7 +905,8 @@ const SpriteMap = {
   '무당왕 쟌느': './assets/jeanne.png',
   '좀비토끼 나나': './assets/nana.png',
   '어뢰 바바': './assets/baba.png',
-  '대천사토끼 나엘': './assets/nael.png'
+  '대천사토끼 나엘': './assets/nael.png',
+  '토끼굴의 마피아': './assets/grabbit.png'
 };
 
 // 유물 
@@ -1251,6 +1263,10 @@ const TraitDB = {
       runState.maxHp += 50;
       runState.hp += 50;
     },
+    onRemove: (runState) => {
+      runState.maxHp = Math.max(1, runState.maxHp - 50);
+      runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
     onAdvanceFloor: (runState) => {
       runState.hp = Math.min(runState.maxHp, runState.hp + 5);
     }
@@ -1279,6 +1295,9 @@ const TraitDB = {
     onAcquire: (runState) => {
       runState.maxHp = Math.max(1, runState.maxHp - 50);
       runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
+    onRemove: (runState) => {
+      runState.maxHp += 50;
     },
     modifyMaxEnergy: (maxE) => Math.max(maxE, 5),
     modifyMaxCarryOver: (carry) => Math.max(carry, 2)
@@ -1313,6 +1332,10 @@ const TraitDB = {
     onAcquire: (runState) => {
       runState.maxHp += 30;
       runState.hp += 30;
+    },
+    onRemove: (runState) => {
+      runState.maxHp = Math.max(1, runState.maxHp - 30);
+      runState.hp = Math.min(runState.hp, runState.maxHp);
     }
   },
   '008': {
@@ -1348,6 +1371,9 @@ const TraitDB = {
     onAcquire: (runState) => {
       runState.maxHp = Math.max(1, runState.maxHp - 40);
       runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
+    onRemove: (runState) => {
+      runState.maxHp += 40;
     },
     onAdvanceFloor: (runState) => {
       runState.hp = Math.min(runState.maxHp, runState.hp + 10);
@@ -1397,6 +1423,9 @@ const TraitDB = {
     onAcquire: (runState) => {
       runState.maxHp = Math.max(1, runState.maxHp - 30);
       runState.hp = Math.min(runState.hp, runState.maxHp);
+    },
+    onRemove: (runState) => {
+      runState.maxHp += 30;
     },
     onPlayerTurnStart: (engine, owner, turn) => {
       if (turn === 1) {
@@ -1668,8 +1697,29 @@ const StatusDB = {
       const bleed = opp ? engine.statuses.get(opp, 'BLEED') : null;
       if (bleed && bleed.stacks > 0 && owner.hp > 0) {
         const healAmt = bleed.stacks * instance.stacks;
-        engine.emitLog(`🦷 [의념:송곳니] 적의 출혈(${bleed.stacks}) 흡혈 -> HP +${healAmt}`, 'log-status');
+        engine.emitLog(`🦷 [의념:송곳니] ${opp.name}의 출혈(${bleed.stacks}) 흡혈 -> HP +${healAmt}`, 'log-status');
         engine.heal(owner, healAmt, '의념:송곳니');
+      }
+    }
+  },
+  CTX_FAMILY: {
+    id: 'CTX_FAMILY', code: '009', name: '의념:식구',
+    category: STATUS_CATEGORY.CONTEXT, priority: 10,
+    decayTiming: DECAY_TIMING.NONE,
+    // 강제 제거(정화·약탈 등) 시 언데드는 2~4스택만 상실하며, 해제 회복(+40)을 막음
+    modifyRemoveDelta: (delta, instance) => {
+      if (instance.id !== 'UNDEAD') return null;
+      return { delta: -RNG.randInt(2, 4), skipOnRemoved: true };
+    },
+    // 단일 타격으로 50 이상의 유효 피해를 입으면 언데드 2스택 추가 상실
+    onDamageTaken: (engine, owner, packet) => {
+      if (packet.amount >= 50) {
+        const undead = engine.statuses.get(owner, 'UNDEAD');
+        if (undead && undead.stacks > 0) {
+          const lose = Math.min(undead.stacks, 2);
+          engine.emitLog(`💢 [의념:식구] 막대한 피해(${packet.amount})로 [언데드] ${lose}스택 추가 상실!`, 'log-status');
+          engine.statuses.changeStacks(owner, undead, -lose, 'CONSUME');
+        }
       }
     }
   }
@@ -1695,7 +1745,8 @@ const EnemyMeta = {
   BOSS_JURI: { type: '👑 보스', desc: '[부하 소집(방어 25 + 출혈 4)], [지하 참호 파기(방어 35 + 재생 3)], [무자비한 난도질(물리 19 + 출혈 2)], [두더지식 강제정산(강제정산 + 부당거래)]을 사용하는 두더지파 보스 주리입니다.' },
   BOSS_SANTO: { type: '👑 보스', desc: '[배반자의 산개(방어 28 + 도깨비바늘 2)], [산구르기(물리 14 + 방어 44)], [분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치)], [토끼굴 매도(출혈 2 + 저주 3 + 방어 20)]를 사용하는 증오에 찬 탈영병 산토입니다.' },
   BOSS_SIHYANG: { type: '👑 보스', desc: '[환영모자 트릭(방어 22 + 착란 1 + 저주 2)], [살랑거리는 귓속말(물리 16 + 상태이상 n)], [마녀의 티타임(방어 33 + 재생 2)], [광란의 버니합(물리 22 + 착란수치x4)]을 선보이는 토끼마녀 시향입니다.' },
-  BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' }
+  BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' },
+  DREAM_BOSS_MAFIA_MOLE: { type: '⭐ 흩어진 별빛', desc: '어느 세계에서는 굴토끼가 토끼굴의 정점에 올랐을지도 모릅니다. <1막> [의념:식구]와 막대한 [언데드(110~130)]를 거느린 채 [암흑 시술(언데드 수급)], [철문 개방(언데드 소모·출혈 부여)], [수혈과 탐식(출혈 비례 물리 피해 및 흡혈)]을 반복합니다. 쓰러뜨리면 <2막>이 열리며 양측 HP를 모두 회복하고 [의념:송곳니 5]를 각성해, [회광반조(현재 턴 수만큼 연타·출혈)], [회유술(버프·디버프 반감·양측 회복)], [흉계(3회 누적 시 전원 초기화 후 1막 회귀)]를 구사합니다.' }
 };
 
 // 도감 설명: 버프 8종, 디버프 7종, 의념 7종
@@ -1722,7 +1773,8 @@ const StatusMeta = {
   CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' },
   CTX_CHIVALRY: { icon: '⚔️', desc: '스택당 [토끼기사의 지혜]의 피해량이 +8 증가합니다. (전투 종료 시까지 유지)' },
   CTX_TEMPEST: { icon: '🌪️', desc: '기본 타수가 2회 이상인 공격 카드의 타격 횟수를 스택당 1회 추가합니다. 자신의 턴이 시작될 때마다 스택이 1회 상승합니다.' },
-  CTX_FANG: { icon: '🦷', desc: '전투 종료 시까지 자신의 턴 종료 시 적에게 [출혈]이 걸려 있다면, (출혈 스택 × 송곳니 스택)만큼 자신의 HP를 회복합니다.' }
+  CTX_FANG: { icon: '🦷', desc: '전투 종료 시까지 자신의 턴 종료 시 적에게 [출혈]이 걸려 있다면, (출혈 스택 × 송곳니 스택)만큼 자신의 HP를 회복합니다.' },
+  CTX_FAMILY: { icon: '🎩', desc: '전투 내내 유지됩니다. 보유한 [언데드]는 강제 제거 시 전부 사라지지 않고 2~4스택만 감소하며, 제거 시 HP 40 회복 효과가 발동하지 않습니다. 또한 한 번에 50 이상의 피해를 입을 때마다 [언데드]를 추가로 2스택 상실합니다.' }
 };
 
 // 랜덤 버프/디버프 추첨 풀:
@@ -3137,8 +3189,205 @@ const EnemyDB = {
         }
       }
     }
+  },
+  // EnemyDB.DREAM_BOSS_MAFIA_MOLE 교체
+  DREAM_BOSS_MAFIA_MOLE: {
+    id: 'DREAM_BOSS_MAFIA_MOLE',
+    name: '토끼굴의 마피아',
+    maxHp: 200,
+    isBoss: false,
+    isElite: false,
+    isDreamBoss: true,
+
+    onBattleStart(engine, self) {
+      self.phase = 1;
+      self.phaseStartTurn = 1;
+      self.p1Skill1Count = 0;
+      self.p1Skill2Count = 0;
+      self.schemeCount = 0;
+
+      const initUndead = RNG.randInt(110, 130);
+      engine.statuses.setOrMaxContext(self, 'CTX_FAMILY', 1);
+      self.statuses.push({ id: 'UNDEAD', stacks: initUndead, caster: self, accumulated: 0 });
+    },
+
+    onBeforeDeath(engine, self, player) {
+      if ((self.phase || 1) !== 1) return false;
+
+      self.phase = 2;
+      self.phaseStartTurn = engine.isEnemyTurn ? engine.turn + 1 : engine.turn;
+      self.schemeCount = 0;
+
+      self.maxHp = 150;
+      self.hp = 0;
+      engine.statuses.removeSpecific(self, 'CTX_FAMILY');
+
+      engine.emitFx(self, 'fx-yellow');
+      engine.emitFloatingText(self, '🎬 2막 개시!', 'fct-white');
+      engine.emitLog(`🎬 [2막 개시] 식구들의 그림자가 걷히고 토끼굴의 마피아가 직접 이빨을 드러냅니다! (최대 HP 150, 양측 HP 완전 회복)`, 'log-story');
+
+      engine.heal(self, self.maxHp, '2막 개시');
+      engine.heal(player, player.maxHp, '2막 개시');
+      engine.statuses.apply(self, self, 'CTX_FANG', 5);
+      engine.notifyRender();
+      return true;
+    },
+
+    getAction(turn, engine, self, player) {
+      const phase = self.phase || 1;
+      const startTurn = self.phaseStartTurn || 1;
+      const cycle = ((turn - startTurn) % 3 + 3) % 3;
+
+      // ==================== [1막: 조직을 앞세운 소모전] ====================
+      if (phase === 1) {
+        switch (cycle) {
+          case 0: {
+            const gainAmt = 7 + (self.p1Skill1Count || 0);
+            return {
+              name: '암흑 시술',
+              type: 'MAGIC',
+              intent: `🧟 언데드 ${gainAmt} 획득 (반복할수록 획득량 +1)`,
+              execute: () => {
+                self.p1Skill1Count = (self.p1Skill1Count || 0) + 1;
+                engine.statuses.apply(self, self, 'UNDEAD', gainAmt);
+              }
+            };
+          }
+          case 1: {
+            const reqSpend = 3 + (self.p1Skill2Count || 0);
+            const curUndead = engine.statuses.get(self, 'UNDEAD')?.stacks || 0;
+            const actualPreview = Math.min(curUndead, reqSpend);
+            return {
+              name: '철문 개방',
+              type: 'MAGIC',
+              intent: `🚪 언데드 ${actualPreview} 소모 (최대 ${reqSpend}) -> 🩸 출혈 ${actualPreview} 부여`,
+              execute: () => {
+                self.p1Skill2Count = (self.p1Skill2Count || 0) + 1;
+                const inst = engine.statuses.get(self, 'UNDEAD');
+                const spent = inst ? Math.min(inst.stacks, reqSpend) : 0;
+                if (spent > 0) {
+                  engine.emitLog(`🚪 [철문 개방] 마피아가 식구(언데드) ${spent}명을 내몰아 피바다를 만듭니다!`, 'log-status');
+                  engine.statuses.changeStacks(self, inst, -spent, 'CONSUME');
+                  engine.statuses.apply(self, player, 'BLEED', spent);
+                } else {
+                  engine.emitLog(`🚪 [철문 개방] 내보낼 언데드가 남아있지 않습니다!`, 'log-sys');
+                }
+              }
+            };
+          }
+          case 2: {
+            const pBleed = engine.statuses.get(player, 'BLEED')?.stacks || 0;
+            const totalDmg = 20 + (pBleed * 3);
+            return {
+              name: '수혈과 탐식',
+              intent: `🩸 물리 ${totalDmg} (기본 20 + 출혈 ${pBleed}×3) + 피해량 절반 HP 회복`,
+              execute: () => {
+                const nowBleed = engine.statuses.get(player, 'BLEED')?.stacks || 0;
+                const dmg = 20 + (nowBleed * 3);
+                const pkt = new DamagePacket({
+                  source: self, target: player, amount: dmg,
+                  type: DAMAGE_TYPE.PHYSICAL, isStrike: true,
+                  reason: '수혈과 탐식'
+                });
+                engine.phaseJustChanged = false;
+                engine.dealDamage(pkt);
+                // 실명·인내·성채·제복 적용 후 유효 피해량(pkt.amount)의 절반 회복 (방어도로 흡혈을 막고 싶다면 pkt.actualLost 사용)
+                if (!engine.combatEnded && !engine.phaseJustChanged && self.hp > 0 && !pkt.missed && pkt.amount > 0) {
+                  const healAmt = Math.floor(pkt.amount * 0.5);
+                  if (healAmt > 0) engine.heal(self, healAmt, '수혈과 탐식');
+                }
+              }
+            };
+          }
+        }
+      }
+
+      // ==================== [2막: 직접 이빨을 드러낸 결전] ====================
+      switch (cycle) {
+        case 0:
+          return {
+            name: '회광반조',
+            intent: `⚔️ 물리 4 × ${turn}타 (현재 턴 수 비례 · 타격마다 🩸 출혈 1 부여)`,
+            execute: () => {
+              engine.executeAttack(self, player, 4, null, turn, () => {
+                if (player.hp > 0) engine.statuses.apply(self, player, 'BLEED', 1);
+              });
+            }
+          };
+        case 1:
+          return {
+            name: '회유술',
+            type: 'MAGIC',
+            intent: '⚖️ 양측의 모든 버프·디버프 스택 절반 감소 + 양측 HP 40 회복',
+            execute: () => {
+              [self, player].forEach(ent => {
+                const targets = ent.statuses.filter(s => {
+                  const cat = StatusDB[s.id]?.category;
+                  return (cat === STATUS_CATEGORY.BUFF || cat === STATUS_CATEGORY.DEBUFF) && s.stacks > 0;
+                });
+                targets.forEach(s => {
+                  const drop = Math.ceil(s.stacks / 2);
+                  if (drop > 0) engine.statuses.changeStacks(ent, s, -drop, 'REMOVE');
+                });
+              });
+              if (!engine.combatEnded) {
+                engine.heal(self, 40, '회유술');
+                engine.heal(player, 40, '회유술');
+              }
+            }
+          };
+        case 2: {
+          const nextStep = (self.schemeCount || 0) + 1;
+          if (nextStep < 3) {
+            return {
+              name: `흉계 [${nextStep}/3]`,
+              type: 'MAGIC',
+              intent: `🕯️ 흉계 카운트다운 [${nextStep}/3] (3회 누적 시 전원 초기화 및 1막 회귀)`,
+              execute: () => {
+                self.schemeCount = nextStep;
+                engine.emitFx(self, 'fx-purple');
+                engine.emitFloatingText(self, `흉계 ${nextStep}/3`, 'fct-purple');
+                engine.emitLog(`🕯️ [흉계 ${nextStep}/3] 토끼굴의 마피아가 어둠 속에서 조직을 다시 규합하고 있습니다...`, 'log-status');
+              }
+            };
+          }
+          return {
+            name: '흉계 완성 [3/3]',
+            type: 'MAGIC',
+            intent: '🕯️ [3/3] 전원 버프·디버프 초기화 & HP 완전 회복 + 1막 회귀 (최대 HP 200 · 언데드 70)',
+            execute: () => {
+              engine.emitLog(`🕯️ [흉계 완성] "거래는 원점으로 돌아간다." 모든 상태가 지워지고 1막이 다시 열립니다!`, 'log-hit');
+              engine.statuses.removeAll(self, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
+              engine.statuses.removeAll(player, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
+              engine.statuses.removeSpecific(self, 'CTX_FANG');
+
+              self.phase = 1;
+              self.schemeCount = 0;
+              self.p1Skill1Count = 0;
+              self.p1Skill2Count = 0;
+              self.phaseStartTurn = engine.turn + 1;
+              self.maxHp = 200;
+
+              engine.emitFx(self, 'fx-yellow');
+              engine.emitFloatingText(self, '1막 회귀!', 'fct-white');
+              engine.heal(self, self.maxHp, '흉계 완성');
+              engine.heal(player, player.maxHp, '흉계 완성');
+
+              engine.statuses.setOrMaxContext(self, 'CTX_FAMILY', 1);
+              engine.statuses.apply(self, self, 'UNDEAD', 70);
+              engine.notifyRender();
+            }
+          };
+        }
+      }
+    }
   }
 };
+
+// 몽중몽 고정 보스 등장 순서 (별빛 0 -> 1번 보스, 별빛 1 -> 2번 보스...)
+const DREAM_BOSS_ORDER = [
+  'DREAM_BOSS_MAFIA_MOLE'
+];
 
 /**
  * ============================================================================
@@ -3298,16 +3547,37 @@ class StatusManager {
    * - 'CONSUME': 언데드 부활 등 자체 소모 -> onDispel, onRemoved 모두 미발동
    */
   changeStacks(owner, instance, delta, mode = 'DISPEL') {
-    instance.stacks += delta;
+    let actualDelta = delta;
+    let skipOnRemoved = false;
+
+    if (actualDelta < 0 && mode === 'REMOVE') {
+      const guard = owner.getPassives().find(({ def }) => def.modifyRemoveDelta);
+      if (guard) {
+        const res = guard.def.modifyRemoveDelta(actualDelta, instance, this.engine, owner, guard.inst);
+        if (res && typeof res === 'object') {
+          actualDelta = res.delta;
+          if (res.skipOnRemoved) skipOnRemoved = true;
+        }
+      }
+    }
+
+    const before = instance.stacks;
+    instance.stacks += actualDelta;
+    const actualLost = Math.max(0, before - Math.max(0, instance.stacks));
+
     if (instance.stacks <= 0) {
       const idx = owner.statuses.indexOf(instance);
       if (idx !== -1) owner.statuses.splice(idx, 1);
       const def = StatusDB[instance.id];
       this.engine.emitLog(`💨 [${mode === 'DISPEL' ? '해제' : '제거'}] ${owner.name}의 [${def.name}] 소멸`, 'log-status');
       if (mode === 'DISPEL' && def.onDispel) def.onDispel(this.engine, owner, instance);
-      if (mode !== 'CONSUME' && def.onRemoved) def.onRemoved(this.engine, owner, instance);
+      if (mode !== 'CONSUME' && !skipOnRemoved && def.onRemoved) def.onRemoved(this.engine, owner, instance);
+    } else if (actualLost > 0 && mode === 'REMOVE') {
+      const def = StatusDB[instance.id];
+      this.engine.emitLog(`🎩 [제거 저항] ${owner.name}의 [${def.name}] ${actualLost}스택만 감소 (남은 스택:${instance.stacks})`, 'log-status');
     }
     this.engine.notifyRender();
+    return actualLost;
   }
 
   // 특정 카테고리 중 무작위 1종을 '해제(DISPEL)'
@@ -3330,9 +3600,7 @@ class StatusManager {
   removeSpecific(target, statusId) {
     const inst = this.get(target, statusId);
     if (!inst) return 0;
-    const s = inst.stacks;
-    this.changeStacks(target, inst, -s, 'REMOVE');
-    return s;
+    return this.changeStacks(target, inst, -inst.stacks, 'REMOVE');
   }
 
   // 지정한 카테고리(예: [BUFF, DEBUFF])의 모든 상태를 '강제 제거(REMOVE)'하고 종류 수·총 스택 수 반환 ([040 희망의 기사] 등)
@@ -3340,8 +3608,11 @@ class StatusManager {
     const list = target.statuses.filter(s => categories.includes(StatusDB[s.id].category));
     let removedCount = 0, removedStacks = 0;
     list.forEach(inst => {
-      removedCount += 1; removedStacks += inst.stacks;
-      this.changeStacks(target, inst, -inst.stacks, 'REMOVE');
+      const lost = this.changeStacks(target, inst, -inst.stacks, 'REMOVE');
+      if (lost > 0) {
+        removedCount += 1;
+        removedStacks += lost;
+      }
     });
     return { removedCount, removedStacks };
   }
@@ -3365,6 +3636,10 @@ class CombatEngine {
     this.onRenderCallback = null;
     this.onCardPlayedCallback = null;
     this.onCombatEndCallback = null;
+
+    // 몽중몽 2막 보스용
+    this.isEnemyTurn = false;      // 페이즈 전환 시 다음 패턴 턴 계산용
+    this.phaseJustChanged = false; // 1막 종료 시 진행 중이던 다단히트 공격 중단용
   }
 
   log(msg, cls = '') { this.emitLog(msg, cls); }
@@ -3465,6 +3740,7 @@ class CombatEngine {
    * 다단히트 물리 공격 실행기
    * - 타수(hits)만큼 반복하며 매 타격마다 개별 DamagePacket을 생성해 dealDamage로 전달
    * - 적 공격일 경우 10층 단위 티어 보너스(+3씩) 가산, 플레이어일 경우 도금이빨/숫돌 등 타격 보너스 적용
+   * - 보스 2막 전환 시 오류 방지
    */
   executeAttack(user, target, damageOrFn, currentCard = this.activeCard, explicitHits = null, onEachHit = null) {
     const isCardAttack = user === this.player && currentCard;
@@ -3472,8 +3748,9 @@ class CombatEngine {
       ? explicitHits
       : (isCardAttack ? this.getEffectiveHits(user, currentCard) : 1);
 
+    this.phaseJustChanged = false;
     for (let i = 0; i < hits; i++) {
-      if (this.combatEnded) break;
+      if (this.combatEnded || this.phaseJustChanged) break;
       let dmg = typeof damageOrFn === 'function' ? damageOrFn() : damageOrFn;
       if (!user.isPlayer && user.tierDamageBonus) {
         dmg += user.tierDamageBonus;
@@ -3488,8 +3765,8 @@ class CombatEngine {
         type: DAMAGE_TYPE.PHYSICAL, isStrike: true,
         reason: `${isCardAttack ? currentCard.name : user.name} (${i + 1}/${hits}타)`
       }));
-      if (onEachHit && !this.combatEnded) {
-        onEachHit(i, hits, dmg); // 매 타격 직후 추가 효과 실행 (산토끼습격 출혈, 토끼남작의 이빨 회복 등)
+      if (onEachHit && !this.combatEnded && !this.phaseJustChanged) {
+        onEachHit(i, hits, dmg);
       }
     }
   }
@@ -3610,6 +3887,11 @@ class CombatEngine {
   checkCombatEnd() {
     if (this.combatEnded || !this.onCombatEndCallback) return;
     if (this.enemy.maxHp > 0 && this.enemy.hp <= 0) {
+      const enemyDef = EnemyDB[this.enemy.enemyId];
+      if (enemyDef && enemyDef.onBeforeDeath && enemyDef.onBeforeDeath(this, this.enemy, this.player)) {
+        this.phaseJustChanged = true;
+        return;
+      }
       this.combatEnded = true;
       this.emitLog(`🏆 [전투 승리] ${this.enemy.name} 처치!`, 'log-sys');
       this.onCombatEndCallback(true);
@@ -3734,6 +4016,9 @@ class CombatEngine {
    * -> 3) 턴 시작 패시브(망토, 전술 도약, 채권자 등) -> 4) 기본 3장 드로우 -> 5) 드로우 후 패시브(천무지체, 적응형 두뇌, 탐욕스런 앞니)
    */
   startPlayerTurn() {
+    this.isEnemyTurn = false;
+    this.phaseJustChanged = false;
+
     if (this.combatEnded) return;
     this.emitLog(` [${this.turn}턴: 플레이어 차례] `, 'log-sys');
 
@@ -3797,6 +4082,8 @@ class CombatEngine {
       }
     });
 
+    this.isEnemyTurn = true;
+
     this.emitLog(` [${this.turn}턴: ${this.enemy.name} 차례] `, 'log-sys');
     [this.player, this.enemy].forEach(ent => {
       [...ent.statuses].forEach(s => {
@@ -3854,6 +4141,7 @@ const RogueManager = {
   STARTER_DECK: ['001', '001', '001', '010', '010', '010', '005', '002', '011'], // 고정 기본 덱 9장
   MIN_DECK_SIZE: 9,        // 캠프 카드 제거 시 유지해야 하는 최소 덱 매수
   BASE_MAX_DECK_SIZE: 21,  // 기본 최대 덱 상한 ([003 학자안경] 보유 시 24장으로 확장)
+  NORMAL_MAX_FLOOR: 50, // 1~50층 일반 구간 상한 고정 (51층부터 몽중몽)
 
   // 현재 진행 중인 로그라이크 런의 런타임 상태
   state: {
@@ -3861,14 +4149,54 @@ const RogueManager = {
     deck: [], relics: [], traits: [], clearedBosses: [],
     relic015Wins: 0,
     runLog: [],
-    deathCause: ''
+    deathCause: '',
+    dreamUnlocked: false,
+    dreamStars: 0
   },
   currentPaths: [], // 현재 층 갈림길에 제시된 방 유형 목록 (예: ['NORMAL', 'ELITE', 'CAMP'])
   rewardQueue: [],  // 전투 승리 후 순차적으로 처리할 보상 대기열 (카드 -> 유물 -> 특성 순)
+  pendingDreamAnchorUpdate: false, // 몽중몽 보스 격파 후 보상 정산이 끝나면 체크포인트 갱신
 
-  // 현재 EnemyDB에 등록된 보스 수 × 10층을 최고층으로 자동 계산 (현재 보스 5종 = 50층)
+  // 노말모드 기사도 최대 층
   getMaxFloor() {
-    return Object.values(EnemyDB).filter(e => e.isBoss).length * 10;
+    return this.NORMAL_MAX_FLOOR;
+  },
+
+  // 몽중몽 최대 층
+  isDreamMode() {
+    return this.state.floor > this.NORMAL_MAX_FLOOR;
+  },
+
+  // 현재 스펙을 콜드슬립 체크포인트에 저장 (51층 최초 진입 및 몽중몽 보스 격파 직후 호출)
+  saveDreamAnchor() {
+    this.state.dreamUnlocked = true;
+    SaveLedger.set('dream.unlocked', true);
+    SaveLedger.set('dream.anchor.floor', this.state.floor);
+    SaveLedger.set('dream.anchor.hp', this.state.hp);
+    SaveLedger.set('dream.anchor.maxHp', this.state.maxHp);
+    SaveLedger.set('dream.anchor.hitTakenCount', this.state.hitTakenCount);
+    SaveLedger.set('dream.anchor.deck', this.state.deck.join(','));
+    SaveLedger.set('dream.anchor.relics', this.state.relics.join(','));
+    SaveLedger.set('dream.anchor.traits', this.state.traits.join(','));
+  },
+
+  // 몽중몽 패배 시 콜드슬립 스냅샷으로 상태 복원 (runLog와 deathCause는 유지)
+  restoreFromDreamAnchor() {
+    const parseList = (str) => String(str || '').split(',').map(s => s.trim()).filter(Boolean);
+    const anchorFloor = Number(SaveLedger.get('dream.anchor.floor')) || (this.NORMAL_MAX_FLOOR + 1);
+    const savedDeck = parseList(SaveLedger.get('dream.anchor.deck'));
+
+    this.state.active = true;
+    this.state.floor = anchorFloor;
+    this.state.hp = Number(SaveLedger.get('dream.anchor.hp')) || 150;
+    this.state.maxHp = Number(SaveLedger.get('dream.anchor.maxHp')) || 150;
+    this.state.hitTakenCount = Number(SaveLedger.get('dream.anchor.hitTakenCount')) || 0;
+    this.state.deck = savedDeck.length >= this.MIN_DECK_SIZE ? savedDeck : [...this.STARTER_DECK];
+    this.state.relics = parseList(SaveLedger.get('dream.anchor.relics'));
+    this.state.traits = parseList(SaveLedger.get('dream.anchor.traits'));
+    this.state.runLog.push(`💫몽중몽 회귀(${anchorFloor}F)`);
+    this.syncToSaveLedger();
+    return anchorFloor;
   },
 
   // 특성을 반영한 현재 최대 덱 상한 계산
@@ -3906,6 +4234,8 @@ const RogueManager = {
     SaveLedger.set('roguelike.relic015Wins', this.state.relic015Wins);
     SaveLedger.set('roguelike.runLog', this.state.runLog.join(' > '));
     SaveLedger.set('roguelike.deathCause', this.state.deathCause);
+    SaveLedger.set('dream.unlocked', this.state.dreamUnlocked);
+    SaveLedger.set('dream.stars', this.state.dreamStars);
   },
 
   // SaveLedger에 기록된 텍스트 데이터를 불러와 RogueManager.state에 복원
@@ -3925,17 +4255,29 @@ const RogueManager = {
     const rawLog = String(SaveLedger.get('roguelike.runLog') || '').trim();
     this.state.runLog = rawLog ? rawLog.split(' > ').map(s => s.trim()).filter(Boolean) : [];
     this.state.deathCause = String(SaveLedger.get('roguelike.deathCause') || '');
+    this.state.dreamUnlocked = Boolean(SaveLedger.get('dream.unlocked'));
+    this.state.dreamStars = Number(SaveLedger.get('dream.stars')) || 0;
   },
 
   // [새 기사도 시작] 상태 초기화 후 0층 초기 특성 선택 화면으로 진입
   startNewRun() {
+    this.pendingDreamAnchorUpdate = false;
     this.state = {
       active: true, floor: 1, hp: 150, maxHp: 150, hitTakenCount: 0,
       deck: [...this.STARTER_DECK], relics: [], traits: [], clearedBosses: [],
       relic015Wins: 0,
       runLog: [],
-      deathCause: ''
+      deathCause: '',
+      dreamUnlocked: false,
+      dreamStars: 0
     };
+    SaveLedger.set('dream.anchor.floor', this.NORMAL_MAX_FLOOR + 1);
+    SaveLedger.set('dream.anchor.hp', 150);
+    SaveLedger.set('dream.anchor.maxHp', 150);
+    SaveLedger.set('dream.anchor.hitTakenCount', 0);
+    SaveLedger.set('dream.anchor.deck', '');
+    SaveLedger.set('dream.anchor.relics', '');
+    SaveLedger.set('dream.anchor.traits', '');
     this.syncToSaveLedger();
     AppUI.mode = 'ROGUE_HUB';
     AppUI.go('screen-choice');
@@ -4032,15 +4374,17 @@ const RogueManager = {
     );
   },
 
-  // 현재 층의 갈림길 허브로 진입 (구현된 최고층을 넘었으면 엔딩 화면으로 분기)
+  // 현재 층의 갈림길 허브로 진입
   enterHubForCurrentFloor() {
     AppUI.mode = 'ROGUE_HUB';
     AppUI.go('screen-choice');
-    const maxFloor = this.getMaxFloor();
-    if (this.state.floor > maxFloor) {
-      this.renderMaxFloorReached(maxFloor);
-      return;
+
+    // 51층 이상 최초 진입(기존 v1.09 51층 주차 세이브 이어하기 포함) 시 콜드슬립 체크포인트 자동 생성
+    if (this.isDreamMode() && !this.state.dreamUnlocked) {
+      this.saveDreamAnchor();
+      this.syncToSaveLedger();
     }
+
     this.generatePathsForCurrentFloor();
     this.renderPathSelection();
   },
@@ -4052,8 +4396,12 @@ const RogueManager = {
    * - 보스 직전 층(9, 19, 29층...) 또는 [006 요람사진] 보유 시: 캠프 1개 확정 포함
    */
   generatePathsForCurrentFloor() {
+    if (this.isDreamMode()) {
+      this.currentPaths = ['NORMAL', 'ELITE', 'CAMP', 'LAKE', 'BOSS', 'DREAM_BOSS'];
+      return;
+    }
+
     const floor = this.state.floor;
-    
     if (floor % 10 === 0) {
       this.currentPaths = ['BOSS'];
       return;
@@ -4073,24 +4421,63 @@ const RogueManager = {
     this.currentPaths = RNG.sampleUnique(options, options.length);
   },
 
-  // 생성된 갈림길(일반 / 엘리트 / 캠프 / 보스) 선택지 UI 렌더링
+  // 생성된 갈림길(일반 / 엘리트 / 캠프 / 호수 / 보스 / 흩어진 별빛) 선택지 UI 렌더링
   renderPathSelection() {
     const meta = {
       NORMAL: { title: '⚔️ 일반', desc: '일반 적과 교전합니다. (카드 보상)', color: 'var(--accent)' },
       ELITE: { title: '🔥 엘리트', desc: '강력한 적과 교전합니다. (카드 + 유물 보상)', color: 'var(--fx-purple)' },
       CAMP: { title: '⛺ 캠프', desc: '체력 35% 회복 또는 덱에서 카드 1장을 제거합니다.', color: 'var(--fx-green)' },
+      LAKE: { title: '🌊 호수', desc: '체력을 100% 회복하거나 보유한 특성·유물 중 1개를 제거합니다.', color: 'var(--fx-blue)' },
       BOSS: { title: '👑 보스', desc: '층의 지배자와 결전을 치릅니다. (HP 50% 회복 + 카드 + 유물 + 특성 보상)', color: 'var(--fx-red)' }
     };
-    AppUI.setChoiceScreen(
-      `🧭 ${this.state.floor}층 갈림길 선택`,
-      `현재 HP: ${this.state.hp}/${this.state.maxHp} | 덱: ${this.state.deck.length}/${this.getMaxDeckSize()}장`,
-      this.currentPaths.map(type => ({
+
+    const items = this.currentPaths.map(type => {
+      if (type === 'DREAM_BOSS') {
+        const nextBossId = DREAM_BOSS_ORDER[this.state.dreamStars];
+        const bossDef = nextBossId ? EnemyDB[nextBossId] : null;
+        if (bossDef) {
+          return {
+            title: `⭐ 흩어진 별빛: ${bossDef.name} (HP ${bossDef.maxHp})`,
+            desc: `다른 가능성의 강적 [${bossDef.name}]와(과) 결전을 치릅니다. (격파 시 ⭐+1 · 체크포인트 갱신 · HP 50% 회복 · 카드/유물/특성 보상)`,
+            borderColor: 'var(--fx-yellow)',
+            disabled: false,
+            onClick: () => this.startCombatNode('DREAM_BOSS')
+          };
+        }
+        return {
+          title: `⭐ 흩어지 별빛 (현재 보스 모두 격파 완료)`,
+          desc: `흩어진 별빛을 모두 쓰러뜨렸습니다. 일반·엘리트·캠프·호수로 자유롭게 등반을 이어갈 수 있습니다.`,
+          borderColor: 'var(--border)',
+          disabled: true
+        };
+      }
+
+      return {
         title: meta[type].title,
         desc: meta[type].desc,
         borderColor: meta[type].color,
-        onClick: () => type === 'CAMP' ? this.renderCampView() : this.startCombatNode(type)
-      }))
-    );
+        onClick: () => {
+          if (type === 'CAMP') this.renderCampView();
+          else if (type === 'LAKE') this.renderLakeView();
+          else this.startCombatNode(type);
+        }
+      };
+    });
+
+    if (this.isDreamMode()) {
+      const anchorFloor = Number(SaveLedger.get('dream.anchor.floor')) || (this.NORMAL_MAX_FLOOR + 1);
+      AppUI.setChoiceScreen(
+        `🌙 ${this.state.floor}층 — 기사도: 몽중몽 (⭐${this.state.dreamStars})`,
+        `HP: ${this.state.hp}/${this.state.maxHp} | 덱: ${this.state.deck.length}/${this.getMaxDeckSize()}장 | 체크포인트: ${anchorFloor}층`,
+        items
+      );
+    } else {
+      AppUI.setChoiceScreen(
+        `🧭 ${this.state.floor}층 갈림길 선택`,
+        `현재 HP: ${this.state.hp}/${this.state.maxHp} | 덱: ${this.state.deck.length}/${this.getMaxDeckSize()}장`,
+        items
+      );
+    }
   },
 
   // 캠프 화면 렌더링: 최대 HP의 35% 휴식 회복 또는 마스터 덱에서 카드 1장 영구 제거
@@ -4135,6 +4522,69 @@ const RogueManager = {
     AppUI.setChoiceScreen(`⛺ ${this.state.floor}층 캠프`, '체력을 회복하거나 덱의 카드 1장을 제거하십시오.', items);
   },
 
+  // 호수 렌더링
+  renderLakeView() {
+    const items = [
+      {
+        title: `💧 휴식: 체력 100% 완전 회복 (HP ${this.state.hp} → ${this.state.maxHp})`,
+        desc: `호수에 몸을 담가 체력을 최대치(${this.state.maxHp})까지 완전히 회복하고 다음 층으로 이동합니다.`,
+        borderColor: 'var(--fx-green)',
+        onClick: () => {
+          this.state.hp = this.state.maxHp;
+          this.state.runLog.push(`${this.state.floor}F:호수(완전회복/HP:${this.state.hp})`);
+          this.advanceFloor();
+        }
+      }
+    ];
+
+    // 보유 특성 제거 목록
+    this.state.traits.forEach((tid, idx) => {
+      const t = TraitDB[tid];
+      if (!t) return;
+      items.push({
+        title: `🧬 특성 제거: [${t.id}] ${t.name}`,
+        desc: `${t.desc} (제거 시 최대 HP 변동 효과도 원복됩니다.)`,
+        borderColor: 'var(--fx-blue)',
+        onClick: () => {
+          this.state.traits.splice(idx, 1);
+          if (t.onRemove) t.onRemove(this.state);
+          this.state.runLog.push(`${this.state.floor}F:호수(특성제거:${t.name})`);
+          this.advanceFloor();
+        }
+      });
+    });
+
+    // 보유 유물 제거 목록
+    this.state.relics.forEach((rid, idx) => {
+      const r = RelicDB[rid];
+      if (!r) return;
+      items.push({
+        title: `🏺 유물 제거: [${r.id}] ${r.name}`,
+        desc: r.desc,
+        borderColor: 'var(--fx-yellow)',
+        onClick: () => {
+          this.state.relics.splice(idx, 1);
+          if (rid === '015') this.state.relic015Wins = 0;
+          this.state.runLog.push(`${this.state.floor}F:호수(유물제거:${r.name})`);
+          this.advanceFloor();
+        }
+      });
+    });
+
+    items.push({
+      title: '↩️ 갈림길로 돌아가기',
+      desc: '아무 행동도 하지 않고 현재 층 선택 화면으로 돌아갑니다.',
+      borderColor: 'var(--border)',
+      onClick: () => this.renderPathSelection()
+    });
+
+    AppUI.setChoiceScreen(
+      `🌊 ${this.state.floor}층 호수`,
+      `체력을 100% 회복하거나, 빌드에 방해되는 특성(${this.state.traits.length}) · 유물(${this.state.relics.length})을 1개 버릴 수 있습니다.`,
+      items
+    );
+  },
+
   /**
    * 전투 노드(NORMAL / ELITE / BOSS) 진입 및 CombatEngine 세팅
    * - 층수에 따라 10층 단위 티어 스케일링 적용: 적 최대 HP × 1.45^tier, 물리 공격력 +3×tier
@@ -4142,24 +4592,32 @@ const RogueManager = {
   startCombatNode(type) {
     let enemyId = 'COAL_MOLE';
     if (type === 'NORMAL') {
-      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => !e.isBoss && !e.isElite)).id;
+      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => !e.isBoss && !e.isElite && !e.isDreamBoss)).id;
     } else if (type === 'ELITE') {
-      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => e.isElite)).id;
+      enemyId = RNG.pickRandom(Object.values(EnemyDB).filter(e => e.isElite && !e.isDreamBoss)).id;
     } else if (type === 'BOSS') {
-      const allBosses = Object.values(EnemyDB).filter(e => e.isBoss);
-      const uncleared = allBosses.filter(b => !this.state.clearedBosses.includes(b.id));
-      enemyId = RNG.pickRandom(uncleared.length > 0 ? uncleared : allBosses).id;
+      const allBosses = Object.values(EnemyDB).filter(e => e.isBoss && !e.isDreamBoss);
+      if (this.isDreamMode()) {
+        enemyId = RNG.pickRandom(allBosses).id;
+      } else {
+        const uncleared = allBosses.filter(b => !this.state.clearedBosses.includes(b.id));
+        enemyId = RNG.pickRandom(uncleared.length > 0 ? uncleared : allBosses).id;
+      }
+    } else if (type === 'DREAM_BOSS') {
+      enemyId = DREAM_BOSS_ORDER[this.state.dreamStars];
+      if (!enemyId || !EnemyDB[enemyId]) return;
     }
 
     const eng = AppUI.engine;
     eng.combatEnded = false;
     eng.turn = 1;
     eng.replayDepth = 0;
+    eng.isEnemyTurn = false;
+    eng.phaseJustChanged = false;
 
-    // 플레이어 엔티티 초기화 및 보유 특성·유물·마스터 덱 장착
     eng.player = new Entity('토끼기사', this.state.maxHp, true);
     eng.player.hp = this.state.hp;
-    eng.player.energy = 0; // 첫 턴 시작 시 recovery(3)가 더해져 3활력으로 시작
+    eng.player.energy = 0;
     eng.player.runTrackers.hitTakenCount = this.state.hitTakenCount;
 
     this.state.traits.forEach(tid => {
@@ -4180,19 +4638,27 @@ const RogueManager = {
     const shuffledIds = RNG.sampleUnique(this.state.deck, this.state.deck.length);
     eng.player.deck = shuffledIds.map(cid => eng.createCardInstance(cid));
 
-    // 적 엔티티 초기화 및 10층 단위 티어 보정 적용
+    // 적 엔티티 초기화: 몽중몽 보스는 고정 스펙, 일반·엘리트는 4티어(50층) 상한 고정
     const eDef = EnemyDB[enemyId];
-    const tier = Math.floor((this.state.floor - 1) / 10);
-    const scaledHp = Math.floor(eDef.maxHp * Math.pow(1.45, tier));
+    let scaledHp = eDef.maxHp;
+    let tierDamageBonus = 0;
+    if (!eDef.isDreamBoss) {
+      const tier = Math.min(4, Math.floor((this.state.floor - 1) / 10));
+      scaledHp = Math.floor(eDef.maxHp * Math.pow(1.45, tier));
+      tierDamageBonus = tier * 3;
+    }
+
     eng.enemy = new Entity(eDef.name, scaledHp, false);
     eng.enemy.enemyId = enemyId;
-    eng.enemy.tierDamageBonus = tier * 3;
+    eng.enemy.tierDamageBonus = tierDamageBonus;
     if (enemyId === 'BOSS_ARCHANGEL_NAEL') {
-      eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1); // 대천사 나엘 고유 패시브 부여
+      eng.statuses.setOrMaxContext(eng.enemy, 'CTX_ASCENDANT', 1);
+    }
+    if (eDef.onBattleStart) {
+      eDef.onBattleStart(eng, eng.enemy, eng.player);
     }
 
     eng.onCardPlayedCallback = null;
-    // 전투 승/패 판정 후, 쌓여있는 전투 로그를 유저가 끝까지 클릭해 읽은 뒤 정산 화면으로 이동
     eng.onCombatEndCallback = (victory) => {
       AppUI.runAfterLogs(() => this.onCombatFinished(victory, type, enemyId));
     };
@@ -4206,6 +4672,7 @@ const RogueManager = {
    * 전투 종료 후 승패 정산 및 보상 대기열(rewardQueue) 구성
    * - 패배 시: 사망 원인 및 여정 로그 기록 후 런 종료(active = false)
    * - 승리 시: 노드 유형(일반/엘리트/보스) 및 유물(마도서, 별빛 망토)에 따라 보상 큐 적재
+   * - 몽중몽 추가
    */
   onCombatFinished(victory, nodeType, enemyId) {
     const eng = AppUI.engine;
@@ -4217,6 +4684,34 @@ const RogueManager = {
       const cause = eng.player.lastHitReason || '알 수 없음';
       this.state.deathCause = `${this.state.floor}F ${eName} (${eng.turn}턴) - [${cause}]`;
       this.state.runLog.push(`${this.state.floor}F:${eName}(패/${eng.turn}T)`);
+
+      // 몽중몽 구간 패배 시: 세이브 삭제 대신 콜드슬립 체크포인트로 즉시 복구
+      if (this.isDreamMode() && this.state.dreamUnlocked) {
+        const anchorFloor = this.restoreFromDreamAnchor();
+        AppUI.mode = 'ROGUE_HUB';
+        AppUI.go('screen-choice');
+        AppUI.setChoiceScreen(
+          '💫 몽중몽 도전 실패 — 체크포인트 회귀',
+          `${this.state.deathCause}에 의해 쓰러졌습니다. 마지막 체크포인트(${anchorFloor}층) 스펙으로 복구되었습니다.`,
+          [
+            {
+              title: `🔄 ${anchorFloor}층 체크포인트에서 다시 도전`,
+              desc: `HP ${this.state.hp}/${this.state.maxHp} · 덱 ${this.state.deck.length}장 상태로 몽중몽 허브로 복귀합니다.`,
+              borderColor: 'var(--fx-yellow)',
+              onClick: () => this.enterHubForCurrentFloor()
+            },
+            {
+              title: '🏠 타이틀로 돌아가기',
+              desc: '복구된 체크포인트 세이브를 유지한 채 로비로 이동합니다.',
+              borderColor: 'var(--border)',
+              onClick: () => AppUI.returnToLobby()
+            }
+          ]
+        );
+        return;
+      }
+
+      // 1~50층 일반 구간 패배 시: 기존과 동일하게 런 종료
       this.state.active = false;
       this.syncToSaveLedger();
       AppUI.mode = 'ROGUE_HUB';
@@ -4233,7 +4728,6 @@ const RogueManager = {
 
     if (nodeType === 'NORMAL') {
       if (enemyId === 'NUN_NAEL' && eng.enemy.peaceAchieved) {
-        // 토끼수녀 나엘 특수 승리(6턴까지 무피해 버티기) 시 전체 카드 중 1장 선택 보상
         this.rewardQueue.push({
           type: 'CARD',
           allCards: true,
@@ -4255,9 +4749,16 @@ const RogueManager = {
       this.rewardQueue.push({ type: 'CARD', note: `👑 보스 격파! 체력 50%(+${healAmt}) 회복 완료` });
       this.rewardQueue.push({ type: 'RELIC' });
       this.rewardQueue.push({ type: 'TRAIT' });
+    } else if (nodeType === 'DREAM_BOSS') {
+      this.state.dreamStars += 1;
+      this.pendingDreamAnchorUpdate = true;
+      const healAmt = Math.floor(this.state.maxHp * 0.5);
+      this.state.hp = Math.min(this.state.maxHp, this.state.hp + healAmt);
+      this.rewardQueue.push({ type: 'CARD', note: `⭐ 흩어진 별빛 [${eName}] 격파! (⭐${this.state.dreamStars}) 체력 50%(+${healAmt}) 회복` });
+      this.rewardQueue.push({ type: 'RELIC' });
+      this.rewardQueue.push({ type: 'TRAIT' });
     }
 
-    // 승리 시 발동하는 보유 유물 효과 처리 ([015 별빛 망토] 등)
     this.state.relics.forEach(rid => {
       if (RelicDB[rid]?.onCombatVictory) {
         RelicDB[rid].onCombatVictory(this, this.rewardQueue);
@@ -4398,6 +4899,13 @@ const RogueManager = {
     this.state.traits.forEach(tid => {
       if (TraitDB[tid]?.onAdvanceFloor) TraitDB[tid].onAdvanceFloor(this.state);
     });
+
+    // 50층 돌파 직후(51층 도달) 또는 몽중몽 보스 격파 후 보상 수령 완료 시 체크포인트 갱신
+    if ((this.state.floor === this.NORMAL_MAX_FLOOR + 1 && !this.state.dreamUnlocked) || this.pendingDreamAnchorUpdate) {
+      this.pendingDreamAnchorUpdate = false;
+      this.saveDreamAnchor();
+    }
+
     this.syncToSaveLedger();
     this.enterHubForCurrentFloor();
   },
@@ -4926,8 +5434,12 @@ const AppUI = {
 
   // [메뉴] 버튼 클릭 시 전술 메뉴 팝업 열기 (층수, 누적 피격, 보유 특성/유물 배지, 덱/무덤 조회 버튼)
   openTacticalMenu() {
-    const isRogue = (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB');
-    const floorText = isRogue ? `${RogueManager.state.floor}층 (상한 ${RogueManager.getMaxFloor()}층)` : '스토리 스테이지';
+    const isRogue = (this.mode === 'ROGUE_COMBAT' || this.mode === 'ROGUE_HUB'); // 👈 이 1줄이 빠졌습니다
+    const floorText = isRogue
+      ? (RogueManager.isDreamMode()
+          ? `${RogueManager.state.floor}층 (별빛회수 · ⭐${RogueManager.state.dreamStars})`
+          : `${RogueManager.state.floor}층 (상한 ${RogueManager.getMaxFloor()}층)`)
+      : '스토리 스테이지';
     const hitCount = this.mode === 'ROGUE_HUB' ? RogueManager.state.hitTakenCount : this.engine.player.runTrackers.hitTakenCount;
 
     const traitIds = isRogue ? RogueManager.state.traits : this.engine.player.traits.map(t => t.id);
@@ -5090,12 +5602,15 @@ const AppUI = {
       countEl.textContent = `개체 도감 (${enemies.length}종)`;
       html = enemies.map(e => {
         const meta = EnemyMeta[e.id] || { type: '개체', desc: '정보 없음' };
-        const borderCol = e.isBoss ? 'var(--fx-red)' : (e.isElite ? 'var(--fx-purple)' : 'var(--border)');
+        const borderCol = e.isDreamBoss
+          ? 'var(--fx-yellow)'
+          : (e.isBoss ? 'var(--fx-red)' : (e.isElite ? 'var(--fx-purple)' : 'var(--border)'));
+        const hpLabel = e.isDreamBoss ? `고정 HP ${e.maxHp}` : `기본 HP ${e.maxHp}`;
         return `
           <div class="codex-item" style="border-left: 3px solid ${borderCol};">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <strong style="color:var(--text-main); font-size:13px;">👾 ${e.name}</strong>
-              <span style="font-size:10.5px; color:var(--fx-yellow); font-weight:bold;">${meta.type} · 기본 HP ${e.maxHp}</span>
+              <span style="font-size:10.5px; color:var(--fx-yellow); font-weight:bold;">${meta.type} · ${hpLabel}</span>
             </div>
             <div style="font-size:11.5px; color:#a9b1d6; line-height:1.4; margin-top:2px;">${meta.desc}</div>
           </div>
@@ -5109,7 +5624,8 @@ const AppUI = {
         { title: '🃏 시작 덱 구성 (총 12장)', desc: '기본 9장(연속 때리기 3, 얼음방패 3, 출혈 1, 토끼의 투지 1, 용자의 행운 1)에 출발 전 직접 고른 카드 3장을 더해 여정을 시작합니다. 카드는 최소 9장~최대 21장까지 보유할 수 있습니다.' },
         { title: '🔄 매 턴 카드 뽑기와 버리기', desc: '내 턴이 시작될 때마다 카드를 3장 뽑습니다. 턴을 마칠 때 쓰지 않고 손에 남긴 카드는 모두 버려집니다.' },
         { title: '💚 활력 (초록색 보석)', desc: '체력바 옆의 초록색 보석은 카드를 쓰는 힘입니다. 매 턴 3개씩 차오르며, 카드 오른쪽 위 숫자만큼 소모합니다. 쓰지 않은 활력은 최대 1개까지 다음 턴으로 넘어갑니다.' },
-        { title: '🎁 전투 승리 보상', desc: '전투에서 이기면 새로운 카드 1장을 얻습니다. 강력한 엘리트를 이기면 유물을, 10층마다 등장하는 보스를 이기면 유물과 특성을 추가로 얻습니다.' }
+        { title: '🎁 전투 승리 보상', desc: '전투에서 이기면 새로운 카드 1장을 얻습니다. 강력한 엘리트를 이기면 유물을, 10층마다 등장하는 보스를 이기면 유물과 특성을 추가로 얻습니다.' },
+        { title: '⭐ 몽중몽 (기사도 51층 이후)', desc: '모든 노드가 항상 해금되며 무한히 층을 오르고 별빛 보스를 쓰러뜨릴 수 있습니다.' },
       ];
 
       html = rules.map(r => `
@@ -5202,11 +5718,16 @@ const AppUI = {
 
     if (RogueManager.state.active) {
       continueBtn.classList.remove('hidden');
-      continueBtn.textContent = `⚔️ 기사도 이어하기 (${RogueManager.state.floor}층)`;
-      subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
+      if (RogueManager.isDreamMode()) {
+        continueBtn.textContent = `🌙 몽중몽 이어하기 (${RogueManager.state.floor}층 · ⭐${RogueManager.state.dreamStars})`;
+        subEl.innerHTML = `진행 중 몽중몽: <b>${RogueManager.state.floor}층 (⭐${RogueManager.state.dreamStars})</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
+      } else {
+        continueBtn.textContent = `⚔️ 기사도 이어하기 (${RogueManager.state.floor}층)`;
+        subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
+      }
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.09 빠른진행추가 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.11 흩어진 별빛 1 | 기사도 ${maxFloor}층 + 몽중몽 별빛 ${DREAM_BOSS_ORDER.length}개`;
     }
   },
 
