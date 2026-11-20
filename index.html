@@ -617,7 +617,10 @@
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="screen-header">
         <strong>📋 전술 메뉴 & 상태</strong>
-        <button onclick="AppUI.toggleModal('modal-menu', false)" style="padding:4px 10px;">닫기</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="btn-auto-log" onclick="AppUI.toggleAutoLogPlay()" style="padding:4px 8px; font-size:11.5px; white-space:nowrap;">⏩ 빠른진행: OFF</button>
+          <button onclick="AppUI.toggleModal('modal-menu', false)" style="padding:4px 10px;">닫기</button>
+        </div>
       </div>
       <div id="menu-status-summary" style="font-size:12px; display:flex; flex-direction:column; gap:8px;"></div>
       <hr style="border-color:var(--border);">
@@ -719,7 +722,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.08)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.09)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -828,7 +831,8 @@ const PatchNotesDB = [
     { version: 'v1.05 (2026.11.18.)', title: '판정 수정: 희망의 기사 조건 트리거 로직 완화 + 코드주석 정돈 + 전투 로그 색상 전환 이슈 개선', desc: '' },
     { version: 'v1.06 (2026.11.19.)', title: '추가: 유물 037 온기가 남은 검집, 카드 046 토끼시종의 만능 꾸러미, 카드 047 폭풍검, 의념 006 기사도, 의념 007 폭풍우, 수정: 008 토끼기사의 지혜(상향), 카드 002 토끼의 투지, 카드 025 토끼남작의 이빨, 카드 033 산토끼 습격, 판정 조정: 카드 002 독검, 카드 037 살랑거리는 토끼귀, 카드 038 버니합', desc: '' },
   { version: 'v1.07 (2026.11.19.)', title: '코드 오류 수정, 밸런스 상향: 카드 014 독사검, 버프 002 독검', desc: '' },
-  { version: 'v1.08 (2026.11.19.)', title: '신규 카드: 치아 스케일링, 신규 특성: 도굴꾼, 신규 유물: 제복, 육식 가이드북, 카드 개편: 출혈, 용자의 행운', desc: '' }
+  { version: 'v1.08 (2026.11.19.)', title: '신규 카드: 치아 스케일링, 신규 특성: 도굴꾼, 신규 유물: 제복, 육식 가이드북, 카드 개편: 출혈, 용자의 행운', desc: '' },
+  { version: 'v1.09 (2026.11.20.)', title: '빠른 진행(전투로그) 기능 추가, 밸런스 패치: 온기가 남은 검집 하향(방어도 7 -> 5), 독검 하향(수치 부여 4 -> 3), 토끼남작의 이빨 하향(회복량 4 -> 3)', desc: '' }
 ];
 
 /**
@@ -1190,10 +1194,10 @@ const RelicDB = {
   },
   '037': {
     id: '037', name: '온기가 남은 검집', priority: 20,
-    desc: '묘지에 있는 카드를 가져오거나 재사용할 때, 해당 카드 1장당 방어도 +7 획득',
+    desc: '묘지에 있는 카드를 가져오거나 재사용할 때, 해당 카드 1장당 방어도 +5 획득',
     onGraveyardCardAccess: (engine, owner, count) => {
       if (count > 0) {
-        const total = count * 7;
+        const total = count * 5;
         engine.emitLog(`🏺 [유물: 온기가 남은 검집] 묘지 연계(${count}장) -> 방어도 +${total}`, 'log-passive');
         engine.gainArmor(owner, total, '온기가 남은 검집');
       }
@@ -1268,7 +1272,6 @@ const TraitDB = {
     desc: '전투 보상 카드 선택지 +1개(4택 1) 및 최대 덱 상한 24장으로 증가',
     modifyRewardCardChoices: (count) => count + 1,
     modifyMaxDeckSize: (max) => Math.max(max, 24)
-  // CardDB['048'] 추가 (047 폭풍검 아래)
   },
   '004': {
     id: '004', name: '빠른 발굽', priority: 10,
@@ -1345,7 +1348,6 @@ const TraitDB = {
     onAcquire: (runState) => {
       runState.maxHp = Math.max(1, runState.maxHp - 40);
       runState.hp = Math.min(runState.hp, runState.maxHp);
-  // CardDB['048'] 추가 (047 폭풍검 아래)
     },
     onAdvanceFloor: (runState) => {
       runState.hp = Math.min(runState.maxHp, runState.hp + 10);
@@ -1720,7 +1722,7 @@ const StatusMeta = {
   CTX_ASCENDANT: { icon: '🪽', desc: '전투 내내 유지되며 난투, 실명, 뇌진탕 디버프를 부여받지 않습니다.' },
   CTX_CHIVALRY: { icon: '⚔️', desc: '스택당 [토끼기사의 지혜]의 피해량이 +8 증가합니다. (전투 종료 시까지 유지)' },
   CTX_TEMPEST: { icon: '🌪️', desc: '기본 타수가 2회 이상인 공격 카드의 타격 횟수를 스택당 1회 추가합니다. 자신의 턴이 시작될 때마다 스택이 1회 상승합니다.' },
-  CTX_FANG: { icon: '🦷', desc: '전투 종료 시까자신의 턴 종료 시 적에게 [출혈]이 걸려 있다면, (출혈 스택 × 송곳니 스택)만큼 자신의 HP를 회복합니다.' }
+  CTX_FANG: { icon: '🦷', desc: '전투 종료 시까지 자신의 턴 종료 시 적에게 [출혈]이 걸려 있다면, (출혈 스택 × 송곳니 스택)만큼 자신의 HP를 회복합니다.' }
 };
 
 // 랜덤 버프/디버프 추첨 풀:
@@ -1877,7 +1879,7 @@ const CardDB = {
       engine.executeAttack(u, t, mult * u.runTrackers.hitTakenCount);
     }
   },
-  '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 [독검] 4 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 4) },
+  '014': { id: '014', name: '독사검', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 [독검] 3 부여', play: (engine, u) => engine.statuses.apply(u, u, 'VIPER_BLADE', 3) },
   '015': {
     id: '015', name: '공평한 카라보스', cost: 1, type: 'MAGIC', hits: 0,
     desc: '적의 랜덤 버프 1개를 제거하고, 자신이 그 버프를 1스택 얻습니다.',
@@ -1940,10 +1942,10 @@ const CardDB = {
   },
   '025': {
     id: '025', name: '토끼남작의 이빨', cost: 1, type: 'ATTACK', hits: 2,
-    desc: '타수 2, 물리 6, 타격 적중 시마다 HP +4 회복',
+    desc: '타수 2, 물리 6, 타격 적중 시마다 HP +3 회복',
     play: (engine, u, t) => {
       engine.executeAttack(u, t, 6, engine.activeCard, null, () => {
-        if (u.hp > 0) engine.heal(u, 4, '토끼남작의 이빨');
+        if (u.hp > 0) engine.heal(u, 3, '토끼남작의 이빨');
       });
     }
   },
@@ -4744,12 +4746,13 @@ const AppUI = {
   selectedCardIdx: null,  // 손패에서 터치해 선택 중인 카드 인덱스 (선택 안 했으면 null)
 
   // --- [순차 로그 연출 큐 상태] ---
-  // 엔진이 순식간에 계산한 전투 결과를 유저가 한 줄씩 터치하며 읽을 수 있도록 보관하는 대기열
   logViewMode: 'STEP',       // 'STEP'(1줄씩 클릭 재생) | 'FULL'(즉시 전체 출력)
-  presentationQueue: [],     // 재생 대기 중인 로그 프레임 목록 ({ msg, cls, fxList, floatingTextList, snapshot })
+  presentationQueue: [],     // 재생 대기 중인 로그 프레임 목록
   pendingFxList: [],         // 현재 로그 줄이 출력될 때 함께 터뜨릴 5색 테두리/흔들림 연출 임시 바구니
-  pendingFloatingTexts: [],  // 현재 로그 줄이 출력될 때 함께 띄울 플로팅 텍스트(-15, 방어 등) 임시 바구니
-  postQueueActions: [],      // 쌓인 로그를 유저가 끝까지 다 읽은 직후 실행할 후속 작업 (승/패 결과 화면 이동 등)
+  pendingFloatingTexts: [],  // 현재 로그 줄이 출력될 때 함께 띄울 플로팅 텍스트 임시 바구니
+  postQueueActions: [],      // 쌓인 로그를 끝까지 읽은 직후 실행할 후속 작업
+  autoLogPlay: false,        // 0.3초 간격 로그 자동 진행 활성화 여부
+  autoLogTimer: null,        // 자동 진행 setTimeout 핸들
 
   // ==========================================================================
   // [A] 초기화 및 전역 화면 · BGM 제어
@@ -4812,6 +4815,43 @@ const AppUI = {
       btn.textContent = '🔇 BGM: OFF';
       btn.style.borderColor = 'var(--border)';
       btn.style.color = 'var(--text-main)';
+    }
+  },
+
+  // 전술 메뉴의 [⏩ 빠른진행] 온/오프 토글
+  toggleAutoLogPlay() {
+    this.autoLogPlay = !this.autoLogPlay;
+    const btn = document.getElementById('btn-auto-log');
+    if (btn) {
+      btn.textContent = this.autoLogPlay ? '⏩ 빠른진행: ON' : '⏩ 빠른진행: OFF';
+      btn.style.borderColor = this.autoLogPlay ? 'var(--fx-green)' : 'var(--border)';
+      btn.style.color = this.autoLogPlay ? 'var(--fx-green)' : 'var(--text-main)';
+    }
+
+    if (this.autoLogPlay) {
+      if (this.presentationQueue.length > 0) {
+        this.scheduleAutoLogStep();
+        this.updateLogStepUI();
+      }
+    } else {
+      this.clearAutoLogTimer();
+      this.updateLogStepUI();
+    }
+  },
+
+  scheduleAutoLogStep() {
+    this.clearAutoLogTimer();
+    if (!this.autoLogPlay || this.presentationQueue.length === 0) return;
+    this.autoLogTimer = setTimeout(() => {
+      this.autoLogTimer = null;
+      this.advanceLogStep();
+    }, 300); // 0.3초 간격
+  },
+
+  clearAutoLogTimer() {
+    if (this.autoLogTimer) {
+      clearTimeout(this.autoLogTimer);
+      this.autoLogTimer = null;
     }
   },
 
@@ -5166,7 +5206,7 @@ const AppUI = {
       subEl.innerHTML = `진행 중 세이브: <b>${RogueManager.state.floor}층</b> (HP ${RogueManager.state.hp}/${RogueManager.state.maxHp} | 덱 ${RogueManager.state.deck.length}장)`;
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.08 | 현재 등반 가능 최고층: ${maxFloor}층`;
+      subEl.innerHTML = `v1.09 빠른진행추가 | 현재 등반 가능 최고층: ${maxFloor}층`;
     }
   },
 
@@ -5302,15 +5342,19 @@ const AppUI = {
     }
 
     this.presentationQueue.push(step);
-    // 첫 번째 로그라면 즉시 화면에 첫 프레임을 띄우고, 2번째 줄부터는 유저 터치를 기다림
+    // 첫 번째 로그라면 즉시 화면에 첫 프레임을 띄우고, 빠른진행이 켜져 있으면 0.3초 뒤 자동 진행 예약
     if (this.presentationQueue.length === 1) {
       this.applyPresentationStep(this.presentationQueue[0]);
+      if (this.autoLogPlay) {
+        this.scheduleAutoLogStep();
+      }
     }
     this.updateLogStepUI();
   },
 
-  // 유저가 화면을 터치했을 때 현재 로그를 넘기고 다음 로그 스텝을 재생
+  // 유저가 화면을 터치하거나 0.3초 타이머가 만료되었을 때 다음 로그 스텝 재생
   advanceLogStep() {
+    this.clearAutoLogTimer();
     if (this.presentationQueue.length === 0) return;
 
     this.presentationQueue.shift();
@@ -5318,6 +5362,9 @@ const AppUI = {
     if (this.presentationQueue.length > 0) {
       this.applyPresentationStep(this.presentationQueue[0]);
       this.updateLogStepUI();
+      if (this.autoLogPlay) {
+        this.scheduleAutoLogStep();
+      }
     } else {
       // 큐의 모든 로그를 다 읽었으면 최신 상태로 동기화하고 예약된 후속 작업(승/패 이동 등) 실행
       this.updateLogStepUI();
@@ -5328,6 +5375,7 @@ const AppUI = {
 
   // [스킵 ⏭️] 버튼 클릭 시 남은 로그를 한꺼번에 전체 로그창에 밀어 넣고 즉시 최신 상태 표시
   flushAllLogs() {
+    this.clearAutoLogTimer();
     while (this.presentationQueue.length > 0) {
       const step = this.presentationQueue.shift();
       this.appendDomLog(step.msg, step.cls);
@@ -5369,6 +5417,7 @@ const AppUI = {
   },
 
   clearLogs() {
+    this.clearAutoLogTimer();
     this.presentationQueue = [];
     this.pendingFxList = [];
     this.pendingFloatingTexts = [];
@@ -5545,7 +5594,11 @@ const AppUI = {
       mainDisplay.textContent = `▶ ${currentStep.msg}`;
       countEl.textContent = remaining > 0 ? `남은 로그: +${remaining}줄` : `마지막 로그`;
       hintEl.style.color = 'var(--fx-yellow)';
-      hintEl.textContent = (hasPendingAction && remaining === 0) ? '터치하여 결과 이동 ▶' : '화면 터치하여 다음 줄 ▶';
+      if (hasPendingAction && remaining === 0) {
+        hintEl.textContent = '터치하여 결과 이동 ▶';
+      } else {
+        hintEl.textContent = this.autoLogPlay ? '⏩ 빠른 진행 중 (0.3초)...' : '화면 터치하여 다음 줄 ▶';
+      }
     } else {
       purpleBox.classList.remove('waiting-log');
       skipBtn.classList.add('hidden');
