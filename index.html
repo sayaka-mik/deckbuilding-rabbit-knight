@@ -113,6 +113,7 @@
       background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px;
       display: flex; flex-direction: column; justify-content: flex-end;
       transition: border-color 0.15s, box-shadow 0.15s;
+      cursor: pointer;
     }
     /* 캐릭터 도트/초상화 배경 이미지 레이어 */
     .avatar-bg {
@@ -370,6 +371,7 @@
     .fct-cyan { color: #73daca; }   /* 버프 획득 (재생!! 등) */
     .fct-purple { color: #bb9af7; } /* 디버프 획득 (저주!! 등) */
     .fct-green { color: #9ece6a; }  /* 체력 회복 (💚+7 등) */
+    .fct-sm { font-size: 18px; }    /* 피해유예·피해감면 등 문구형 플로팅 텍스트 */
 
     /* 1층 출발 보급에서 카드 3장을 고를 때 0.3초 동안 초록색 '추가!'가 튀어 오르는 연출 */
     @keyframes draft-pop {
@@ -483,7 +485,7 @@
     <!-- [전투 1단] 좌측 플레이어 박스 / 우측 적 박스 -->
     <div class="stage-top-row">
       <!-- 좌측: 플레이어 상태 박스 (초상화, HP/방어도 바, 활력 보석, 상태이상 태그) -->
-      <div id="box-player" class="actor-box">
+      <div id="box-player" class="actor-box" onclick="AppUI.onActorBoxClick(event, 'player')">
         <div id="player-name-label" class="actor-name-floating" style="color:var(--fx-yellow);">토끼기사</div>
         <div id="sprite-player" class="avatar-bg">[내 도트 초상화]<br>토끼기사</div>
         <div class="actor-hud-overlay">
@@ -500,7 +502,7 @@
       </div>
 
       <!-- 우측: 적 상태 박스 (초상화, HP/방어도 바, 상태이상 태그) -->
-      <div id="box-enemy" class="actor-box">
+      <div id="box-enemy" class="actor-box" onclick="AppUI.onActorBoxClick(event, 'enemy')">
         <div id="enemy-name-label" class="actor-name-floating" style="color:var(--fx-red);">적</div>
         <div id="sprite-enemy" class="avatar-bg">[적 도트 초상화]<br>적</div>
         <div class="actor-hud-overlay">
@@ -731,7 +733,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.11)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.12)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -843,7 +845,8 @@ const PatchNotesDB = [
   { version: 'v1.08 (2026.11.19.)', title: '신규 카드: 치아 스케일링, 신규 특성: 도굴꾼, 신규 유물: 제복, 육식 가이드북, 카드 개편: 출혈, 용자의 행운', desc: '' },
   { version: 'v1.09 (2026.11.20.)', title: '빠른 진행(전투로그) 기능 추가, 밸런스 패치: 온기가 남은 검집 하향(방어도 7 -> 5), 독검 하향(수치 부여 4 -> 3), 토끼남작의 이빨 하향(회복량 4 -> 3)', desc: '' },
   { version: 'v1.10 (2026.11.20.)', title: '기사도:몽중몽 업데이트', desc: '' },
-  { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' }
+  { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' },
+  { version: 'v1.12 (2026.11.21.)', title: '흩어진 별빛 1: 부귀영화, 초상화 누르면 방어도/버프/디버프 표시 모달 추가, 인내/안개얼음성채 시각 피드백 추가', desc: '' }
 ];
 
 /**
@@ -906,7 +909,8 @@ const SpriteMap = {
   '좀비토끼 나나': './assets/nana.png',
   '어뢰 바바': './assets/baba.png',
   '대천사토끼 나엘': './assets/nael.png',
-  '토끼굴의 마피아': './assets/grabbit.png'
+  '토끼굴의 마피아': './assets/grabbit.png',
+  '부귀영화': './assets/witchrabbit.png'
 };
 
 // 유물 
@@ -1563,9 +1567,19 @@ const StatusDB = {
     onInit: (instance) => { instance.accumulated = 0; },
     modifyIncomingDamage: (packet, engine, owner, instance) => {
       if (packet.type === DAMAGE_TYPE.PHYSICAL && packet.amount > 0) {
-        instance.accumulated = Math.min(400, instance.accumulated + packet.amount);
+        const absorbed = packet.amount;
+        const hasStackLock = owner.getPassives().some(({ def }) => def.preventStackDecrease);
+        if (hasStackLock) {
+          instance.accumulated += absorbed;
+          packet.patienceOverflowInst = instance;
+        } else {
+          instance.accumulated = Math.min(400, instance.accumulated + absorbed);
+        }
+        owner.patienceGainedSinceSerenade = true;
         packet.logs.push(`인내 흡수(누적:${instance.accumulated})`);
         packet.amount = 0;
+        engine.emitFx(owner, 'fx-blue');
+        engine.emitFloatingText(owner, `🛡️피해유예 +${absorbed}`, 'fct-blue fct-sm');
       }
     },
     onOwnerTurnEnd: (engine, owner, instance) => engine.statuses.changeStacks(owner, instance, -1, 'DISPEL'),
@@ -1625,8 +1639,14 @@ const StatusDB = {
   CTX_MIST_FORTRESS: {
     id: 'CTX_MIST_FORTRESS', code: '003', name: '의념:안개얼음성채', category: STATUS_CATEGORY.CONTEXT, priority: 50,
     decayTiming: DECAY_TIMING.PLAYER_TURN_END_CONTEXT,
-    modifyIncomingDamage: (packet) => {
-      if (packet.amount > 0) { packet.amount = Math.max(0, packet.amount - 25); packet.logs.push('안개얼음성채(-25)'); }
+    modifyIncomingDamage: (packet, engine, owner) => {
+      if (packet.amount > 0) {
+        const reduced = Math.min(packet.amount, 25);
+        packet.amount = Math.max(0, packet.amount - 25);
+        packet.logs.push('안개얼음성채(-25)');
+        engine.emitFx(owner, 'fx-blue');
+        engine.emitFloatingText(owner, `❄️피해감면 -${reduced}`, 'fct-cyan fct-sm');
+      }
     }
   },
   INSURANCE: {
@@ -1722,6 +1742,22 @@ const StatusDB = {
         }
       }
     }
+  },
+  CTX_RESPONSIBLE: {
+    id: 'CTX_RESPONSIBLE', code: '010', name: '의념:책임자',
+    category: STATUS_CATEGORY.CONTEXT, priority: 10,
+    decayTiming: DECAY_TIMING.NONE,
+    preventStackDecrease: true,
+    preventStatusIds: ['INSURANCE', 'UNDEAD'],
+    onApply: (engine, target) => {
+      ['INSURANCE', 'UNDEAD'].forEach(banId => {
+        const inst = engine.statuses.get(target, banId);
+        if (inst && inst.stacks > 0) {
+          engine.emitLog(`🚫 [의념:책임자] 금지된 [${StatusDB[banId].name}] 상태가 즉시 소멸합니다.`, 'log-status');
+          engine.statuses.changeStacks(target, inst, -inst.stacks, 'CONSUME');
+        }
+      });
+    }
   }
 };
 
@@ -1746,7 +1782,8 @@ const EnemyMeta = {
   BOSS_SANTO: { type: '👑 보스', desc: '[배반자의 산개(방어 28 + 도깨비바늘 2)], [산구르기(물리 14 + 방어 44)], [분쇄 낙하(물리 8 or 물리 16 +방어막 절반수치)], [토끼굴 매도(출혈 2 + 저주 3 + 방어 20)]를 사용하는 증오에 찬 탈영병 산토입니다.' },
   BOSS_SIHYANG: { type: '👑 보스', desc: '[환영모자 트릭(방어 22 + 착란 1 + 저주 2)], [살랑거리는 귓속말(물리 16 + 상태이상 n)], [마녀의 티타임(방어 33 + 재생 2)], [광란의 버니합(물리 22 + 착란수치x4)]을 선보이는 토끼마녀 시향입니다.' },
   BOSS_ARCHANGEL_NAEL: { type: '👑 보스', desc: '[의념:승천자]를 두른 채 [검정 빗물 비옥 대지(재생 10 + 물리 9×10)], [순례 혈해 순교 시산(플레이어 방어 100 + 출혈 6)], [부정한 사육제(플레이어 40% 회복 + 불완전 시 자신 80 회복)], [시험(재생 5 + 저주 3 + 계약 5 부여 및 4턴 뒤 심판)]을 내리는 대천사토끼 나엘입니다.' },
-  DREAM_BOSS_MAFIA_MOLE: { type: '⭐ 흩어진 별빛', desc: '어느 세계에서는 굴토끼가 토끼굴의 정점에 올랐을지도 모릅니다. <1막> [의념:식구]와 막대한 [언데드(110~130)]를 거느린 채 [암흑 시술(언데드 수급)], [철문 개방(언데드 소모·출혈 부여)], [수혈과 탐식(출혈 비례 물리 피해 및 흡혈)]을 반복합니다. 쓰러뜨리면 <2막>이 열리며 양측 HP를 모두 회복하고 [의념:송곳니 5]를 각성해, [회광반조(현재 턴 수만큼 연타·출혈)], [회유술(버프·디버프 반감·양측 회복)], [흉계(3회 누적 시 전원 초기화 후 1막 회귀)]를 구사합니다.' }
+  DREAM_BOSS_MAFIA_MOLE: { type: '⭐ 흩어진 별빛', desc: '어느 세계에서는 굴토끼가 토끼굴의 정점에 올랐을지도 모릅니다. <1막> [의념:식구]와 막대한 [언데드(110~130)]를 거느린 채 [암흑 시술(언데드 수급)], [철문 개방(언데드 소모·출혈 부여)], [수혈과 탐식(출혈 비례 물리 피해 및 흡혈)]을 반복합니다. 쓰러뜨리면 <2막>이 열리며 양측 HP를 모두 회복하고 [의념:송곳니 5]를 각성해, [회광반조(현재 턴 수만큼 연타·출혈)], [회유술(버프·디버프 반감·양측 회복)], [흉계(3회 누적 시 전원 초기화 후 1막 회귀)]를 구사합니다.' },
+  DREAM_BOSS_WEALTH_GLORY: { type: '⭐ 흩어진 별빛', desc: '어쩌면 토끼마녀 시향은 위정자의 자리에 어울리는 묘재일지도 모릅니다. [천하인]은 양측에 [의념:승천자]와 [의념:책임자]를 부여하고 [인내]를 두르며(봉인 시 [강경책]으로 응징), [멸문지화(마지막 사용 카드 제외·독사검 5장·재생 1)], [만찬초대(독사검 5장·출혈 2·송곳니 10)], [희노애락(독사검 2배·저주 3·계약 1)], [의심병(독사검×2 연타·잔여 방어 파쇄 및 물리 20·독사검 절반 제거)], [세레나데(인내 미누적 시 최대 HP -300)]는 그녀의 일과입니다.' }
 };
 
 // 도감 설명: 버프 8종, 디버프 7종, 의념 7종
@@ -1774,7 +1811,8 @@ const StatusMeta = {
   CTX_CHIVALRY: { icon: '⚔️', desc: '스택당 [토끼기사의 지혜]의 피해량이 +8 증가합니다. (전투 종료 시까지 유지)' },
   CTX_TEMPEST: { icon: '🌪️', desc: '기본 타수가 2회 이상인 공격 카드의 타격 횟수를 스택당 1회 추가합니다. 자신의 턴이 시작될 때마다 스택이 1회 상승합니다.' },
   CTX_FANG: { icon: '🦷', desc: '전투 종료 시까지 자신의 턴 종료 시 적에게 [출혈]이 걸려 있다면, (출혈 스택 × 송곳니 스택)만큼 자신의 HP를 회복합니다.' },
-  CTX_FAMILY: { icon: '🎩', desc: '전투 내내 유지됩니다. 보유한 [언데드]는 강제 제거 시 전부 사라지지 않고 2~4스택만 감소하며, 제거 시 HP 40 회복 효과가 발동하지 않습니다. 또한 한 번에 50 이상의 피해를 입을 때마다 [언데드]를 추가로 2스택 상실합니다.' }
+  CTX_FAMILY: { icon: '🎩', desc: '전투 내내 유지됩니다. 보유한 [언데드]는 강제 제거 시 전부 사라지지 않고 2~4스택만 감소하며, 제거 시 HP 40 회복 효과가 발동하지 않습니다. 또한 한 번에 50 이상의 피해를 입을 때마다 [언데드]를 추가로 2스택 상실합니다.' },
+  CTX_RESPONSIBLE: { icon: '⚖️', desc: '전투 내내 유지됩니다. 보유한 버프와 디버프의 스택이 감소하거나 제거되지 않습니다. [보험]과 [언데드]를 획득할 수 없으며 이미 보유 중이라면 즉시 제거됩니다. [인내] 누적치가 400에 도달하면 즉시 400의 상태이상 피해를 입고 초과분은 다음 누적으로 이월됩니다.' }
 };
 
 // 랜덤 버프/디버프 추첨 풀:
@@ -1817,13 +1855,14 @@ const CardDB = {
       ['BLEED', 'CURSE'].forEach(id => {
         const inst = engine.statuses.get(t, id);
         if (inst && inst.stacks > 0) {
-          const stacks = inst.stacks;
-          dmg += StatusDB[id].calcNaturalTotalDamage(stacks);
-          engine.statuses.removeSpecific(t, id);
-          removed = true;
-          if (hasUnfairContract) {
-            const half = Math.floor(stacks * 0.5);
-            if (half > 0) refunds.push({ id, stacks: half });
+          const lost = engine.statuses.removeSpecific(t, id);
+          if (lost > 0) {
+            dmg += StatusDB[id].calcNaturalTotalDamage(lost);
+            removed = true;
+            if (hasUnfairContract) {
+              const half = Math.floor(lost * 0.5);
+              if (half > 0) refunds.push({ id, stacks: half });
+            }
           }
         }
       });
@@ -1942,8 +1981,8 @@ const CardDB = {
         return;
       }
       const pick = RNG.pickRandom(buffs);
-      engine.statuses.changeStacks(t, pick, -pick.stacks, 'REMOVE');
-      engine.statuses.apply(u, u, pick.id, 1);
+      const lost = engine.statuses.changeStacks(t, pick, -pick.stacks, 'REMOVE');
+      if (lost > 0) engine.statuses.apply(u, u, pick.id, 1);
     }
   },
   '016': { id: '016', name: '토끼굴의 기억', cost: 2, type: 'MAGIC', hits: 0, desc: '자신에게 인내 4 부여', play: (engine, u) => engine.statuses.apply(u, u, 'PATIENCE', 4) },
@@ -3190,7 +3229,6 @@ const EnemyDB = {
       }
     }
   },
-  // EnemyDB.DREAM_BOSS_MAFIA_MOLE 교체
   DREAM_BOSS_MAFIA_MOLE: {
     id: 'DREAM_BOSS_MAFIA_MOLE',
     name: '토끼굴의 마피아',
@@ -3381,12 +3419,252 @@ const EnemyDB = {
         }
       }
     }
+  },
+  DREAM_BOSS_WEALTH_GLORY: {
+    id: 'DREAM_BOSS_WEALTH_GLORY',
+    name: '부귀영화',
+    maxHp: 2000,
+    isBoss: false,
+    isElite: false,
+    isDreamBoss: true,
+
+    countViperBlades(player) {
+      return ['deck', 'hand', 'graveyard'].reduce(
+        (sum, zone) => sum + player[zone].filter(c => c.id === '014').length,
+        0
+      );
+    },
+
+    addViperBladesToDeck(engine, player, count) {
+      for (let i = 0; i < count; i++) {
+        const card = engine.createCardInstance('014');
+        const insertIdx = RNG.randInt(0, player.deck.length);
+        player.deck.splice(insertIdx, 0, card);
+      }
+      engine.notifyRender();
+    },
+
+    removeHalfViperBlades(engine, player) {
+      const total = this.countViperBlades(player);
+      const targetRemove = Math.floor(total / 2);
+      let removed = 0;
+
+      ['deck', 'graveyard', 'hand'].forEach(zone => {
+        for (let i = player[zone].length - 1; i >= 0 && removed < targetRemove; i--) {
+          if (player[zone][i].id === '014') {
+            const [gone] = player[zone].splice(i, 1);
+            if (player.combatTrackers.lastGraveyardCard?.uid === gone.uid) {
+              player.combatTrackers.lastGraveyardCard = null;
+            }
+            if (player.combatTrackers.lastPlayedCard?.uid === gone.uid) {
+              player.combatTrackers.lastPlayedCard = null;
+            }
+            removed++;
+          }
+        }
+      });
+      engine.notifyRender();
+      return removed;
+    },
+
+    onBattleStart(engine, self, player) {
+      self.openedWithChunhain = false;
+      self.cycleStep = 0;
+      self.patienceGainedSinceSerenade = false;
+      if (player && player.combatTrackers) {
+        player.combatTrackers.lastPlayedCard = null;
+      }
+    },
+
+    getAction(turn, engine, self, player) {
+      // ==================== [오프닝: 천하인 / 봉인 시 강경책] ====================
+      if (!self.openedWithChunhain) {
+        return {
+          name: '천하인',
+          type: 'MAGIC',
+          intent: '👑 모두에게 [의념:승천자]·[의념:책임자] 부여 + 🛡️ 부귀영화 인내 1 획득',
+          execute: () => {
+            self.openedWithChunhain = true;
+            self.cycleStep = 0;
+            self.patienceGainedSinceSerenade = false;
+            engine.emitLog(`👑 [천하인] "이 천하의 모든 책임과 업보는 영원히 지워지지 않는다."`, 'log-story');
+            [self, player].forEach(ent => {
+              engine.statuses.apply(self, ent, 'CTX_ASCENDANT', 1);
+              engine.statuses.apply(self, ent, 'CTX_RESPONSIBLE', 1);
+            });
+            engine.statuses.apply(self, self, 'PATIENCE', 1);
+          },
+          fallbackAction: {
+            name: '강경책',
+            type: 'ATTACK',
+            ignoreBlockers: true,
+            intent: '🦷 의념:송곳니 15 획득 + 💥 물리 44 (천하인 방해 응징)',
+            execute: () => {
+              engine.emitLog(`🔥 [강경책] 천하인의 선포를 방해한 대가로 서슬 퍼런 보복이 내려집니다!`, 'log-hit');
+              engine.statuses.apply(self, self, 'CTX_FANG', 15);
+              engine.executeAttack(self, player, 44);
+            }
+          }
+        };
+      }
+
+      // ==================== [본 사이클 5단계 순환] ====================
+      const step = (((self.cycleStep || 0) + Math.max(0, turn - engine.turn)) % 5 + 5) % 5;
+
+      switch (step) {
+        case 0: {
+          const lastCard = player.combatTrackers?.lastPlayedCard;
+          const targetDesc = lastCard ? `[${lastCard.name}] 전투 제외` : '마지막 사용 카드 제외(대상 없음)';
+          return {
+            name: '멸문지화',
+            type: 'MAGIC',
+            intent: `🔥 ${targetDesc} + 🐍 덱에 독사검 5장 추가 + 💚 재생 1 획득`,
+            execute: () => {
+              self.cycleStep = 1;
+              const targetCard = player.combatTrackers?.lastPlayedCard;
+              if (targetCard) {
+                let banished = false;
+                ['hand', 'deck', 'graveyard'].forEach(zone => {
+                  const idx = player[zone].findIndex(c => c.uid === targetCard.uid);
+                  if (idx !== -1) {
+                    player[zone].splice(idx, 1);
+                    banished = true;
+                  }
+                });
+                if (player.combatTrackers.lastGraveyardCard?.uid === targetCard.uid) {
+                  player.combatTrackers.lastGraveyardCard = null;
+                }
+                player.combatTrackers.lastPlayedCard = null;
+                if (banished) {
+                  engine.emitFloatingText(player, `${targetCard.name} 제외!`, 'fct-purple');
+                  engine.emitLog(`🔥 [멸문지화] 마지막으로 사용한 [${targetCard.name}] 카드가 이번 전투에서 제외되었습니다!`, 'log-hit');
+                } else {
+                  engine.emitLog(`🔥 [멸문지화] 대상 카드 [${targetCard.name}]은(는) 이미 전투에서 제외된 상태입니다.`, 'log-sys');
+                }
+              } else {
+                engine.emitLog(`🔥 [멸문지화] 제외할 마지막 사용 카드가 없습니다.`, 'log-sys');
+              }
+
+              this.addViperBladesToDeck(engine, player, 5);
+              engine.emitLog(`🐍 [멸문지화] 플레이어 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
+              engine.statuses.apply(self, self, 'REGEN', 1);
+            }
+          };
+        }
+
+        case 1:
+          return {
+            name: '만찬초대',
+            type: 'MAGIC',
+            intent: '🍷 덱에 독사검 5장 추가 + 🩸 출혈 2 부여 + 🦷 의념:송곳니 10 획득',
+            execute: () => {
+              self.cycleStep = 2;
+              this.addViperBladesToDeck(engine, player, 5);
+              engine.emitLog(`🍷 [만찬초대] 플레이어 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
+              engine.statuses.apply(self, player, 'BLEED', 2);
+              engine.statuses.apply(self, self, 'CTX_FANG', 10);
+            }
+          };
+
+        case 2: {
+          const curViper = this.countViperBlades(player);
+          return {
+            name: '희노애락',
+            type: 'MAGIC',
+            intent: `🎭 보유 독사검 2배(+${curViper}장 추가) + 💀 자신에게 저주 3 · 📜 계약 1 부여`,
+            execute: () => {
+              self.cycleStep = 3;
+              const addCount = this.countViperBlades(player);
+              if (addCount > 0) {
+                this.addViperBladesToDeck(engine, player, addCount);
+                engine.emitLog(`🎭 [희노애락] 플레이어의 [독사검]이 2배(+${addCount}장)로 불어났습니다!`, 'log-status');
+              } else {
+                engine.emitLog(`🎭 [희노애락] 불어날 [독사검]이 없습니다.`, 'log-sys');
+              }
+              engine.statuses.apply(self, self, 'CURSE', 3);
+              engine.statuses.apply(self, self, 'CONTRACT', 1);
+            }
+          };
+        }
+
+        case 3: {
+          const curViper = this.countViperBlades(player);
+          const hits = curViper * 2;
+          return {
+            name: '의심병',
+            type: 'ATTACK',
+            intent: `⚔️ 물리 2 × ${hits}타 (독사검 ${curViper}장×2) + 잔여 방어 파쇄 및 물리 20 + 독사검 절반 제거`,
+            execute: () => {
+              self.cycleStep = 4;
+              const nowViper = this.countViperBlades(player);
+              const totalHits = nowViper * 2;
+              if (totalHits > 0) {
+                engine.executeAttack(self, player, 2, null, totalHits);
+              } else {
+                engine.emitLog(`👁️ [의심병] 덱에 독사검이 없어 타격이 발생하지 않았습니다.`, 'log-sys');
+              }
+
+              if (!engine.combatEnded && player.armor > 0) {
+                const broken = player.armor;
+                player.armor = 0;
+                engine.emitFloatingText(player, '방어 파쇄!', 'fct-red');
+                engine.emitLog(`💥 [의심병] 잔여 방어도(${broken})를 전부 무너뜨리고 추가 일격을 가합니다!`, 'log-hit');
+                engine.executeAttack(self, player, 20, null, 1);
+              }
+
+              if (!engine.combatEnded) {
+                const removed = this.removeHalfViperBlades(engine, player);
+                if (removed > 0) {
+                  engine.emitLog(`🗑️ [의심병] 히스테리가 가라앉으며 [독사검] ${removed}장이 제거되었습니다.`, 'log-sys');
+                }
+              }
+            }
+          };
+        }
+
+        case 4: {
+          const willLoseHp = !self.patienceGainedSinceSerenade;
+          return {
+            name: '세레나데',
+            type: 'MAGIC',
+            intent: willLoseHp
+              ? '🎵 인내 추가 누적 없음 -> 💔 부귀영화 최대 HP 300 상실 예정!'
+              : '🎵 인내 추가 누적 감지됨 -> 최대 HP 상실 없음 (카운터 초기화)',
+            execute: () => {
+              self.cycleStep = 0;
+              if (!self.patienceGainedSinceSerenade) {
+                const prevMax = self.maxHp;
+                if (prevMax <= 300) {
+                  self.maxHp = 1;
+                  self.hp = 0;
+                  engine.emitFloatingText(self, '최대 HP 붕괴!', 'fct-red');
+                  engine.emitLog(`🎵 [세레나데] 아무도 건드리지 않은 권좌가 스스로 무너져 내렸습니다!`, 'log-story');
+                  engine.notifyRender();
+                  engine.checkCombatEnd();
+                } else {
+                  self.maxHp = prevMax - 300;
+                  self.hp = Math.min(self.hp, self.maxHp);
+                  engine.emitFx(self, 'fx-red');
+                  engine.emitFloatingText(self, '최대 HP -300', 'fct-red');
+                  engine.emitLog(`🎵 [세레나데] 지난 세레나데 이후 인내가 쌓이지 않아 부귀영화의 최대 HP가 300 감소합니다! (${prevMax} -> ${self.maxHp})`, 'log-hit');
+                  engine.notifyRender();
+                }
+              } else {
+                engine.emitLog(`🎵 [세레나데] 인내에 누적된 적의가 권좌를 지탱합니다. (최대 HP 유지)`, 'log-sys');
+              }
+              self.patienceGainedSinceSerenade = false;
+            }
+          };
+        }
+      }
+    }
   }
 };
 
 // 몽중몽 고정 보스 등장 순서 (별빛 0 -> 1번 보스, 별빛 1 -> 2번 보스...)
 const DREAM_BOSS_ORDER = [
-  'DREAM_BOSS_MAFIA_MOLE'
+  'DREAM_BOSS_MAFIA_MOLE',
+  'DREAM_BOSS_WEALTH_GLORY'
 ];
 
 /**
@@ -3436,6 +3714,7 @@ class Entity {
     this.graveyard = [];          // 버려진 카드 더미 (묘지)
     this.runTrackers = { hitTakenCount: 0 };          // 런 전체 누적 기록 ([013 복수]용 피격 횟수)
     this.combatTrackers = { lastGraveyardCard: null };// 단일 전투 내 기록 ([024 끼토산]용 직전 묘지 카드)
+    this.combatTrackers = { lastGraveyardCard: null, lastPlayedCard: null }; // 직전 사용 카드
   }
 
   /**
@@ -3473,7 +3752,17 @@ class StatusManager {
     const def = StatusDB[statusId];
     if (!def || stacks <= 0) return;
 
-    // 1) 디버프 면역([의념:구도자], [의념:승천자]) 보유 시 무효화
+    // 1-A) 특정 상태 획득 금지([의념:책임자]의 보험·언데드 금지 등) 체크
+    const bannedBy = target.getPassives().find(({ def: pDef }) =>
+      Array.isArray(pDef.preventStatusIds) && pDef.preventStatusIds.includes(statusId)
+    );
+    if (bannedBy) {
+      this.engine.emitFloatingText(target, '획득 불가!', 'fct-white');
+      this.engine.emitLog(`🚫 [${bannedBy.def.name}] 효과로 ${target.name}은(는) [${def.name}] 상태를 획득할 수 없습니다!`, 'log-sys');
+      return;
+    }
+
+    // 1-B) 디버프 면역([의념:구도자], [의념:승천자]) 보유 시 무효화
     if (def.category === STATUS_CATEGORY.DEBUFF) {
       const blocker = target.getPassives().find(({ def: pDef }) =>
         pDef.preventDebuff || (Array.isArray(pDef.preventDebuffIds) && pDef.preventDebuffIds.includes(statusId))
@@ -3487,7 +3776,7 @@ class StatusManager {
 
     let finalStacks = stacks;
 
-    // 2) 시전자(caster)의 부여량 증가 패시브 적용 (회중시계, 검은 양초 등)
+    // 2) 시전자(caster)의 부여량 증가 패시브 적용
     if (caster) {
       caster.getPassives().forEach(({ def: pDef, inst }) => {
         if (pDef.modifyStatusAppliedStacks) {
@@ -3496,7 +3785,7 @@ class StatusManager {
       });
     }
 
-    // 3) 피시전자(target)의 획득량 증가 패시브 적용 (간호키트, 눈사람 과자, 검은 체질 등)
+    // 3) 피시전자(target)의 획득량 증가 패시브 적용
     if (target) {
       target.getPassives().forEach(({ def: pDef, inst }) => {
         if (pDef.modifyStatusReceivedStacks) {
@@ -3505,7 +3794,7 @@ class StatusManager {
       });
     }
 
-    // 4) 기존 상태가 있으면 스택 합산, 없으면 새 인스턴스 생성 후 초기화(onInit)
+    // 4) 기존 상태 합산 또는 신규 생성
     let inst = this.get(target, statusId);
     if (inst) inst.stacks += finalStacks;
     else {
@@ -3514,7 +3803,9 @@ class StatusManager {
       target.statuses.push(inst);
     }
 
-    // 5) 카테고리별 테두리 색상(fx) 및 플로팅 텍스트(fct) 출력
+    // 5) 적용 직후 즉시 실행 훅 (예: 책임자 부여 시 기존 보험·언데드 숙청)
+    if (def.onApply) def.onApply(this.engine, target, inst);
+
     const fx = def.category === STATUS_CATEGORY.DEBUFF ? 'fx-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fx-blue' : 'fx-yellow');
     const fct = def.category === STATUS_CATEGORY.DEBUFF ? 'fct-purple' : (def.category === STATUS_CATEGORY.BUFF ? 'fct-cyan' : 'fct-white');
 
@@ -3549,9 +3840,24 @@ class StatusManager {
   changeStacks(owner, instance, delta, mode = 'DISPEL') {
     let actualDelta = delta;
     let skipOnRemoved = false;
+    const def = StatusDB[instance.id];
 
+    // 1) [의념:책임자] 버프/디버프 스택 감소 및 제거 차단 (금지 대상인 보험·언데드 소멸은 예외)
+    if (actualDelta < 0 && def && (def.category === STATUS_CATEGORY.BUFF || def.category === STATUS_CATEGORY.DEBUFF)) {
+      const isBannedExempt = (instance.id === 'INSURANCE' || instance.id === 'UNDEAD');
+      const lockPassive = !isBannedExempt && owner.getPassives().find(({ def: pDef }) => pDef.preventStackDecrease);
+      if (lockPassive) {
+        if (mode === 'REMOVE') {
+          this.engine.emitFloatingText(owner, '고정됨!', 'fct-white');
+          this.engine.emitLog(`🔒 [${lockPassive.def.name}] 효과로 ${owner.name}의 [${def.name}] 상태가 감소/제거되지 않습니다!`, 'log-sys');
+        }
+        return 0;
+      }
+    }
+
+    // 2) [의념:식구] 등 강제 제거량 변조 훅
     if (actualDelta < 0 && mode === 'REMOVE') {
-      const guard = owner.getPassives().find(({ def }) => def.modifyRemoveDelta);
+      const guard = owner.getPassives().find(({ def: pDef }) => pDef.modifyRemoveDelta);
       if (guard) {
         const res = guard.def.modifyRemoveDelta(actualDelta, instance, this.engine, owner, guard.inst);
         if (res && typeof res === 'object') {
@@ -3568,12 +3874,10 @@ class StatusManager {
     if (instance.stacks <= 0) {
       const idx = owner.statuses.indexOf(instance);
       if (idx !== -1) owner.statuses.splice(idx, 1);
-      const def = StatusDB[instance.id];
       this.engine.emitLog(`💨 [${mode === 'DISPEL' ? '해제' : '제거'}] ${owner.name}의 [${def.name}] 소멸`, 'log-status');
       if (mode === 'DISPEL' && def.onDispel) def.onDispel(this.engine, owner, instance);
       if (mode !== 'CONSUME' && !skipOnRemoved && def.onRemoved) def.onRemoved(this.engine, owner, instance);
     } else if (actualLost > 0 && mode === 'REMOVE') {
-      const def = StatusDB[instance.id];
       this.engine.emitLog(`🎩 [제거 저항] ${owner.name}의 [${def.name}] ${actualLost}스택만 감소 (남은 스택:${instance.stacks})`, 'log-status');
     }
     this.engine.notifyRender();
@@ -3710,6 +4014,19 @@ class CombatEngine {
     const primaryBlocker = findBlocker(primaryAction);
     if (!primaryBlocker) {
       return { action: primaryAction, blocker: null, isFallback: false };
+    }
+
+    // 전용 대체 행동(예: 천하인 봉인 시 강경책)이 지정된 경우 최우선 적용
+    if (primaryAction.fallbackAction) {
+      const fb = primaryAction.fallbackAction;
+      if (fb.ignoreBlockers || !findBlocker(fb)) {
+        return {
+          action: fb,
+          blocker: primaryBlocker,
+          isFallback: true,
+          originalName: primaryAction.name
+        };
+      }
     }
 
     // 2. 예정 행동이 봉인되었다면(예: 난투로 MAGIC 차단), 이후 최대 12턴 패턴을 탐색해 실행 가능한 대체 행동 선택
@@ -3866,6 +4183,20 @@ class CombatEngine {
 
     this.notifyRender();
     this.checkCombatEnd();
+
+    // 영구 인내(책임자 등)가 400 이상 누적되면 즉시 400 상태이상 피해 폭발 후 초과분 이월
+    if (packet.patienceOverflowInst && !this.combatEnded && target.hp > 0) {
+      const pInst = packet.patienceOverflowInst;
+      while (pInst.accumulated >= 400 && !this.combatEnded && target.hp > 0) {
+        pInst.accumulated -= 400;
+        this.emitLog(`💥 [인내 과부하] ${target.name}의 인내 누적치가 400에 도달해 폭발합니다! (이월 잔여: ${pInst.accumulated})`, 'log-hit');
+        this.dealDamage(new DamagePacket({
+          source: null, target, amount: 400,
+          type: DAMAGE_TYPE.STATUS, isStrike: false,
+          reason: '인내 과부하(400)'
+        }));
+      }
+    }
   }
 
   // 방어도 획득 처리 (빙하코트 +5 등 획득량 변조 패시브 적용)
@@ -3982,6 +4313,7 @@ class CombatEngine {
 
     this.player.energy -= cost;
     this.player.hand.splice(handIndex, 1);
+    this.player.combatTrackers.lastPlayedCard = card; // 👈 [멸문지화] 대상 추적
     this.emitLog(`🃏 [카드 발동] ${this.player.name} -> [${card.name}]`, 'log-sys');
 
     this.resolveCardEffect(card, this.player, this.enemy, false);
@@ -5478,6 +5810,77 @@ const AppUI = {
     this.toggleModal('modal-menu', true);
   },
 
+  // 초상화 영역(#box-player / #box-enemy) 클릭 시 상세 상태 모달 열기
+  onActorBoxClick(event, side) {
+    // 하단 상태이상 배지(.s-tag)를 직접 누른 경우 기존 개별 설명 팝업 유지
+    if (event.target.closest('.s-tag')) return;
+
+    // 스토리 대사 오버레이가 떠 있거나 로그 재생 대기 중이면 화면 넘김(버블링) 우선
+    const vnOverlay = document.getElementById('combat-vn-overlay');
+    if (vnOverlay && !vnOverlay.classList.contains('hidden')) return;
+    if (this.presentationQueue.length > 0) return;
+
+    event.stopPropagation();
+    this.openActorDetailModal(side);
+  },
+
+  // 플레이어 또는 적의 HP · 방어막 · 의념 · 버프 · 디버프 전체를 한눈에 보여주는 모달
+  openActorDetailModal(side) {
+    const ent = side === 'player' ? this.engine.player : this.engine.enemy;
+    if (!ent) return;
+
+    const renderGroup = (title, category, colorVar) => {
+      const list = ent.statuses.filter(s => StatusDB[s.id]?.category === category && s.stacks > 0);
+      if (list.length === 0) {
+        return `
+          <div style="margin-top:8px;">
+            <div style="font-size:11.5px; font-weight:bold; color:${colorVar}; margin-bottom:4px;">${title} (0)</div>
+            <div style="font-size:11px; color:var(--text-sub); padding-left:4px;">없음</div>
+          </div>
+        `;
+      }
+      const itemsHtml = list.map(s => {
+        const def = StatusDB[s.id];
+        const meta = StatusMeta[s.id] || { icon: '📌', desc: '설명 없음' };
+        const accBadge = s.accumulated > 0
+          ? ` <span style="color:var(--fx-yellow);">[누적: ${s.accumulated}]</span>`
+          : '';
+        return `
+          <div style="background:var(--bg-card); border-left:3px solid ${colorVar}; border-radius:4px; padding:6px 8px; margin-bottom:5px;">
+            <div style="font-weight:bold; color:${colorVar}; font-size:12px;">
+              ${meta.icon} ${def.name} ×${s.stacks}${accBadge}
+            </div>
+            <div style="font-size:11px; color:#a9b1d6; line-height:1.35; margin-top:2px;">${meta.desc}</div>
+          </div>
+        `;
+      }).join('');
+      return `
+        <div style="margin-top:8px;">
+          <div style="font-size:11.5px; font-weight:bold; color:${colorVar}; margin-bottom:4px;">${title} (${list.length})</div>
+          ${itemsHtml}
+        </div>
+      `;
+    };
+
+    const extraStat = side === 'player'
+      ? `<span>⚡ 활력: <b>${ent.energy} / ${ent.maxEnergy}</b></span>`
+      : (ent.tierDamageBonus > 0 ? `<span>⚔️ 티어 보너스: <b>+${ent.tierDamageBonus}</b></span>` : '');
+
+    const html = `
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:8px 10px; display:flex; flex-wrap:wrap; gap:10px; font-size:12px;">
+        <span>❤️ HP: <b style="color:var(--fx-red);">${ent.hp} / ${ent.maxHp}</b></span>
+        <span>🛡️ 방어막: <b style="color:var(--fx-blue);">${ent.armor}</b></span>
+        ${extraStat}
+      </div>
+      ${renderGroup('✨ 의념', STATUS_CATEGORY.CONTEXT, 'var(--fx-yellow)')}
+      ${renderGroup('💠 버프', STATUS_CATEGORY.BUFF, 'var(--fx-blue)')}
+      ${renderGroup('☠️ 디버프', STATUS_CATEGORY.DEBUFF, 'var(--fx-purple)')}
+    `;
+
+    const label = side === 'player' ? `🛡️ ${ent.name} 상세 상태` : `👾 ${ent.name} 상세 상태`;
+    this.openInfo(label, html);
+  },
+
   // 마스터 덱(MASTER) / 남은 덱(DECK) / 무덤(GRAVE) 카드 목록 팝업 출력
   openPileViewer(pileType) {
     let cards = [];
@@ -5727,7 +6130,7 @@ const AppUI = {
       }
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.11 흩어진 별빛 1 | 기사도 ${maxFloor}층 + 몽중몽 별빛 ${DREAM_BOSS_ORDER.length}개`;
+      subEl.innerHTML = `v1.12 흩어진 별빛 2 | 기사도 ${maxFloor}층 + 몽중몽 별빛 ${DREAM_BOSS_ORDER.length}개`;
     }
   },
 
