@@ -733,7 +733,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.13)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.14)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -847,7 +847,8 @@ const PatchNotesDB = [
   { version: 'v1.10 (2026.11.20.)', title: '기사도:몽중몽 업데이트', desc: '' },
   { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' },
   { version: 'v1.12 (2026.11.21.)', title: '흩어진 별빛 2: 부귀영화, 초상화 누르면 방어도/버프/디버프 표시 모달 추가, 인내/안개얼음성채 시각 피드백 추가', desc: '' },
-  { version: 'v1.13 (2026.11.24.)', title: '전투 시 적 메세지 개선, ATTACK, MAGIC, NONE, SKILL 표시 추가, 계약+난투,실명 로직 픽스, 실명 효과 명료화 픽스', desc: '' }
+  { version: 'v1.13 (2026.11.24.)', title: '전투 시 적 메세지 개선, ATTACK, MAGIC, NONE, SKILL 표시 추가, 계약+난투,실명 로직 픽스, 실명 효과 명료화 픽스', desc: '' },
+  { version: 'v1.14 (2026.11.14.)', title: '토끼기사의 지혜가 마법카드로 변경되어있던 이슈 롤백(1.06쯤 발생한 것으로 추정), 보스 나엘 문법 오류로 인한 크랙 해결', desc: '' }
 ];
 
 /**
@@ -1907,7 +1908,7 @@ const CardDB = {
   '006': { id: '006', name: '보존계약', cost: 2, type: 'MAGIC', hits: 0, desc: '적에게 계약 2 부여', play: (engine, u, t) => engine.statuses.apply(u, t, 'CONTRACT', 2) },
   '007': { id: '007', name: '반격', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 도깨비바늘 1 부여', play: (engine, u) => engine.statuses.apply(u, u, 'GOBLIN_NEEDLE', 1) },
   '008': {
-    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'MAGIC', hits: 0,
+    id: '008', name: '토끼기사의 지혜', cost: 2, type: 'ATTACK', hits: 0,
     desc: '사용 후 묘지로 갈 때 적에게 물리 40 피해. [의념:기사도] 1을 획득합니다.',
     play: (engine, u, t, isReplay) => {
       // 끼토산/금고 재사용 시에도 설정이 켜져 있으면 동일하게 발동
@@ -3200,14 +3201,15 @@ const EnemyDB = {
         case 3: {
           const hasTrial = !!self.trialActive;
           const curCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
+          const actionType = (hasTrial && curCurse >= 1) ? 'ATTACK' : 'MAGIC'; // 👈 이 1줄 추가
           const judgePreview = hasTrial
             ? (curCurse >= 1 ? `⚖️ [실망] 토끼기사에게 물리 66 피해 (현재 저주 ${curCurse}) + ` : `⚖️ [환희] 대천사토끼 나엘이 저주 15 획득 + `)
             : '';
 
           return {
             name: hasTrial ? '시험의 심판과 갱신' : '시험',
-            type: (hasTrial && curCurse >= 1) ? 'ATTACK' : 'MAGIC',
-            intent: `[${actionType}] ${judgePreview} 📜 토끼기사에게 재생 5 · 저주 3 · 계약 5 부여, 시험을 시작합니다`,
+            type: actionType,
+            intent: `[${actionType}] ${judgePreview}📜 토끼기사에게 재생 5 · 저주 3 · 계약 5 부여, 시험을 시작합니다`,
             execute: () => {
               if (self.trialActive) {
                 const nowCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
