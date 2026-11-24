@@ -847,7 +847,7 @@ const PatchNotesDB = [
   { version: 'v1.10 (2026.11.20.)', title: '기사도:몽중몽 업데이트', desc: '' },
   { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' },
   { version: 'v1.12 (2026.11.21.)', title: '흩어진 별빛 2: 부귀영화, 초상화 누르면 방어도/버프/디버프 표시 모달 추가, 인내/안개얼음성채 시각 피드백 추가', desc: '' },
-  { version: 'v1.13 (2026.11.24.)', title: '전투 시 적 메세지 개선, ATTACK, MAGIC, NONE, SKILL 표시 추가, 계약+난투,실명 로직 픽스, 실명+온히트 로직 픽스 예정', desc: '' }
+  { version: 'v1.13 (2026.11.24.)', title: '전투 시 적 메세지 개선, ATTACK, MAGIC, NONE, SKILL 표시 추가, 계약+난투,실명 로직 픽스, 실명 효과 명료화 픽스', desc: '' }
 ];
 
 /**
@@ -1515,14 +1515,15 @@ const StatusDB = {
     decayTiming: DECAY_TIMING.CASTER_TURN_START,
     canPlayCard: (card) => card.type !== 'MAGIC'
   },
-    BLIND: {
+  BLIND: {
     id: 'BLIND', code: '006', name: '실명', category: STATUS_CATEGORY.DEBUFF, priority: 100,
     decayTiming: DECAY_TIMING.CASTER_TURN_START,
-    modifyOutgoingDamage: (packet) => {
+    modifyOutgoingDamage: (packet, engine) => {
       if (packet.type === DAMAGE_TYPE.PHYSICAL && packet.amount > 0) {
         packet.amount = 0;
         packet.missed = true;
-        packet.logs.push('실명(빗나감)');
+        packet.logs.push('실명(타격 피해 0)');
+        engine.emitFloatingText(packet.target, '🌑실명(0)', 'fct-white fct-sm');
       }
     }
   },
@@ -1794,7 +1795,7 @@ const StatusMeta = {
   CONTRACT: { icon: '📜', desc: '보유자의 턴 종료 시 스택 1 감소. 유지되는 동안 다른 디버프 스택이 감소하지 않습니다.' },
   DELIRIUM: { icon: '🧪', desc: '보유자의 턴이 끝날 때 스택×5 상태이상 피해를 입고 스택이 1 증가합니다.' },
   BRAWL: { icon: '💢', desc: '시전자의 턴 시작 시 스택 1 감소. 보유 중에는 마법 카드를 사용할 수 없습니다.' },
-  BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 모든 물리 피해가 빗나가 피해가 0이 됩니다.' },
+  BLIND: { icon: '🌑', desc: '시전자의 턴 시작 시 스택 1 감소. 자신이 입히는 모든 물리 피해가 피해가 0이 됩니다.' },
   CONCUSSION: { icon: '💫', desc: '보유자의 턴 종료 시 스택 1 감소. 모든 카드와 행동을 사용할 수 없습니다.' },
   GOBLIN_NEEDLE: { icon: '🌵', desc: '피격될 때마다 공격자에게 스택×5 물리 피해를 입힙니다.' },
   VIPER_BLADE: { icon: '🗡️', desc: '보유자의 턴 종료 시 스택이 1 감소합니다. 유지되는 동안 모든 직접 타격마다 스택×2의 추가 물리 피해를 입힙니다.' },
@@ -1931,7 +1932,7 @@ const CardDB = {
   '010': { id: '010', name: '얼음방패', cost: 1, type: 'MAGIC', hits: 0, desc: '자신에게 방어도 18 부여', play: (engine, u) => engine.gainArmor(u, 18, '얼음방패') },
   '011': {
     id: '011', name: '용자의 행운', cost: 1, type: 'ATTACK', hits: 1,
-    desc: '타수 1, 물리 데미지 10~30. 피해량이 30 이상이면 활력 +1 회복 및 카드 1장 드로우',
+    desc: '타수 1, 물리 데미지 10~30. 수치가 30 이상이 나오면 활력 +1 회복 및 카드 1장 드로우',
     play: (engine, u, t) => {
       const hasBlackTag = u.relics.some(r => r.id === '022');
       engine.executeAttack(
@@ -4176,7 +4177,7 @@ class CombatEngine {
 
     // 8단계: 빗나가지 않은 직접 타격 피격 후 반응 (피격 횟수 누적, [도깨비바늘] 반격, [불굴의 털], [피 묻은 붕대])
     // ※ [045 피해망상]은 자해 타격이지만 paranoiaRedirect 플래그를 통해 예외적으로 반격 트리거를 허용함
-    if (packet.isStrike && !packet.missed && (source !== target || packet.paranoiaRedirect)) {
+    if (packet.isStrike && (source !== target || packet.paranoiaRedirect)) {
       target.runTrackers.hitTakenCount += 1;
       target.getPassives().forEach(({ def, inst }) => {
         if (def.onAfterBeStruck) def.onAfterBeStruck(this, target, source, packet, inst);
