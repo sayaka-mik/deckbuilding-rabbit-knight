@@ -733,7 +733,7 @@ const SaveLedger = {
 
   // 현재 data 객체를 "key = value" 형태의 여러 줄 텍스트로 변환 (세이브 기록장 출력용)
   exportText() {
-    const lines = ['# Sir Mad Boomer Save Data (v1.12)'];
+    const lines = ['# Sir Mad Boomer Save Data (v1.13)'];
     for (const [k, v] of Object.entries(this.data)) {
       lines.push(`${k} = ${v}`);
     }
@@ -846,7 +846,8 @@ const PatchNotesDB = [
   { version: 'v1.09 (2026.11.20.)', title: '빠른 진행(전투로그) 기능 추가, 밸런스 패치: 온기가 남은 검집 하향(방어도 7 -> 5), 독검 하향(수치 부여 4 -> 3), 토끼남작의 이빨 하향(회복량 4 -> 3)', desc: '' },
   { version: 'v1.10 (2026.11.20.)', title: '기사도:몽중몽 업데이트', desc: '' },
   { version: 'v1.11 (2026.11.21.)', title: '흩어진 별빛 1: 토끼굴의 마피아', desc: '' },
-  { version: 'v1.12 (2026.11.21.)', title: '흩어진 별빛 1: 부귀영화, 초상화 누르면 방어도/버프/디버프 표시 모달 추가, 인내/안개얼음성채 시각 피드백 추가', desc: '' }
+  { version: 'v1.12 (2026.11.21.)', title: '흩어진 별빛 2: 부귀영화, 초상화 누르면 방어도/버프/디버프 표시 모달 추가, 인내/안개얼음성채 시각 피드백 추가', desc: '' },
+  { version: 'v1.13 (2026.11.24.)', title: '전투 시 적 메세지 개선, ATTACK, MAGIC, NONE, SKILL 표시 추가, 계약+난투,실명 로직 픽스, 실명+온히트 로직 픽스 예정', desc: '' }
 ];
 
 /**
@@ -2373,10 +2374,10 @@ const EnemyDB = {
     getAction(turn, engine, self, player) {
       const cycle = (turn - 1) % 2;
       if (cycle === 0) {
-        return { name: '흙먼지 돌진', intent: '⚔️ 물리 14', execute: () => engine.executeAttack(self, player, 14) };
+        return { name: '흙먼지 돌진', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 14 피해', execute: () => engine.executeAttack(self, player, 14) };
       }
       return {
-        name: '굴 파기', type: 'MAGIC', intent: '🛡️ 방어 14 + ⚔️ 물리 8',
+        name: '굴 파기', type: 'MAGIC', intent: '[MAGIC] 🛡️ 굴토끼가 방어 14 획득 + ⚔️ 토끼기사에게 물리 8 피해',
         execute: () => { engine.gainArmor(self, 14, '굴 파기'); engine.executeAttack(self, player, 8); }
       };
     }
@@ -2388,13 +2389,13 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '태엽 감기', type: 'MAGIC', intent: '🛡️ 방어 16 + 🌵 도깨비바늘 1',
+            name: '태엽 감기', type: 'MAGIC', intent: '[MAGIC] 🛡️ 태엽토끼가 방어 16 획득 + 🌵 도깨비바늘 1 획득',
             execute: () => { engine.gainArmor(self, 16, '태엽 감기'); engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1); }
           };
         case 1:
-          return { name: '빨리감기', intent: '💥 강타: 물리 32', execute: () => engine.executeAttack(self, player, 32) };
+          return { name: '빨리감기', intent: '[ATTACK] 💥 토끼기사에게 물리 32 피해', execute: () => engine.executeAttack(self, player, 32) };
         case 2:
-          return { name: '일시정지', intent: '💤 행동 없음', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
+          return { name: '일시정지', intent: '[NONE] 💤 일시정지', execute: () => engine.log('⚙️ 태엽토끼의 태엽이 풀려 움직이지 못합니다.', 'log-sys') };
       }
     }
   },
@@ -2404,12 +2405,12 @@ const EnemyDB = {
       const cycle = (turn - 1) % 2;
       if (cycle === 0) {
         return {
-          name: '연속 찌르기', intent: '⚔️ 물리 5 × 3타',
+          name: '연속 찌르기', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 5x3 피해',
 	  execute: () => engine.executeAttack(self, player, 5, null, 3) // 👈 3타 전달
         };
       }
       return {
-        name: '독액 살포', intent: '⚔️ 물리 10 + 🩸 출혈 2',
+        name: '독액 살포', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 10 피해 + 🩸 출혈 2 부여',
         execute: () => { engine.executeAttack(self, player, 10); engine.statuses.apply(self, player, 'BLEED', 2); }
       };
     }
@@ -2427,7 +2428,7 @@ const EnemyDB = {
           return {
             name: '약초 다지기',
             type: 'MAGIC',
-            intent: '💚 재생 3 + 🛡️ 방어 9',
+            intent: '[MAGIC] 💚 비시즌 석궁병 제나가 재생 3 + 🛡️ 방어 9 획득',
             execute: () => {
               engine.statuses.apply(self, self, 'REGEN', 3);
               engine.gainArmor(self, 9, '약초 다지기');
@@ -2436,13 +2437,13 @@ const EnemyDB = {
         case 1: // 2턴, 5턴
           return {
             name: '비시즌 사격',
-            intent: '⚔️ 다단히트: 물리 7 × 3타',
+            intent: '[ATTACK] ⚔️ 토끼기사에게 물리 7×3 피해',
             execute: () => engine.executeAttack(self, player, 7, null, 3) // 👈3타전달
           };
         case 2: // 3턴, 6턴
           return {
             name: '토끼풀 찜질',
-            intent: '💚 재생 2 + ⚔️ 물리 13',
+            intent: '[ATTACK] 💚 비시즌 석궁병 제나가 재생 2 획득 + ⚔️ 토끼기사에게 물리 13 피해',
             execute: () => {
               engine.statuses.apply(self, self, 'REGEN', 2);
               engine.executeAttack(self, player, 13);
@@ -2457,7 +2458,7 @@ const EnemyDB = {
       // 6턴째 HP가 최대치(온전한 상태)라면 특수 승리 판정
       if (turn === 6 && self.hp === self.maxHp) {
         return {
-          name: '슬퍼하지 마세요', type: 'SKILL', ignoreBlockers: true, intent: '✨ 평화 (HP 20% 회복 및 특별 보상)',
+          name: '슬퍼하지 마세요', type: 'SKILL', ignoreBlockers: true, intent: '[SKILL] ✨ 평화 (HP 20% 회복 및 특별 보상)',
           execute: () => {
             self.peaceAchieved = true;
             engine.heal(player, Math.floor(player.maxHp * 0.2), '슬퍼하지 마세요');
@@ -2472,7 +2473,7 @@ const EnemyDB = {
       const cycle = (turn - 1) % 2;
       if (cycle === 0) {
         return {
-          name: '두려워 마세요', type: 'MAGIC', intent: '🛡️ 방어막 초기화 + 🧪 착란 2 + 🛡️ 방어 10 획득',
+          name: '두려워 마세요', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼기사의 방어막 초기화 + 🧪 토끼기사에게 착란 2 부여 + 🛡️ 토끼수녀 나엘이 방어 10 획득',
           execute: () => {
             if (player.armor > 0) {
               player.armor = 0;
@@ -2485,7 +2486,7 @@ const EnemyDB = {
         };
       }
       return {
-        name: '싸우지 마세요', type: 'MAGIC', intent: '🛡️ 방어막 초기화 + 🧪 착란 1 + 🛡️ 인내 2 획득',
+        name: '싸우지 마세요', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼기사의 방어막 초기화 + 🧪 토끼기사에게 착란 1 부여 + 🛡️ 토끼수녀 나엘이 인내 2 획득',
         execute: () => {
           if (player.armor > 0) {
             player.armor = 0;
@@ -2507,7 +2508,7 @@ const EnemyDB = {
           return {
             name: '퀸즈겜빗',
             type: 'MAGIC',
-            intent: '🎲 50% 확률로 모두에게 랜덤 버프/디버프 2종 2스택 부여 (총 4회)',
+            intent: '[MAGIC] 🎲 50% 확률로 모두에게 랜덤 버프/디버프 2종 2스택 부여 (총 4회)',
             execute: () => {
               let hitCount = 0;
 
@@ -2530,7 +2531,7 @@ const EnemyDB = {
         case 1:
           return {
             name: '허풍쟁이',
-            intent: '⚔️ 물리 5 + ✨ 모두의 버프/디버프 제거 (3종류 이상 제거 시 추가 피해)',
+            intent: '[ATTACK] ⚔️ 토끼기사에게 물리 5 피해 + ✨ 모두의 버프/디버프 제거 (3종류 이상 지웠다면 추가 물리 30 피해)',
             execute: () => {
               engine.executeAttack(self, player, 5);
               const r1 = engine.statuses.removeAll(self, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
@@ -2550,7 +2551,7 @@ const EnemyDB = {
           return {
             name: '무아지경',
             type: 'MAGIC',
-            intent: '⚡ 모두에게 설리반 1~2 랜덤 부여',
+            intent: '[MAGIC] ⚡ 모두에게 설리반 1~2 랜덤 부여',
             execute: () => {
               engine.statuses.apply(self, player, 'SULLIVAN', RNG.randInt(1, 2));
               engine.statuses.apply(self, self, 'SULLIVAN', RNG.randInt(1, 2));
@@ -2566,7 +2567,7 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '방한대책', type: 'MAGIC', intent: '🌵 도깨비바늘 1 + 💚 재생 2 획득',
+            name: '방한대책', type: 'MAGIC', intent: '[MAGIC] 🌵 눈토끼 우메가 도깨비바늘 1 + 💚 재생 2 획득',
             execute: () => {
               engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1);
               engine.statuses.apply(self, self, 'REGEN', 2);
@@ -2574,7 +2575,7 @@ const EnemyDB = {
           };
         case 1:
           return {
-            name: '장작패기', intent: '⚔️ 물리 24 + 💚 재생 1 획득',
+            name: '장작패기', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 24 피해 + 💚 눈토끼 우메가 재생 1 획득',
             execute: () => {
               engine.executeAttack(self, player, 24);
               engine.statuses.apply(self, self, 'REGEN', 1);
@@ -2582,7 +2583,7 @@ const EnemyDB = {
           };
         case 2:
           return {
-            name: '고집쟁이', intent: '⚔️ 물리 13 + 💢 난투 2 부여 + 💚 플레이어에게 재생 1 부여',
+            name: '고집쟁이', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 13 피해 + 💢 난투 2 부여 + 💚 재생 1 부여',
             execute: () => {
               engine.executeAttack(self, player, 13);
               engine.statuses.apply(self, player, 'BRAWL', 2);
@@ -2614,7 +2615,7 @@ const EnemyDB = {
         return {
           name: `유비무환 (${left}/${maxCleanse})`,
           type: 'MAGIC',
-          intent: `✨ 즉시 정화 — 보유 디버프 전부 제거 (잔량 ${left}/${maxCleanse})`,
+          intent: `[MAGIC] ✨ 시즌 제나가 보유 디버프 전부 제거 (잔량 ${left}/${maxCleanse})`,
           execute: () => {
             self.cleanseUsed = (self.cleanseUsed || 0) + 1;
             const remain = Math.max(0, maxCleanse - self.cleanseUsed);
@@ -2630,7 +2631,7 @@ const EnemyDB = {
       const stockNote = left > 0 ? `유비무환 잔량 ${left}/${maxCleanse}` : `유비무환 소진`;
       return {
         name: '단궁난무',
-        intent: `⚔️ 물리 6 × 6타 (${stockNote})`,
+        intent: `[ATTACK] ⚔️ 토끼기사에게 물리 6×6 피해 (${stockNote})`,
         execute: () => engine.executeAttack(self, player, 6, null, 6)
       };
     }
@@ -2644,18 +2645,18 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '겨울의 장막', type: 'MAGIC', intent: '🪞 바바야가 2스택 + 🛡️ 방어 10',
+            name: '겨울의 장막', type: 'MAGIC', intent: '[MAGIC] 🪞 설산의 기사가 바바야가 2 + 🛡️ 방어 10 획득',
             execute: () => { engine.statuses.apply(self, self, 'BABA_YAGA', 2); engine.gainArmor(self, 10, '거울 장막 전개'); }
           };
         case 1:
           return {
-            name: '서리 창 찌르기', intent: `⚔️ 물리 14 (다음 적 턴 시작 시 바바야가 반격: 현재 누적 ${storedDmg})`,
+            name: '서리 창 찌르기', intent: `[ATTACK] ⚔️ 토끼기사에게 물리 14 피해`,
             execute: () => engine.executeAttack(self, player, 14)
           };
         case 2:
           return {
-            name: '겨울 호흡', type: 'MAGIC', intent: '💚 재생 3',
-            execute: () => { engine.statuses.apply(self, self, 'REGEN', 3); engine.log('🪞 겨울 장막이 걷혔습니다.', 'log-sys'); }
+            name: '겨울 호흡', type: 'MAGIC', intent: '[MAGIC] 💚 설산의 기사가 재생 3 획득',
+            execute: () => { engine.statuses.apply(self, self, 'REGEN', 3); engine.log('🪞 거울 호흡', 'log-sys'); }
           };
       }
     }
@@ -2671,7 +2672,7 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '망자의 서약', type: 'MAGIC', intent: '🧟 언데드 2 + 💀 저주 2',
+            name: '망자의 서약', type: 'MAGIC', intent: '[MAGIC] 🧟 좀비토끼 나나가 언데드 2 획득 + 💀 토끼기사에게 저주 2 부여',
             execute: () => {
               engine.statuses.apply(self, self, 'UNDEAD', 2);
               engine.statuses.apply(self, player, 'CURSE', 2);
@@ -2679,7 +2680,7 @@ const EnemyDB = {
           };
         case 1:
           return {
-            name: '부패한 이빨', intent: '⚔️ 물리 15 + 🩸 출혈 1',
+            name: '부패한 이빨', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 15 피해 + 🩸 출혈 1 부여',
             execute: () => {
               engine.executeAttack(self, player, 15);
               engine.statuses.apply(self, player, 'BLEED', 1);
@@ -2687,7 +2688,7 @@ const EnemyDB = {
           };
         case 2:
           return {
-            name: '시체 껍질', type: 'MAGIC', intent: '🛡️ 방어 22 + 💚 재생 2',
+            name: '시체 껍질', type: 'MAGIC', intent: '[MAGIC] 🛡️ 좀비토끼 나나가 방어 22 + 💚 재생 2 획득',
             execute: () => {
               engine.gainArmor(self, 22, '시체 껍질');
               engine.statuses.apply(self, self, 'REGEN', 2);
@@ -2695,7 +2696,7 @@ const EnemyDB = {
           };
         case 3:
           return {
-            name: '원혼의 비명', intent: '⚔️ 물리 9 × 2타 + 🧪 착란 1',
+            name: '원혼의 비명', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 9x2 피해 + 🧪 착란 1 부여',
             execute: () => {
               engine.executeAttack(self, player, 9, null, 2);
               engine.statuses.apply(self, player, 'DELIRIUM', 1);
@@ -2703,7 +2704,7 @@ const EnemyDB = {
           };
         case 4:
           return {
-            name: '불사의 집념', intent: '🧟 언데드 1 + ⚔️ 물리 14',
+            name: '불사의 집념', intent: '[ATTACK] 🧟 좀비토끼 나나가 언데드 1 획득 + ⚔️ 토끼기사에게 물리 14 피해',
             execute: () => {
               engine.statuses.apply(self, self, 'UNDEAD', 1);
               engine.executeAttack(self, player, 14);
@@ -2711,12 +2712,12 @@ const EnemyDB = {
           };
         case 5:
           return {
-            name: '묘지기의 난도질', intent: '⚔️ 물리 7 × 3타',
+            name: '묘지기의 난도질', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 7x3 피해',
             execute: () => engine.executeAttack(self, player, 7, null, 3)
           };
         case 6:
           return {
-            name: '사후 경직', type: 'MAGIC', intent: '🛡️ 방어 16 (몸이 굳어 공격하지 못합니다)',
+            name: '사후 경직', type: 'MAGIC', intent: '[MAGIC] 🛡️ 좀비토끼 나나가 방어 16 획득',
             execute: () => {
               engine.gainArmor(self, 16, '사후 경직');
               engine.log('🧟 좀비토끼 나나의 관절이 굳어 숨을 고릅니다.', 'log-sys');
@@ -2736,7 +2737,7 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '심해의 룰렛', type: 'MAGIC', intent: '🎲 모두에게 랜덤 버프/디버프 2종 2스택 부여',
+            name: '심해의 룰렛', type: 'MAGIC', intent: '[MAGIC] 🎲 모두에게 랜덤 버프/디버프 2종 2스택 부여',
             execute: () => {
               [self, player].forEach(target => {
                 const picks = RNG.sampleUnique(RANDOM_BUFF_DEBUFF_POOL, 2);
@@ -2746,7 +2747,7 @@ const EnemyDB = {
           };
         case 1:
           return {
-            name: '어뢰 돌진', intent: '💥 강타: 물리 24 + 🛡️ 방어 14',
+            name: '어뢰 돌진', intent: '[ATTACK] 💥 토끼기사에게 물리 24 피해 + 🛡️ 어뢰 바바가 방어 14 획득',
             execute: () => {
               engine.executeAttack(self, player, 24);
               engine.gainArmor(self, 14, '어뢰 돌진');
@@ -2754,7 +2755,7 @@ const EnemyDB = {
           };
         case 2:
           return {
-            name: '해적식 약탈', type: 'MAGIC', intent: '🤏 플레이어 버프 최대 2종 강탈 (없을 시 방어 24)',
+            name: '해적식 약탈', type: 'MAGIC', intent: '[MAGIC] 🤏 토끼기사의 버프 2종 강탈 (뺏지 못하면 어뢰 바바가 방어 24 획득)',
             execute: () => {
               const pBuffs = player.statuses.filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.BUFF && s.stacks > 0);
               if (pBuffs.length > 0) {
@@ -2764,7 +2765,7 @@ const EnemyDB = {
                   engine.statuses.changeStacks(player, s, -amt, 'REMOVE');
                   engine.statuses.apply(self, self, s.id, amt);
                 });
-                engine.emitLog(`🏴‍☠️ [해적식 약탈] 어뢰 바바가 플레이어의 버프 ${stolen.length}종을 강탈했습니다!`, 'log-status');
+                engine.emitLog(`🏴‍☠️ [해적식 약탈] 어뢰 바바가 토끼기사의 버프 ${stolen.length}종을 강탈했습니다!`, 'log-status');
               } else {
                 engine.emitLog(`🏴‍☠️ [해적식 약탈] 훔칠 버프가 없어 대신 장갑을 두릅니다.`, 'log-sys');
                 engine.gainArmor(self, 24, '약탈 불발');
@@ -2773,12 +2774,12 @@ const EnemyDB = {
           };
         case 3:
           return {
-            name: '어뢰 연사', intent: '⚔️ 물리 6 × 3타',
+            name: '어뢰 연사', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 6x3 피해',
             execute: () => engine.executeAttack(self, player, 6, null, 3)
           };
         case 4:
           return {
-            name: '어뢰 장갑 전개', type: 'MAGIC', intent: '🌵 도깨비바늘 2 + 🛡️ 방어 18',
+            name: '어뢰 장갑 전개', type: 'MAGIC', intent: '[MAGIC] 🌵 어뢰 바바가 도깨비바늘 2 + 🛡️ 방어 18 획득',
             execute: () => {
               engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 2);
               engine.gainArmor(self, 18, '어뢰 장갑 전개');
@@ -2786,7 +2787,7 @@ const EnemyDB = {
           };
         case 5:
           return {
-            name: '오물 투척 (디버프 전이)', intent: '⚔️ 물리 12 + 🤢 자신의 디버프를 플레이어에게 전이',
+            name: '오물 투척', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 12 피해 + 🤢 어뢰 바바의 디버프를 토끼기사에게 전이',
             execute: () => {
               engine.executeAttack(self, player, 12);
               const myDebuffs = self.statuses.filter(s => StatusDB[s.id]?.category === STATUS_CATEGORY.DEBUFF && s.stacks > 0);
@@ -2802,7 +2803,7 @@ const EnemyDB = {
           };
         case 6:
           return {
-            name: '잠수 재장전', type: 'MAGIC', intent: '🛡️ 방어 26 + 💚 재생 2',
+            name: '잠수 재장전', type: 'MAGIC', intent: '[MAGIC] 🛡️ 어뢰 바바가 방어 26 + 💚 재생 2 획득',
             execute: () => {
               engine.gainArmor(self, 26, '잠수 재장전');
               engine.statuses.apply(self, self, 'REGEN', 2);
@@ -2826,7 +2827,7 @@ const EnemyDB = {
           return {
             name: '부하 소집',
             type: 'MAGIC',
-            intent: '🛡️ 방어 25 + 🩸 출혈 4',
+            intent: '[MAGIC] 🛡️ 두더지파 보스 주리가 방어 25 획득 + 🩸 토끼기사에게 출혈 4 부여',
             execute: () => {
               engine.gainArmor(self, 25, '부하 소집');
               engine.statuses.apply(self, player, 'BLEED', 4);
@@ -2837,7 +2838,7 @@ const EnemyDB = {
           return {
             name: '지하 참호 파기',
             type: 'MAGIC',
-            intent: '🛡️ 방어 35 + 💚 재생 3',
+            intent: '[MAGIC] 🛡️ 두더지파 보스 주리가 방어 35 + 💚 재생 3 획득',
             execute: () => {
               engine.gainArmor(self, 35, '지하 참호 파기');
               engine.statuses.apply(self, self, 'REGEN', 3);
@@ -2847,7 +2848,7 @@ const EnemyDB = {
         case 2:
           return {
             name: '무자비한 난도질',
-            intent: '⚔️ 물리 19 + 🩸 출혈 2',
+            intent: '[ATTACK] ⚔️ 토끼기사에게 물리 19 피해 + 🩸 출혈 2 부여',
             execute: () => {
               engine.executeAttack(self, player, 19);
               engine.statuses.apply(self, player, 'BLEED', 2);
@@ -2858,7 +2859,7 @@ const EnemyDB = {
           return {
             name: '두더지식 강제정산',
             type: 'MAGIC',
-            intent: '💥 강제정산 + 🩸 부당거래(출혈/저주 50% 리필)',
+            intent: '[MAGIC] 💥 토끼기사의 출혈/저주를 강제정산 + 🩸 부당거래(출혈/저주 50% 리필)',
             execute: () => {
               let totalDamage = 0;
               const refunds = [];
@@ -2918,7 +2919,7 @@ const EnemyDB = {
           return {
             name: '배반자의 산개',
             type: 'MAGIC',
-            intent: '🛡️ 방어 28 + 🌵 도깨비바늘 2',
+            intent: '[MAGIC] 🛡️ 탈영병 산토가 방어 28 + 🌵 도깨비바늘 2 획득',
             execute: () => {
               engine.gainArmor(self, 28, '배반자의 산개');
               engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 2);
@@ -2928,7 +2929,7 @@ const EnemyDB = {
         case 1: // 2턴, 6턴, 10턴... (돌진 + 방어 중첩)
           return {
             name: '산구르기',
-            intent: '⚔️ 물리 14 + 🛡️ 방어 44',
+            intent: '[ATTACK] ⚔️ 토끼기사에게 물리 14 피해 + 🛡️ 탈영병 산토가 방어 44 획득',
             execute: () => {
               engine.executeAttack(self, player, 14);
               engine.gainArmor(self, 44, '산구르기');
@@ -2940,8 +2941,8 @@ const EnemyDB = {
             const momentumBonus = Math.min(38, Math.floor(self.armor * 0.5));
             const totalDmg = 16 + momentumBonus;
             return {
-              name: '분쇄 낙하',
-              intent: `💥 분쇄 낙하: 물리 ${totalDmg} (방어막이 남아있다면 강화됩니다)`,
+              name: '분쇄 낙하 (완벽)',
+              intent: `[ATTACK] 💥 탈영병 산토가 자신의 방어막을 절반 소모하여 토끼기사에게 물리 ${totalDmg} 피해`,
               execute: () => {
                 engine.executeAttack(self, player, totalDmg);
                 const spent = Math.ceil(self.armor * 0.5);
@@ -2953,7 +2954,7 @@ const EnemyDB = {
           }
           return {
             name: '분쇄 낙하 (균형 붕괴)',
-            intent: '💫 [방어 파쇄됨!] 균형 붕괴: 물리 8',
+            intent: '[ATTACK] 💫 [방어도 모두 파쇄됨!] 균형 붕괴: 토끼기사에게 기본 물리 8 피해',
             execute: () => {
               engine.emitLog(`💫 [균형 붕괴] 방어막이 깨진 산토가 중심을 잃고 나뒹굽니다!`, 'log-sys');
               engine.executeAttack(self, player, 8);
@@ -2965,7 +2966,7 @@ const EnemyDB = {
           return {
             name: '토끼굴 매도',
             type: 'MAGIC',
-            intent: '🩸 출혈 2 + 💀 저주 3 + 🛡️ 방어 20',
+            intent: '[MAGIC] 🩸 토끼기사에게 출혈 2 + 💀 저주 3 부여 + 🛡️ 탈영병 산토가 방어 20 획득',
             execute: () => {
               engine.statuses.apply(self, player, 'BLEED', 2);
               engine.statuses.apply(self, player, 'CURSE', 3);
@@ -2981,20 +2982,20 @@ const EnemyDB = {
       const cycle = (turn - 1) % 4;
       switch (cycle) {
         case 0:
-          return { name: '수리검 던지기', intent: '⚔️ 물리 4 × 2타', execute: () => engine.executeAttack(self, player, 4, null, 2) };
+          return { name: '수리검 던지기', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 4x2 피해', execute: () => engine.executeAttack(self, player, 4, null, 2) };
         case 1:
           return {
-            name: '연막탄', type: 'MAGIC', intent: '🛡️ 방어 8 + 🌑 실명 1',
+            name: '연막탄', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼닌자 엘이 방어 8 획득 + 🌑 토끼기사에게 실명 1 부여',
             execute: () => { engine.gainArmor(self, 8, '연막탄'); engine.statuses.apply(self, player, 'BLIND', 1); }
           };
         case 2:
           return {
-            name: '급소 찌르기', intent: '⚔️ 물리 12 + 🩸 출혈 1',
+            name: '급소 찌르기', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 12 피해 + 🩸 출혈 1 부여',
             execute: () => { engine.executeAttack(self, player, 12); engine.statuses.apply(self, player, 'BLEED', 1); }
           };
         case 3:
           return {
-            name: '숨 고르기', type: 'MAGIC', intent: '🛡️ 방어 5 + 💚 재생 1',
+            name: '숨 고르기', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼닌자 엘이 방어 5 + 💚 재생 1 획득',
             execute: () => { engine.gainArmor(self, 5, '숨 고르기'); engine.statuses.apply(self, self, 'REGEN', 1); }
           };
       }
@@ -3006,17 +3007,17 @@ const EnemyDB = {
       const cycle = (turn - 1) % 4;
       switch (cycle) {
         case 0:
-          return { name: '단단한 등껍질', type: 'MAGIC', intent: '🛡️ 방어 20', execute: () => engine.gainArmor(self, 20, '단단한 등껍질') };
+          return { name: '단단한 등껍질', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼거북 샤미가 방어 20 획득', execute: () => engine.gainArmor(self, 20, '단단한 등껍질') };
         case 1:
           return {
-            name: '웅크리기', type: 'MAGIC', intent: '🛡️ 방어 15 + 🛡️ 인내 1',
+            name: '웅크리기', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼거북 샤미가 방어 15 + 🛡️ 인내 1 획득',
             execute: () => { engine.gainArmor(self, 15, '웅크리기'); engine.statuses.apply(self, self, 'PATIENCE', 1); }
           };
         case 2:
-          return { name: '짓누르기', intent: '💥 강타: 물리 24', execute: () => engine.executeAttack(self, player, 24) };
+          return { name: '짓누르기', intent: '[ATTACK] 💥 토끼기사에게 물리 24 피해', execute: () => engine.executeAttack(self, player, 24) };
         case 3:
           return {
-            name: '느릿한 반격', intent: '⚔️ 물리 8 + 🌵 도깨비바늘 1',
+            name: '느릿한 반격', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 8 피해 + 🌵 토끼거북 샤미가 도깨비바늘 1 획득',
             execute: () => { engine.executeAttack(self, player, 8); engine.statuses.apply(self, self, 'GOBLIN_NEEDLE', 1); }
           };
       }
@@ -3029,19 +3030,19 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '우아한 스텝', type: 'MAGIC', intent: '🛡️ 방어 10 + 💚 재생 2',
+            name: '우아한 스텝', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼무희가 방어 10 + 💚 재생 2 획득',
             execute: () => { engine.gainArmor(self, 10, '우아한 스텝'); engine.statuses.apply(self, self, 'REGEN', 2); }
           };
         case 1:
-          return { name: '부채춤', intent: '⚔️ 물리 7 × 2타', execute: () => engine.executeAttack(self, player, 7, null, 2) };
+          return { name: '부채춤', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 7x2 피해', execute: () => engine.executeAttack(self, player, 7, null, 2) };
         case 2:
           return {
-            name: '칼춤', intent: '⚔️ 물리 16 + 🩸 출혈 1',
+            name: '칼춤', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 16 피해 + 🩸 출혈 1 부여',
             execute: () => { engine.executeAttack(self, player, 16); engine.statuses.apply(self, player, 'BLEED', 1); }
           };
         case 3:
           return {
-            name: '매혹의 춤', type: 'MAGIC', intent: '💀 저주 2 + 🧪 착란 1',
+            name: '매혹의 춤', type: 'MAGIC', intent: '[MAGIC] 💀 토끼기사에게 저주 2 + 🧪 착란 1 부여',
             execute: () => { engine.statuses.apply(self, player, 'CURSE', 2); engine.statuses.apply(self, player, 'DELIRIUM', 1); }
           };
       }
@@ -3055,22 +3056,22 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '접신', type: 'MAGIC', intent: '🛡️ 방어 20 + 💚 재생 2',
+            name: '접신', type: 'MAGIC', intent: '[MAGIC] 🛡️ 무당왕 쟌느가 방어 20 + 💚 재생 2 획득',
             execute: () => { engine.gainArmor(self, 20, '접신'); engine.statuses.apply(self, self, 'REGEN', 2); }
           };
         case 1:
           return {
-            name: '원혼 부르기', type: 'MAGIC', intent: '💀 저주 3 + 🧪 착란 2',
+            name: '원혼 부르기', type: 'MAGIC', intent: '[MAGIC] 💀 토끼기사에게 저주 3 + 🧪 착란 2 부여',
             execute: () => { engine.statuses.apply(self, player, 'CURSE', 3); engine.statuses.apply(self, player, 'DELIRIUM', 2); }
           };
         case 2:
           return {
-            name: '혼령 타격', intent: '⚔️ 물리 15 + 🩸 출혈 1',
+            name: '혼령 타격', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 15 피해 + 🩸 출혈 1 부여',
             execute: () => { engine.executeAttack(self, player, 15); engine.statuses.apply(self, player, 'BLEED', 1); }
           };
         case 3:
           return {
-            name: '살풀이', type: 'MAGIC', intent: '✨ 자신의 디버프 전부 정화 + 🛡️ 방어 30',
+            name: '살풀이', type: 'MAGIC', intent: '[MAGIC] ✨ 무당왕 쟌느가 자신의 디버프 전부 정화 + 🛡️ 방어 30 획득',
             execute: () => {
               const { removedCount } = engine.statuses.removeAll(self, [STATUS_CATEGORY.DEBUFF]);
               engine.emitLog(`✨ [살풀이] 쟌느가 춤을 추며 디버프 ${removedCount}종을 털어냅니다.`, 'log-sys');
@@ -3078,24 +3079,24 @@ const EnemyDB = {
             }
           };
         case 4:
-          return { name: '작두 타기', intent: '⚔️ 물리 5 × 4타', execute: () => engine.executeAttack(self, player, 5, null, 4) };
+          return { name: '작두 타기', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 5 × 4타', execute: () => engine.executeAttack(self, player, 5, null, 4) };
         case 5:
           return {
-            name: '신내림', type: 'MAGIC', intent: '🛡️ 방어 40 + ⚡ 설리반 2',
+            name: '신내림', type: 'MAGIC', intent: '[MAGIC] 🛡️ 무당왕 쟌느가 방어 40 + ⚡ 설리반 2 획득',
             execute: () => { engine.gainArmor(self, 40, '신내림'); engine.statuses.apply(self, self, 'SULLIVAN', 2); }
           };
         case 6:
           return {
-            name: '억압하는 방울', intent: '⚔️ 물리 12 + 💢 난투 2',
+            name: '억압하는 방울', intent: '[ATTACK] ⚔️ 토끼기사에게 물리 12 피해 + 💢 난투 2 부여',
             execute: () => { engine.executeAttack(self, player, 12); engine.statuses.apply(self, player, 'BRAWL', 2); }
           };
         case 7:
-          return { name: '대굿 준비', type: 'MAGIC', intent: '🛡️ 방어 50 (강력한 공격을 준비합니다)', execute: () => engine.gainArmor(self, 50, '대굿 준비') };
+          return { name: '대굿 준비', type: 'MAGIC', intent: '[MAGIC] 🛡️ 무당왕 쟌느가 방어 50을 획득하고 강력한 공격을 준비합니다', execute: () => engine.gainArmor(self, 50, '대굿 준비') };
         case 8:
-          return { name: '강림: 천벌', intent: '💥 강타: 물리 66', execute: () => engine.executeAttack(self, player, 66) };
+          return { name: '강림: 천벌', intent: '[ATTACK] 💥 토끼기사에게 물리 66 피해', execute: () => engine.executeAttack(self, player, 66) };
         case 9:
           return {
-            name: '탈진', type: 'MAGIC', intent: '💤 행동 없음 (기력을 소진해 쉬고 있습니다)',
+            name: '탈진', type: 'MAGIC', intent: '[MAGIC] 💤 탈진',
             execute: () => { engine.log('쟌느가 거친 숨을 몰아쉬며 아무런 행동도 하지 못합니다.', 'log-sys'); }
           };
       }
@@ -3110,7 +3111,7 @@ const EnemyDB = {
       switch (cycle) {
         case 0:
           return {
-            name: '환영모자 트릭', type: 'MAGIC', intent: '🛡️ 방어 22 + 🧪 착란 1, 저주 2',
+            name: '환영모자 트릭', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼마녀 시향이 방어 22 획득 + 🧪 토끼기사에게 착란 1, 저주 2 부여',
             execute: () => {
               engine.gainArmor(self, 22, '환영모자 트릭');
               engine.statuses.apply(self, player, 'DELIRIUM', 1);
@@ -3121,7 +3122,9 @@ const EnemyDB = {
           const bonusStatus = dStacks > 0 ? 10 : 0;
           return {
             name: '살랑거리는 귓속말',
-            intent: bonusStatus > 0 ? `⚔️ 물리 16 + 🔮 상태이상 ${bonusStatus}` : `⚔️ 물리 16`,
+            intent: bonusStatus > 0
+              ? `[ATTACK] ⚔️ 토끼기사에게 물리 16 피해 + 🔮 상태이상 ${bonusStatus} 피해`
+              : `[ATTACK] ⚔️ 토끼기사에게 물리 16 피해`,
             execute: () => {
               engine.executeAttack(self, player, 16);
               if (bonusStatus > 0) {
@@ -3135,13 +3138,13 @@ const EnemyDB = {
         }
         case 2:
           return {
-            name: '마녀의 티타임', type: 'MAGIC', intent: '🛡️ 방어 33 + 💚 재생 2',
+            name: '마녀의 티타임', type: 'MAGIC', intent: '[MAGIC] 🛡️ 토끼마녀 시향이 방어 33 + 💚 재생 2 획득',
             execute: () => { engine.gainArmor(self, 33, '마녀의 티타임'); engine.statuses.apply(self, self, 'REGEN', 2); }
           };
         case 3: {
           const totalDmg = 22 + (dStacks * 4);
           return {
-            name: '광란의 버니합', intent: `💥 강타: 물리 ${totalDmg} (기본 22 + 착란 보너스 ${dStacks * 4})`,
+            name: '광란의 버니합', intent: `[ATTACK] 💥 토끼기사에게 물리 ${totalDmg} 피해 (기본 22 + 착란 보너스 ${dStacks * 4})`,
             execute: () => engine.executeAttack(self, player, totalDmg)
           };
         }
@@ -3160,7 +3163,7 @@ const EnemyDB = {
         case 0:
           return {
             name: '검정 빗물 비옥 대지',
-            intent: '💚 플레이어에게 재생 10 부여 + ⚔️ 물리 9 × 10타',
+            intent: '[ATTACK] 💚 토끼기사에게 재생 10 부여 + ⚔️ 토끼기사에게 물리 9x10 피해',
             execute: () => {
               engine.statuses.apply(self, player, 'REGEN', 10);
               engine.executeAttack(self, player, 9, null, 10);
@@ -3170,7 +3173,7 @@ const EnemyDB = {
           return {
             name: '순례 혈해 순교 시산',
             type: 'MAGIC',
-            intent: '🛡️ 플레이어에게 방어도 100 부여 + 🩸 출혈 6 부여',
+            intent: '[MAGIC] 🛡️ 토끼기사에게 방어도 100 + 🩸 출혈 6 부여',
             execute: () => {
               engine.gainArmor(player, 100, '순례 혈해 순교 시산');
               engine.statuses.apply(self, player, 'BLEED', 6);
@@ -3181,7 +3184,7 @@ const EnemyDB = {
           return {
             name: '부정한 사육제',
             type: 'MAGIC',
-            intent: `💚 플레이어 HP ${healPlayerAmt} 회복 (회복 후 플레이어가 최대 HP가 아니라면 나엘이 HP +80 회복)`,
+            intent: `[MAGIC] 💚 토끼기사의 HP ${healPlayerAmt} 회복, 회복 후 토끼기사가 최대 HP가 아니라면 대천사토끼 나엘이 HP +80 회복`,
             execute: () => {
               engine.heal(player, healPlayerAmt, '부정한 사육제');
               if (player.hp < player.maxHp) {
@@ -3197,21 +3200,21 @@ const EnemyDB = {
           const hasTrial = !!self.trialActive;
           const curCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
           const judgePreview = hasTrial
-            ? (curCurse >= 1 ? `⚖️ [실망] 물리 66 (현재 저주 ${curCurse}) + ` : `⚖️ [환희] 나엘 저주 15 획득 + `)
+            ? (curCurse >= 1 ? `⚖️ [실망] 토끼기사에게 물리 66 피해 (현재 저주 ${curCurse}) + ` : `⚖️ [환희] 대천사토끼 나엘이 저주 15 획득 + `)
             : '';
 
           return {
             name: hasTrial ? '시험의 심판과 갱신' : '시험',
             type: (hasTrial && curCurse >= 1) ? 'ATTACK' : 'MAGIC',
-            intent: `${judgePreview}📜 플레이어에게 재생 5 · 저주 3 · 계약 5 부여, 시험이 시작됩니다`,
+            intent: `[${actionType}] ${judgePreview} 📜 토끼기사에게 재생 5 · 저주 3 · 계약 5 부여, 시험을 시작합니다`,
             execute: () => {
               if (self.trialActive) {
                 const nowCurse = engine.statuses.get(player, 'CURSE')?.stacks || 0;
                 if (nowCurse >= 1) {
-                  engine.emitLog(`💔 [실망] 저주(${nowCurse}스택)를 씻어내지 못한 필멸자에게 대천사가 실망합니다!`, 'log-hit');
+                  engine.emitLog(`💔 [실망] 저주(${nowCurse}스택)를 씻어내지 못한 기사에게 대천사가 실망합니다!`, 'log-hit');
                   engine.executeAttack(self, player, 66);
                 } else {
-                  engine.emitLog(`🌟 [환희] 당신의 고결한 모습에 대천사가 기꺼이 저주를 짊어집니다!`, 'log-sys');
+                  engine.emitLog(`🌟 [환희] 기사의 고결한 모습에 대천사가 저주를 짊어집니다!`, 'log-sys');
                   engine.statuses.apply(self, self, 'CURSE', 15);
                 }
               }
@@ -3262,7 +3265,7 @@ const EnemyDB = {
 
       engine.emitFx(self, 'fx-yellow');
       engine.emitFloatingText(self, '🎬 2막 개시!', 'fct-white');
-      engine.emitLog(`🎬 [2막 개시] 식구들의 그림자가 걷히고 토끼굴의 마피아가 직접 이빨을 드러냅니다! (최대 HP 150, 양측 HP 완전 회복)`, 'log-story');
+      engine.emitLog(`🎬 [2막 개시] 식구들의 그림자가 걷히고 토끼굴의 마피아가 직접 이빨을 드러냅니다! (토끼굴의 마피아 최대 HP 150으로 감소, 양측 HP 완전 회복)`, 'log-story');
 
       engine.heal(self, self.maxHp, '2막 개시');
       engine.heal(player, player.maxHp, '2막 개시');
@@ -3284,7 +3287,7 @@ const EnemyDB = {
             return {
               name: '암흑 시술',
               type: 'MAGIC',
-              intent: `🧟 언데드 ${gainAmt} 획득 (반복할수록 획득량 +1)`,
+              intent: `[MAGIC] 🧟 토끼굴의 마피아가 언데드 ${gainAmt} 획득 (반복할수록 획득량 +1)`,
               execute: () => {
                 self.p1Skill1Count = (self.p1Skill1Count || 0) + 1;
                 engine.statuses.apply(self, self, 'UNDEAD', gainAmt);
@@ -3298,7 +3301,7 @@ const EnemyDB = {
             return {
               name: '철문 개방',
               type: 'MAGIC',
-              intent: `🚪 언데드 ${actualPreview} 소모 (최대 ${reqSpend}) -> 🩸 출혈 ${actualPreview} 부여`,
+              intent: `[MAGIC] 🚪 토끼굴의 마피아가 언데드를 ${actualPreview} 소모(최대 ${reqSpend})하고 🩸 토끼기사에게 출혈 ${actualPreview} 부여`,
               execute: () => {
                 self.p1Skill2Count = (self.p1Skill2Count || 0) + 1;
                 const inst = engine.statuses.get(self, 'UNDEAD');
@@ -3318,7 +3321,7 @@ const EnemyDB = {
             const totalDmg = 20 + (pBleed * 3);
             return {
               name: '수혈과 탐식',
-              intent: `🩸 물리 ${totalDmg} (기본 20 + 출혈 ${pBleed}×3) + 피해량 절반 HP 회복`,
+              intent: `[ATTACK] 🩸 토끼기사에게 물리 ${totalDmg} 피해 (기본 20 + 출혈 ${pBleed}×3) + 토끼굴의 마피아가 피해량 절반 HP 회복`,
               execute: () => {
                 const nowBleed = engine.statuses.get(player, 'BLEED')?.stacks || 0;
                 const dmg = 20 + (nowBleed * 3);
@@ -3345,7 +3348,7 @@ const EnemyDB = {
         case 0:
           return {
             name: '회광반조',
-            intent: `⚔️ 물리 4 × ${turn}타 (현재 턴 수 비례 · 타격마다 🩸 출혈 1 부여)`,
+            intent: `[ATTACK] ⚔️ 토끼기사에게 물리 4x${turn} 피해 (현재 턴 수 비례 · 타격마다 토끼기사에게 🩸 출혈 1 부여)`,
             execute: () => {
               engine.executeAttack(self, player, 4, null, turn, () => {
                 if (player.hp > 0) engine.statuses.apply(self, player, 'BLEED', 1);
@@ -3356,7 +3359,7 @@ const EnemyDB = {
           return {
             name: '회유술',
             type: 'MAGIC',
-            intent: '⚖️ 양측의 모든 버프·디버프 스택 절반 감소 + 양측 HP 40 회복',
+            intent: '[MAGIC] ⚖️ 양측의 모든 버프·디버프 스택 절반 감소 + 양측 HP 40 회복',
             execute: () => {
               [self, player].forEach(ent => {
                 const targets = ent.statuses.filter(s => {
@@ -3380,7 +3383,7 @@ const EnemyDB = {
             return {
               name: `흉계 [${nextStep}/3]`,
               type: 'MAGIC',
-              intent: `🕯️ 흉계 카운트다운 [${nextStep}/3] (3회 누적 시 전원 초기화 및 1막 회귀)`,
+              intent: `[MAGIC] 🕯️ 흉계 카운트다운 [${nextStep}/3] (3회 누적 시 전원 초기화 및 1막 회귀)`,
               execute: () => {
                 self.schemeCount = nextStep;
                 engine.emitFx(self, 'fx-purple');
@@ -3392,7 +3395,7 @@ const EnemyDB = {
           return {
             name: '흉계 완성 [3/3]',
             type: 'MAGIC',
-            intent: '🕯️ [3/3] 전원 버프·디버프 초기화 & HP 완전 회복 + 1막 회귀 (최대 HP 200 · 언데드 70)',
+            intent: '[MAGIC] 🕯️ [3/3] 전원 버프·디버프 초기화 & HP 완전 회복 + 토끼굴의 마피아 1막 회귀 (최대 HP 200 · 언데드 70)',
             execute: () => {
               engine.emitLog(`🕯️ [흉계 완성] "거래는 원점으로 돌아간다." 모든 상태가 지워지고 1막이 다시 열립니다!`, 'log-hit');
               engine.statuses.removeAll(self, [STATUS_CATEGORY.BUFF, STATUS_CATEGORY.DEBUFF]);
@@ -3482,7 +3485,7 @@ const EnemyDB = {
         return {
           name: '천하인',
           type: 'MAGIC',
-          intent: '👑 모두에게 [의념:승천자]·[의념:책임자] 부여 + 🛡️ 부귀영화 인내 1 획득',
+          intent: '[MAGIC] 👑 모두에게 [의념:승천자]·[의념:책임자] 부여 + 🛡️ 부귀영화가 인내 1 획득',
           execute: () => {
             self.openedWithChunhain = true;
             self.cycleStep = 0;
@@ -3498,7 +3501,7 @@ const EnemyDB = {
             name: '강경책',
             type: 'ATTACK',
             ignoreBlockers: true,
-            intent: '🦷 의념:송곳니 15 획득 + 💥 물리 44 (천하인 방해 응징)',
+            intent: '[ATTACK] 🦷 부귀영화가 의념:송곳니 15 획득 + 💥 토끼기사에게 물리 44 피해',
             execute: () => {
               engine.emitLog(`🔥 [강경책] 천하인의 선포를 방해한 대가로 서슬 퍼런 보복이 내려집니다!`, 'log-hit');
               engine.statuses.apply(self, self, 'CTX_FANG', 15);
@@ -3514,11 +3517,11 @@ const EnemyDB = {
       switch (step) {
         case 0: {
           const lastCard = player.combatTrackers?.lastPlayedCard;
-          const targetDesc = lastCard ? `[${lastCard.name}] 전투 제외` : '마지막 사용 카드 제외(대상 없음)';
+          const targetDesc = lastCard ? `[${lastCard.name}]를 전투에서 제외` : '마지막 사용 카드 제외(대상 없음)';
           return {
             name: '멸문지화',
             type: 'MAGIC',
-            intent: `🔥 ${targetDesc} + 🐍 덱에 독사검 5장 추가 + 💚 재생 1 획득`,
+            intent: `[MAGIC] 🔥 토끼기사가 마지막으로 사용한 카드 ${targetDesc} + 🐍 토끼기사의 덱에 독사검 5장 강제 추가 + 💚 부귀영화가 재생 1 획득`,
             execute: () => {
               self.cycleStep = 1;
               const targetCard = player.combatTrackers?.lastPlayedCard;
@@ -3546,7 +3549,7 @@ const EnemyDB = {
               }
 
               this.addViperBladesToDeck(engine, player, 5);
-              engine.emitLog(`🐍 [멸문지화] 플레이어 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
+              engine.emitLog(`🐍 [멸문지화] 토끼기사의 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
               engine.statuses.apply(self, self, 'REGEN', 1);
             }
           };
@@ -3556,11 +3559,11 @@ const EnemyDB = {
           return {
             name: '만찬초대',
             type: 'MAGIC',
-            intent: '🍷 덱에 독사검 5장 추가 + 🩸 출혈 2 부여 + 🦷 의념:송곳니 10 획득',
+            intent: '[MAGIC] 🍷 토끼기사의 덱에 독사검 5장 강제 추가 + 🩸 출혈 2 부여 + 🦷 부귀영화가 의념:송곳니 10 획득',
             execute: () => {
               self.cycleStep = 2;
               this.addViperBladesToDeck(engine, player, 5);
-              engine.emitLog(`🍷 [만찬초대] 플레이어 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
+              engine.emitLog(`🍷 [만찬초대] 토끼기사의 덱에 [독사검] 5장이 섞여 들었습니다!`, 'log-status');
               engine.statuses.apply(self, player, 'BLEED', 2);
               engine.statuses.apply(self, self, 'CTX_FANG', 10);
             }
@@ -3571,13 +3574,13 @@ const EnemyDB = {
           return {
             name: '희노애락',
             type: 'MAGIC',
-            intent: `🎭 보유 독사검 2배(+${curViper}장 추가) + 💀 자신에게 저주 3 · 📜 계약 1 부여`,
+            intent: `[MAGIC] 🎭 토끼기사가 보유한 독사검을 2배(+${curViper}장 추가)로 만듦 + 💀 부귀영화가 스스로 저주 3 · 📜 계약 1 획득`,
             execute: () => {
               self.cycleStep = 3;
               const addCount = this.countViperBlades(player);
               if (addCount > 0) {
                 this.addViperBladesToDeck(engine, player, addCount);
-                engine.emitLog(`🎭 [희노애락] 플레이어의 [독사검]이 2배(+${addCount}장)로 불어났습니다!`, 'log-status');
+                engine.emitLog(`🎭 [희노애락] 토끼기사의 [독사검]이 2배(+${addCount}장)로 불어났습니다!`, 'log-status');
               } else {
                 engine.emitLog(`🎭 [희노애락] 불어날 [독사검]이 없습니다.`, 'log-sys');
               }
@@ -3593,7 +3596,7 @@ const EnemyDB = {
           return {
             name: '의심병',
             type: 'ATTACK',
-            intent: `⚔️ 물리 2 × ${hits}타 (독사검 ${curViper}장×2) + 잔여 방어 파쇄 및 물리 20 + 독사검 절반 제거`,
+            intent: `[ATTAC] ⚔️ 토끼기사에게 물리 2×${hits} 피해 (독사검 ${curViper}장×2 타수 증가) + 토끼기사의 잔여 방어 파쇄 및 물리 20 피해 + 토끼기사가 보유한 독사검 절반 제거`,
             execute: () => {
               self.cycleStep = 4;
               const nowViper = this.countViperBlades(player);
@@ -3628,8 +3631,8 @@ const EnemyDB = {
             name: '세레나데',
             type: 'MAGIC',
             intent: willLoseHp
-              ? '🎵 인내 추가 누적 없음 -> 💔 부귀영화 최대 HP 300 상실 예정!'
-              : '🎵 인내 추가 누적 감지됨 -> 최대 HP 상실 없음 (카운터 초기화)',
+              ? '[MAGIC] 🎵 인내 추가 누적 없음 -> 💔 부귀영화 최대 HP 300 상실 예정!'
+              : '[MAGIC] 🎵 인내 추가 누적 감지됨 -> 최대 HP 상실 없음 (카운터 초기화)',
             execute: () => {
               self.cycleStep = 0;
               if (!self.patienceGainedSinceSerenade) {
@@ -3714,7 +3717,6 @@ class Entity {
     this.graveyard = [];          // 버려진 카드 더미 (묘지)
     this.runTrackers = { hitTakenCount: 0 };          // 런 전체 누적 기록 ([013 복수]용 피격 횟수)
     this.combatTrackers = { lastGraveyardCard: null };// 단일 전투 내 기록 ([024 끼토산]용 직전 묘지 카드)
-    this.combatTrackers = { lastGraveyardCard: null, lastPlayedCard: null }; // 직전 사용 카드
   }
 
   /**
@@ -4352,7 +4354,7 @@ class CombatEngine {
     this.phaseJustChanged = false;
 
     if (this.combatEnded) return;
-    this.emitLog(` [${this.turn}턴: 플레이어 차례] `, 'log-sys');
+    this.emitLog(` [${this.turn}턴: 토끼기사의 차례] `, 'log-sys');
 
     const carryOver = Math.min(this.player.maxCarryOver, this.player.energy);
     let recovery = 3;
@@ -4365,7 +4367,8 @@ class CombatEngine {
       [...ent.statuses].forEach(s => {
         const def = StatusDB[s.id];
         if (def.decayTiming === DECAY_TIMING.CASTER_TURN_START && s.caster === this.player) {
-          this.statuses.changeStacks(ent, s, -1, 'DISPEL');
+          if (def.category === STATUS_CATEGORY.DEBUFF) this.statuses.tryDecayDebuff(ent, s, 1);
+          else this.statuses.changeStacks(ent, s, -1, 'DISPEL');
         }
         if (ent === this.player && def.onOwnerTurnStart) {
           def.onOwnerTurnStart(this, ent, s);
@@ -4421,7 +4424,8 @@ class CombatEngine {
       [...ent.statuses].forEach(s => {
         const def = StatusDB[s.id];
         if (def.decayTiming === DECAY_TIMING.CASTER_TURN_START && s.caster === this.enemy) {
-          this.statuses.changeStacks(ent, s, -1, 'DISPEL');
+          if (def.category === STATUS_CATEGORY.DEBUFF) this.statuses.tryDecayDebuff(ent, s, 1);
+          else this.statuses.changeStacks(ent, s, -1, 'DISPEL');
         }
         if (ent === this.enemy && def.onOwnerTurnStart) {
           def.onOwnerTurnStart(this, ent, s);
@@ -4777,7 +4781,7 @@ const RogueManager = {
           };
         }
         return {
-          title: `⭐ 흩어지 별빛 (현재 보스 모두 격파 완료)`,
+          title: `⭐ 흩어진 별빛 (현재 보스 모두 격파 완료)`,
           desc: `흩어진 별빛을 모두 쓰러뜨렸습니다. 일반·엘리트·캠프·호수로 자유롭게 등반을 이어갈 수 있습니다.`,
           borderColor: 'var(--border)',
           disabled: true
@@ -6130,7 +6134,7 @@ const AppUI = {
       }
     } else {
       continueBtn.classList.add('hidden');
-      subEl.innerHTML = `v1.12 흩어진 별빛 2 | 기사도 ${maxFloor}층 + 몽중몽 별빛 ${DREAM_BOSS_ORDER.length}개`;
+      subEl.innerHTML = `v1.13 | 기사도 ${maxFloor}층 + 몽중몽 별빛 ${DREAM_BOSS_ORDER.length}개`;
     }
   },
 
